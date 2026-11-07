@@ -62,7 +62,7 @@ input:focus,select:focus{border-color:#e32636;box-shadow:0 0 0 3px #e3263626}
 <header><div class="head"><div class="brand"><div class="crest">CC</div><div><h1>CARABINIERI</h1><p>SIMULATORE DIDATTICO INDIPENDENTE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <main class="wrap">
 <div class="notice"><strong>Progetto non ufficiale.</strong> Piattaforma indipendente per esercitazione e studio. Non rappresenta l’Arma dei Carabinieri, non rilascia qualifiche e non sostituisce bandi, manuali o fonti normative ufficiali.</div>
-<section id="loginView" class="loginbox"><div class="panel"><div class="badge">AREA RISERVATA</div><h2 style="margin-top:12px">Bentornato</h2><p class="muted">Accedi con le credenziali fornite dall’amministratore.</p><form id="loginForm" onsubmit="event.preventDefault(); if(typeof login==='function'){login(event)}else{document.getElementById('loginMsg').textContent='Caricamento non completato: ricarica la pagina e riprova.'}"><label>Nome utente o email<input id="username" value="christianbeneduce" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><button class="primary" id="loginBtn" type="submit" style="width:100%">Accedi al simulatore</button></form><p id="loginMsg" class="small" role="status"></p><p class="tiny muted">Non è prevista la registrazione pubblica. Gli account vengono creati dall’istruttore.</p></div></section>
+<section id="loginView" class="loginbox"><div class="panel"><div class="badge">AREA RISERVATA</div><h2 style="margin-top:12px">Bentornato</h2><p class="muted">Accedi con le credenziali fornite dall’amministratore.</p><form id="loginForm" novalidate><label>Nome utente o email<input id="username" type="text" placeholder="Nome utente oppure email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><button class="primary" id="loginBtn" type="submit" style="width:100%">Accedi al simulatore</button></form><p id="loginMsg" class="small" role="status"></p><p class="tiny muted">Non è prevista la registrazione pubblica. Gli account vengono creati dall’istruttore.</p></div></section>
 <section id="appView" class="hidden">
 <div class="panel"><div class="row between"><div><div class="muted small">AREA PERSONALE</div><div id="welcome" class="welcome"></div><div id="userMeta" class="small muted"></div></div><div class="row"><span id="roleBadge" class="badge"></span><button id="logoutBtn" class="ghost">Esci</button></div></div></div>
 <nav class="tabs" id="tabs"><button data-tab="home" class="active">Panoramica</button><button data-tab="quiz">Allenamento quiz</button><button data-tab="ranks">Progressione</button><button data-tab="guide">Guida allo studio</button><button data-tab="map">GPS e navigazione</button><button data-tab="units">Reparti</button><button data-tab="account">Account</button><button data-tab="admin" id="adminTab" class="hidden">Istruttore</button></nav>
@@ -83,7 +83,8 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const threshold=i=>Math.round((250+i*60+i*i*4)/10)*10;
 let user=null,profile=null,progress={rank:0,exp:0,quizCount:0,correct:0,streak:0,history:[]},quiz=null,answerIndex=null;
-function showTab(name){["home","quiz","ranks","guide","map","units","account","admin"].forEach(x=>$(x).classList.toggle("hidden",x!==name));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));if(name==="admin"&&["admin","istruttore"].includes(profile?.role)){loadUsers();loadAudit();}}
+function showTab(name){["home","quiz","ranks","guide","map","units","account","admin"].forEach(x=>$(x).classList.toggle("hidden",x!==name));$("loginForm").addEventListener("submit",login);
+document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));if(name==="admin"&&["admin","istruttore"].includes(profile?.role)){loadUsers();loadAudit();}}
 function renderPerformanceChart(){const box=$("performanceChart");if(!box)return;const items=(progress.history||[]).slice(-7);if(!items.length){box.innerHTML='<div class="chart-head"><strong>Andamento esercitazioni</strong><span class="badge">Ultimi 7 quiz</span></div><div class="chart-empty">Completa il primo quiz per visualizzare qui il grafico dei risultati.</div>';return;}const bars=items.map((x,i)=>{const n=Math.max(0,Math.min(4,Number(x.correct)||0));const pct=n/4*100;const d=x.date?new Date(x.date):null;const day=d&&!Number.isNaN(d.getTime())?d.toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"}):"Quiz "+(i+1);return '<div class="chart-col" title="'+n+' risposte corrette su 4"><div class="chart-track"><div class="chart-bar" style="height:'+pct+'%"></div></div><small>'+esc(day)+'</small></div>';}).join("");const avg=items.reduce((s,x)=>s+Math.max(0,Math.min(4,Number(x.correct)||0)),0)/items.length;box.innerHTML='<div class="chart-head"><strong>Andamento esercitazioni</strong><span class="badge">Media '+avg.toFixed(1).replace(".",",")+'/4</span></div><div class="chart-bars">'+bars+'</div><div class="chart-legend">Risposte corrette per esercitazione · scala da 0 a 4</div>';}
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
@@ -103,15 +104,52 @@ function render(){
 }
 async function logEvent(event,details){try{await db.functions.invoke("audit-event",{body:{event,...(details||{})}});}catch(e){console.warn("Audit non disponibile",e);}}
 async function loadProfile(u){
- user=u;
  const p=await db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank").eq("id",u.id).single();
- if(p.error)throw p.error;profile=p.data;
- if(!profile.active||profile.deleted)throw new Error("Account sospeso o disattivato.");
- const g=await db.from("progress").select("payload").eq("user_id",u.id).maybeSingle();if(g.error)throw g.error;
- progress={rank:profile.initial_rank||0,exp:0,quizCount:0,correct:0,streak:0,history:[],...(g.data?.payload||{})};progress.rank=Math.max(Number(progress.rank)||0,Number(profile.initial_rank)||0);
- $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");render();showTab("home");await logEvent("session_start");
+ if(p.error)throw new Error("Profilo non leggibile: "+p.error.message);
+ const nextProfile=p.data;
+ if(!nextProfile||!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
+ profile=nextProfile;user=u;
+ progress={rank:profile.initial_rank||0,exp:0,quizCount:0,correct:0,streak:0,history:[]};
+ const g=await db.from("progress").select("payload").eq("user_id",u.id).maybeSingle();
+ if(!g.error&&g.data?.payload)progress={...progress,...g.data.payload};
+ else if(g.error)console.warn("Progressi non caricati:",g.error.message);
+ progress.rank=Math.max(Number(progress.rank)||0,Number(profile.initial_rank)||0);
+ $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
+ try{render();showTab("home");}catch(viewError){console.error("Dashboard:",viewError);$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");throw new Error("Accesso riuscito, ma la schermata iniziale non si è caricata. Ricarica la pagina.");}
+ logEvent("session_start");
 }
-async function login(e){e.preventDefault();$("loginMsg").textContent="Verifica credenziali…";$("loginBtn").disabled=true;try{const identifier=$("username").value.trim(),password=$("password").value;let sessionUser=null;if(identifier.includes("@")){const {data,error}=await db.auth.signInWithPassword({email:identifier,password});if(error||!data?.user){$("loginMsg").textContent="Credenziali rifiutate. Controlla email e password oppure usa il recupero password.";return;}sessionUser=data.user;}else{const name=identifier.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"");if(!/^[a-z0-9_-]{3,24}$/.test(name)){$("loginMsg").textContent="Inserisci un nome utente valido oppure un indirizzo email.";return;}const {data,error}=await db.functions.invoke("username-login",{body:{username:name,password}});if(error||!data?.session?.access_token||!data?.session?.refresh_token){$("loginMsg").textContent=data?.error||error?.message||"Credenziali rifiutate. Controlla nome utente e password.";return;}const {data:sessionData,error:sessionError}=await db.auth.setSession(data.session);if(sessionError||!sessionData?.user){$("loginMsg").textContent="Sessione non valida. Riprova ad accedere.";return;}sessionUser=sessionData.user;}await loadProfile(sessionUser);$("password").value="";}catch(err){console.error("login",err);$("loginMsg").textContent=err?.message?("Errore di accesso: "+err.message):"Connessione non disponibile. Controlla internet e riprova.";}finally{$("loginBtn").disabled=false;}}
+let loginInProgress=false;
+async function login(e){
+ if(e)e.preventDefault();
+ if(loginInProgress)return;
+ loginInProgress=true;
+ const btn=$("loginBtn"),msg=$("loginMsg"),identifier=$("username").value.trim(),password=$("password").value;
+ btn.disabled=true;msg.className="small";msg.textContent="Verifica credenziali…";
+ try{
+  if(!identifier||!password)throw new Error("Inserisci email o nome utente e password.");
+  let authUser=null;
+  if(identifier.includes("@")){
+   const result=await db.auth.signInWithPassword({email:identifier.toLowerCase(),password});
+   if(result.error||!result.data?.user)throw new Error("Email o password non corretti.");
+   authUser=result.data.user;
+  }else{
+   const name=identifier.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"");
+   if(!/^[a-z0-9_-]{3,24}$/.test(name))throw new Error("Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.");
+   const result=await db.functions.invoke("username-login",{body:{username:name,password}});
+   if(result.error||!result.data?.session?.access_token||!result.data?.session?.refresh_token)throw new Error(result.data?.error||result.error?.message||"Nome utente o password non corretti.");
+   const session=await db.auth.setSession(result.data.session);
+   if(session.error||!session.data?.user)throw new Error("Non è stato possibile avviare la sessione. Riprova.");
+   authUser=session.data.user;
+  }
+  await loadProfile(authUser);
+  $("password").value="";msg.textContent="";
+ }catch(err){
+  console.error("Login:",err);
+  try{await db.auth.signOut({scope:"local"});}catch(_){}
+  user=null;profile=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
+  msg.textContent=err?.message||"Accesso non riuscito. Controlla la connessione e riprova.";msg.className="small error";
+ }finally{btn.disabled=false;loginInProgress=false;}
+}
 async function logout(){try{if(user)await logEvent("session_end");await db.auth.signOut();}catch(e){console.warn("logout",e);}finally{user=null;profile=null;quiz=null;answerIndex=null;resetQuizView();$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("headUser").textContent="";$("password").value="";}}
 function resetQuizView(){$("quizSetup").classList.remove("hidden");$("quizPlay").classList.add("hidden");$("quizResult").classList.add("hidden");$("quizError").textContent="";quiz=null;answerIndex=null;}
 async function startQuiz(){$("quizError").textContent="";$("startQuiz").disabled=true;try{const category=$("quizCategory").value;const {data,error}=await db.functions.invoke("quiz-engine",{body:{action:"start",category}});if(error||!data?.questions){$("quizError").textContent=data?.error||"Non è stato possibile avviare il quiz. Controlla la connessione e riprova.";return;}quiz={id:data.attempt_id,questions:data.questions,answers:[],index:0};$("quizSetup").classList.add("hidden");$("quizPlay").classList.remove("hidden");renderQuestion();}catch(e){console.error("startQuiz",e);$("quizError").textContent="Connessione non disponibile. Il quiz non è stato avviato.";}finally{$("startQuiz").disabled=false;}}
@@ -128,5 +166,5 @@ document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()
 document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.goto)));
 $("logoutBtn").addEventListener("click",logout);$("startQuiz").addEventListener("click",startQuiz);$("answerList").addEventListener("click",e=>{const b=e.target.closest("[data-option]");if(b)chooseAnswer(Number(b.dataset.option));});$("nextQuestion").addEventListener("click",nextQuestion);$("createUser").addEventListener("click",createUser);$("refreshUsers").addEventListener("click",loadUsers);$("refreshAudit").addEventListener("click",loadAudit);$("userList").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b)userAction(b.dataset.user,b.dataset.action);});$("changePassword").addEventListener("click",changePassword);let gpsMode="driving",gpsRecent=[];document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{gpsMode=b.dataset.mode;document.querySelectorAll("[data-mode]").forEach(x=>x.classList.toggle("active",x===b));}));function gpsUrl(){const from=$("gpsFrom").value.trim(),to=$("gpsTo").value.trim();if(!from&&!to){$("gpsMsg").textContent="Inserisci una partenza o una destinazione.";return null;}if(from&&to){gpsRecent=[to,...gpsRecent.filter(x=>x!==to)].slice(0,5);renderGpsRecent();return "https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(from)+"&destination="+encodeURIComponent(to)+"&travelmode="+gpsMode;}return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(to||from);}function renderGpsRecent(){$("gpsRecent").innerHTML=gpsRecent.map((x,i)=>"<button type=\"button\" data-recent=\""+i+"\">"+esc(x)+"</button>").join("");}$("gpsRecent").addEventListener("click",e=>{const b=e.target.closest("[data-recent]");if(b){$("gpsTo").value=gpsRecent[Number(b.dataset.recent)]||"";}});$("gpsRoute").addEventListener("click",()=>{const u=gpsUrl();if(u){$("gpsOpen").href=u;window.open(u,"_blank","noopener,noreferrer");$("gpsMsg").textContent="Percorso pronto in Google Maps.";logEvent("gps_opened",{action:"route"});}});$("gpsOpen").addEventListener("click",e=>{if(!e.currentTarget.href||e.currentTarget.href==="about:blank"){e.preventDefault();$("gpsMsg").textContent="Prima calcola un percorso o cerca una caserma.";}});$("gpsLocate").addEventListener("click",()=>{if(!navigator.geolocation){$("gpsMsg").textContent="Geolocalizzazione non supportata dal dispositivo.";return;}$("gpsMsg").textContent="Richiesta della posizione: consenti l’accesso nel browser.";navigator.geolocation.getCurrentPosition(p=>{$("gpsFrom").value=p.coords.latitude.toFixed(5)+","+p.coords.longitude.toFixed(5);$("gpsMsg").textContent="Posizione acquisita per questa ricerca.";},()=>{$("gpsMsg").textContent="Posizione non disponibile. Inserisci manualmente la partenza.";},{enableHighAccuracy:true,timeout:10000});});$("gpsNearest").addEventListener("click",()=>{const from=$("gpsFrom").value.trim();if(!from){$("gpsMsg").textContent="Inserisci la posizione o usa il GPS prima della ricerca.";return;}const u="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Caserma Carabinieri vicino a "+from);$("gpsOpen").href=u;window.open(u,"_blank","noopener,noreferrer");$("gpsMsg").textContent="Ricerca delle caserme vicine aperta in Google Maps.";logEvent("gps_opened",{action:"nearest"});});
 RANKS.forEach((r,i)=>$("newRank").add(new Option(r,i)));
-(async()=>{const {data}=await db.auth.getSession();if(data.session){try{await loadProfile(data.session.user);}catch(e){await db.auth.signOut();}}})();
+(async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await loadProfile(data.session.user);}catch(e){console.warn("Ripristino sessione:",e);await db.auth.signOut({scope:"local"});user=null;profile=null;$("loginMsg").textContent="Sessione scaduta o non valida. Accedi di nuovo.";}})();
 </script></body></html>
