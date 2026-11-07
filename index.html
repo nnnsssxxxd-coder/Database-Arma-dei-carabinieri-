@@ -796,7 +796,7 @@ async function loadProfile(u){
  else if(g.error)console.warn("Progressi non caricati:",g.error.message);
  progress.rank=Math.max(Number(progress.rank)||0,Number(profile.initial_rank)||0);
  $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
- try{render();showTab("home");refreshQuizCooldown();}catch(viewError){console.error("Dashboard:",viewError);$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");throw new Error("Accesso riuscito, ma la schermata iniziale non si è caricata. Ricarica la pagina.");}
+ try{render();showTab("home");refreshQuizCooldown();}catch(viewError){console.error("Dashboard:",viewError);let banner=$("dashboardLoadError");if(!banner){banner=document.createElement("div");banner.id="dashboardLoadError";banner.className="notice2 error";banner.style.margin="12px 0";$("appView").prepend(banner);}banner.textContent="Accesso effettuato. Alcuni contenuti non si sono caricati: aggiorna la pagina. La sessione resta attiva.";try{showTab("home");}catch(navError){console.error("Navigazione iniziale:",navError);}}
  logEvent("session_start");
 }
 let loginInProgress=false;
@@ -826,10 +826,9 @@ async function login(e){
   $("password").value="";msg.textContent="";
  }catch(err){
   console.error("Login:",err);
-  try{await db.auth.signOut({scope:"local"});}catch(_){}
-  user=null;profile=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
+  if(!user||!profile){try{await db.auth.signOut({scope:"local"});}catch(_){}user=null;profile=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");}
   msg.textContent=err?.message||"Accesso non riuscito. Controlla la connessione e riprova.";msg.className="small error";
- }finally{btn.disabled=false;loginInProgress=false;}
+}finally{btn.disabled=false;loginInProgress=false;}
 }
 async function logout(){
  if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}cooldownUntil=null;
