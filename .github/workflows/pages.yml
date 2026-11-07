@@ -38,11 +38,14 @@ jobs:
           console.log("Sintassi valida: " + scripts.length + " script incorporati verificati.");
           NODE
       - name: Configura GitHub Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
       - name: Prepara sito statico
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
       - name: Pubblica sito
+        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
