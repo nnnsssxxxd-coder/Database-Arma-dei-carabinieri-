@@ -23,6 +23,18 @@ jobs:
     steps:
       - name: Scarica repository
         uses: actions/checkout@v4
+      - name: Verifica sintassi JavaScript incorporato
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)]
+            .filter(([, attrs, body]) => !/\\bsrc\\s*=/.test(attrs) && body.trim());
+          if (!scripts.length) throw new Error('Nessuno script JavaScript incorporato trovato');
+          scripts.forEach(([, , body], index) => new vm.Script(body, { filename: `index.html:inline-script-${index + 1}` }));
+          console.log(`Sintassi valida: ${scripts.length} script incorporati verificati.`);
+          NODE
       - name: Configura GitHub Pages
         uses: actions/configure-pages@v5
       - name: Prepara sito statico
