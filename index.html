@@ -991,12 +991,12 @@ function rankSymbolSvg(rank){
 }
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
- $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";$("cardRole").textContent=String(profile.role||"allievo").toUpperCase();
+ const isInstructor=["admin","istruttore"].includes(profile.role),isSubOfficer=rank>=4&&rank<=11,personnelRole=isSubOfficer?"SOTTUFFICIALE":"UFFICIALE";$("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";$("cardRole").textContent=isInstructor?String(profile.role||"ISTRUTTORE").toUpperCase():personnelRole;
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
  $("homeRank").textContent=RANKS[rank];renderDepartmentUI();
- $("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?"ISTRUTTORE":"ALLIEVO";
+ $("roleBadge").textContent=isInstructor?"ISTRUTTORE":(isSubOfficer?"OPERATORE":"UFFICIALE");
  $("adminTab").classList.toggle("hidden",!["admin","istruttore"].includes(profile.role));
  $("quizCount").textContent=progress.quizCount||0;$("correctCount").textContent=progress.correct||0;$("exp").textContent=exp+" / "+(Number(progress.totalExp)||0);$("streak").textContent=progress.streak||0;renderPerformanceChart();
  const pct=rank>=RANKS.length-1?100:Math.min(100,exp/need*100);const examReady=rank<RANKS.length-1&&exp>=need;if($("rankExamInfo"))$("rankExamInfo").textContent=rank>=RANKS.length-1?"Hai raggiunto il grado massimo del percorso.":examReady?"Requisiti raggiunti: puoi sostenere l’esame per il grado "+(rank+2)+". La prova è composta da 5 domande e richiede almeno 4 risposte corrette.":"Per sbloccare l’esame per il grado "+(rank+2)+" servono "+Math.max(0,need-exp)+" EXP. Difficoltà e argomenti vengono adeguati alla tua progressione.";if($("startRankExam"))$("startRankExam").disabled=!examReady;const insignia=$("rankInsignia");if(insignia){insignia.setAttribute("aria-label","Distintivo del grado "+RANKS[rank]);insignia.innerHTML=rankSymbolSvg(rank);}if($("rankShowcaseName"))$("rankShowcaseName").textContent=RANKS[rank];if($("rankShowcasePercent"))$("rankShowcasePercent").textContent=Math.round(pct)+"%";if($("rankShowcaseProgress"))$("rankShowcaseProgress").style.width=pct+"%";if($("rankShowcaseNext"))$("rankShowcaseNext").textContent=rank>=RANKS.length-1?"Hai raggiunto il grado massimo.":"Prossimo traguardo: "+RANKS[rank+1]+" · "+Math.max(0,need-exp)+" EXP mancanti.";
