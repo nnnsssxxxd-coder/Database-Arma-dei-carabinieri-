@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
         p_questions:safeCqb
       });
       if(error) return reply(req,{error:error.message||"Impossibile assegnare il test."},400);
-      return reply(assignment,201);
+      return reply(req,assignment,201);
     }
     if (action === "exercise_start") {
       if(isCommander) return reply(req,{error:"Il comandante non può svolgere test di reparto assegnati."},403);
@@ -178,7 +178,7 @@ Deno.serve(async (req: Request) => {
         const status=/già completato/.test(msg)?409:/non appartieni|comandante/.test(msg)?403:400;
         return reply(req,{error:msg||"Impossibile registrare il risultato del test."},status);
       }
-      return reply(data);
+      return reply(req,data);
     }
     if (action === "start") {
       if(isCommander) return reply(req,{error:"Il comandante non può più svolgere quiz personali di reparto."},403);
