@@ -67,7 +67,7 @@ Deno.serve(async(req)=>{
   if(body.action==="status"){
    const status=await cooldownFor(user.id,category);
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
-   return reply(status);
+   return reply(req,status);
   }
   if(body.action==="start"){
    await db.from("quiz_attempts").update({answers:[],score:0,exp_awarded:0,completed_at:new Date().toISOString()})
