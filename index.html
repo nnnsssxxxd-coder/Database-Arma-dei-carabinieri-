@@ -992,7 +992,7 @@ function rankSymbolSvg(rank){
 }
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
- const isInstructor=["admin","istruttore"].includes(profile.role),isSubOfficer=rank>=0&&rank<=11,personnelRole=isSubOfficer?"SOTTUFFICIALE":"UFFICIALE";$("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";$("cardRole").textContent=personnelRole;
+ const isInstructor=["admin","istruttore"].includes(profile.role),isSubOfficer=rank>=0&&rank<=11,personnelRole=isSubOfficer?"OPERATORE":"UFFICIALE";$("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";$("cardRole").textContent=personnelRole;
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
