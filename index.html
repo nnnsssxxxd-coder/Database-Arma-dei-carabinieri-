@@ -911,7 +911,7 @@ main{padding-bottom:0!important}
 </section>
 
 <section id="assignedExercises" class="panel hidden"><div class="eyebrow">GESTIONE DEL REPARTO · SIMULAZIONE</div><h2>Esercitazioni assegnate</h2><p class="muted small">Pannello interno per assegnare e verificare esercitazioni decisionali. Non contiene procedure operative né addestramento tattico reale.</p><div id="commanderTools" class="notice2 hidden"><label for="exerciseTitle">Titolo esercitazione<input id="exerciseTitle" maxlength="100" value="CQB · valutazione decisionale e sicurezza"></label><button id="assignCqbExercise" class="primary" type="button">Assegna esercitazione CQB</button><p id="assignExerciseMessage" class="small" role="status"></p><h3>Risultati dei subordinati</h3><div id="commanderResults"></div></div><div id="memberExercises" class="notice2 hidden"><h3>Le tue esercitazioni</h3><div id="memberExerciseList"></div></div><div id="exerciseRunner" class="hidden"><h3 id="exerciseRunnerTitle">Esercitazione</h3><div id="exerciseQuestions"></div><button id="submitExercise" class="primary" type="button">Consegna risposte</button><p id="exerciseMessage" class="small" role="status"></p></div><div id="commandRoster" class="notice2"><h3>Organico di reparto</h3><div id="commandRosterList"></div></div></section>
-<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci avvisi e funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Notifiche</h3><p class="small muted">Avvisi per il ripristino del timer e per le esercitazioni di reparto. Richiede il consenso del browser.</p><button id="enableNotifications" class="primary" type="button">Attiva notifiche</button><p id="notificationStatus" class="small muted" role="status" aria-live="polite">Stato notifiche da verificare.</p></article><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><p class="small muted">Composizione strumentale originale del sito. L’avvio automatico è programmato dopo 3 secondi; il browser potrebbe richiedere un tocco. Puoi disattivarla qui.</p><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="true">No</button><button id="musicYes" type="button" class="primary" aria-pressed="false">Sì</button></div><p id="musicStatus" class="small muted" role="status" aria-live="polite">Musica disattivata.</p></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
+<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci avvisi e funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Notifiche</h3><p class="small muted">Avvisi per il ripristino del timer e per le esercitazioni di reparto. Richiede il consenso del browser.</p><button id="enableNotifications" class="primary" type="button">Attiva notifiche</button><p id="notificationStatus" class="small muted" role="status" aria-live="polite">Stato notifiche da verificare.</p></article><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><p class="small muted">Paranoid · Black Sabbath. Lettore ufficiale Spotify. Per ascoltare premi Play nel lettore: il browser e Spotify gestiscono autorizzazione, disponibilità e volume.</p><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="false">No</button><button id="musicYes" type="button" class="primary" aria-pressed="true">Sì</button></div><div id="musicPlayerWrap" class="music-player-wrap"><iframe id="musicPlayer" title="Paranoid di Black Sabbath su Spotify" src="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div><p id="musicStatus" class="small muted" role="status" aria-live="polite">Lettore Spotify pronto: premi Play per ascoltare.</p></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <a href="https://www.carabinieri.it/" target="_blank" rel="noopener noreferrer">carabinieri.it</a></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
@@ -927,52 +927,29 @@ function formatRemaining(ms){const sec=Math.max(0,Math.ceil(ms/1000)),h=Math.flo
 let lastCooldownNoticeKey=null,notificationRegistration=null,assignmentPollTimer=null,knownAssignmentIds=null;
 let siteAudioContext=null,siteMusicTimer=null,siteMusicStep=0;
 
-function playSoftTone(frequency,start,duration,type,volume){if(!siteAudioContext)return;const osc=siteAudioContext.createOscillator(),gain=siteAudioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(frequency,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(volume,start+.08);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);osc.connect(gain);gain.connect(siteAudioContext.destination);osc.start(start);osc.stop(start+duration+.03);}
-let musicPreference=true,musicAutostartTimer=null,musicGestureHandler=null;
-function setMusicButtons(enabled){$("musicYes").setAttribute("aria-pressed",String(enabled));$("musicNo").setAttribute("aria-pressed",String(!enabled));}
-async function startSiteMusic(fromAuto=false){
- const yes=$("musicYes"),no=$("musicNo"),status=$("musicStatus");
- try{
-  const AudioCtx=window.AudioContext||window.webkitAudioContext;
-  if(!AudioCtx){status.textContent="Audio non supportato da questo browser.";return false;}
-  if(!siteAudioContext)siteAudioContext=new AudioCtx();
-  await siteAudioContext.resume();
-  if(siteAudioContext.state!=="running")throw new Error("Audio non autorizzato dal browser.");
-  if(siteMusicTimer)clearInterval(siteMusicTimer);
-  musicPreference=true;try{localStorage.setItem("siteMusicEnabled","true");}catch(_){}
-  if(musicGestureHandler){document.removeEventListener("pointerdown",musicGestureHandler);document.removeEventListener("keydown",musicGestureHandler);musicGestureHandler=null;}
-  siteMusicStep=0;
-  const chords=[[220,261.63,329.63],[196,246.94,293.66],[174.61,220,261.63],[196,246.94,329.63]];
-  const tick=()=>{if(!siteAudioContext||siteAudioContext.state!=="running")return;const now=siteAudioContext.currentTime+.04,chord=chords[siteMusicStep%chords.length];chord.forEach((n,i)=>playSoftTone(n,now,2.35,"sine",i===0?.055:.035));playSoftTone(chord[0]/2,now,1.2,"triangle",.065);playSoftTone(chord[1]*2,now+.68,.16,"sine",.012);siteMusicStep++;};
-  tick();siteMusicTimer=setInterval(tick,2727);setMusicButtons(true);status.textContent="Musica attiva · volume del lettore al massimo.";return true;
- }catch(e){
-  console.warn("Avvio musica:",e);setMusicButtons(false);
-  status.textContent=fromAuto?"L’audio automatico è bloccato dal browser. Tocca una volta lo schermo per avviare la musica.":"Il browser richiede un tocco per autorizzare l’audio.";
-  return false;
- }
+let musicPreference=true,musicAutostartTimer=null;
+function setMusicButtons(enabled){
+ $("musicYes").setAttribute("aria-pressed",String(enabled));
+ $("musicNo").setAttribute("aria-pressed",String(!enabled));
+ $("musicPlayerWrap").classList.toggle("hidden",!enabled);
+}
+function startSiteMusic(){
+ musicPreference=true;try{localStorage.setItem("siteMusicEnabled","true");}catch(_){}
+ setMusicButtons(true);
+ $("musicStatus").textContent="Lettore Spotify pronto: premi Play per ascoltare Paranoid.";
 }
 function stopSiteMusic(){
  musicPreference=false;try{localStorage.setItem("siteMusicEnabled","false");}catch(_){}
- if(musicAutostartTimer){clearTimeout(musicAutostartTimer);musicAutostartTimer=null;}
- if(musicGestureHandler){document.removeEventListener("pointerdown",musicGestureHandler);document.removeEventListener("keydown",musicGestureHandler);musicGestureHandler=null;}
- if(siteMusicTimer){clearInterval(siteMusicTimer);siteMusicTimer=null;}
- if(siteAudioContext&&siteAudioContext.state==="running")siteAudioContext.suspend().catch(()=>{});
- setMusicButtons(false);$("musicStatus").textContent="Musica disattivata. La scelta verrà ricordata su questo dispositivo.";
+ const frame=$("musicPlayer");frame.src="about:blank";
+ setMusicButtons(false);
+ $("musicStatus").textContent="Musica disattivata. La scelta è stata salvata su questo dispositivo.";
 }
 function initMusicAutostart(){
  try{musicPreference=localStorage.getItem("siteMusicEnabled")!=="false";}catch(_){musicPreference=true;}
  setMusicButtons(musicPreference);
  if(!musicPreference){$("musicStatus").textContent="Musica disattivata nelle impostazioni.";return;}
- $("musicStatus").textContent="Avvio automatico programmato tra 3 secondi.";
- musicAutostartTimer=setTimeout(async()=>{
-  musicAutostartTimer=null;if(!musicPreference)return;
-  const started=await startSiteMusic(true);
-  if(!started&&musicPreference){
-   musicGestureHandler=()=>{if(!musicPreference)return;const handler=musicGestureHandler;musicGestureHandler=null;if(handler){document.removeEventListener("pointerdown",handler);document.removeEventListener("keydown",handler);}void startSiteMusic(true);};
-   document.addEventListener("pointerdown",musicGestureHandler,{once:true,passive:true});
-   document.addEventListener("keydown",musicGestureHandler,{once:true});
-  }
- },3000);
+ $("musicStatus").textContent="Lettore pronto. Per i limiti di riproduzione automatica, premi Play.";
+ $("musicPlayer").src="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator";
 }
 async function notifyDevice(title,body,tag){try{if(!("Notification" in window)||Notification.permission!=="granted")return;const options={body,tag:tag||"area-personale",renotify:false};if(notificationRegistration?.showNotification)await notificationRegistration.showNotification(title,options);else new Notification(title,options);}catch(e){console.warn("Notifica non disponibile",e);}}
 function updateNotificationUI(){const b=$("enableNotifications"),p=$("notificationStatus");if(!b||!p)return;if(!("Notification" in window)){b.disabled=true;b.textContent="Notifiche non supportate";p.textContent="Questo browser non supporta le notifiche.";return;}if(Notification.permission==="granted"){b.textContent="Notifiche attive";p.textContent="Avvisi attivi quando il sito è aperto e collegato.";b.disabled=true;}else if(Notification.permission==="denied"){b.textContent="Permesso bloccato";p.textContent="Abilita le notifiche dalle impostazioni del browser per questo sito.";b.disabled=false;}else{b.textContent="Attiva notifiche";p.textContent="Consenti gli avvisi sul dispositivo per timer e nuove esercitazioni.";b.disabled=false;}}
