@@ -903,7 +903,7 @@ main{padding-bottom:0!important}
 </section>
 
 <section id="assignedExercises" class="panel hidden"><div class="eyebrow">GESTIONE DEL REPARTO · SIMULAZIONE</div><h2>Esercitazioni assegnate</h2><p class="muted small">Pannello interno per assegnare e verificare esercitazioni decisionali. Non contiene procedure operative né addestramento tattico reale.</p><div id="commanderTools" class="notice2 hidden"><label for="exerciseTitle">Titolo esercitazione<input id="exerciseTitle" maxlength="100" value="CQB · valutazione decisionale e sicurezza"></label><button id="assignCqbExercise" class="primary" type="button">Assegna esercitazione CQB</button><p id="assignExerciseMessage" class="small" role="status"></p><h3>Risultati dei subordinati</h3><div id="commanderResults"></div></div><div id="memberExercises" class="notice2 hidden"><h3>Le tue esercitazioni</h3><div id="memberExerciseList"></div></div><div id="exerciseRunner" class="hidden"><h3 id="exerciseRunnerTitle">Esercitazione</h3><div id="exerciseQuestions"></div><button id="submitExercise" class="primary" type="button">Consegna risposte</button><p id="exerciseMessage" class="small" role="status"></p></div><div id="commandRoster" class="notice2"><h3>Organico di reparto</h3><div id="commandRosterList"></div></div></section>
-<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci la musica e il funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="false">No</button><button id="musicYes" type="button" class="primary" aria-pressed="true">Sì</button></div><div id="musicPlayerWrap" class="music-player-wrap" aria-hidden="true"><iframe id="musicPlayer" title="Riproduzione musicale in background" src="about:blank" tabindex="-1" width="1" height="1" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" loading="eager"></iframe></div></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
+<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci la musica e il funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="false">No</button><button id="musicYes" type="button" class="primary" aria-pressed="true">Sì</button></div><div id="musicPlayerWrap" class="music-player-wrap" aria-hidden="true"><audio id="musicPlayer" src="https://drive.google.com/uc?export=download&amp;id=1nZVL-9vtMmGK2W5Y6LYdhZDE_py5N44o" preload="auto" loop></audio></div></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <a href="https://www.carabinieri.it/" target="_blank" rel="noopener noreferrer">carabinieri.it</a></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
@@ -930,31 +930,30 @@ function formatRemaining(ms){const sec=Math.max(0,Math.ceil(ms/1000)),h=Math.flo
 let siteAudioContext=null,siteMusicTimer=null,siteMusicStep=0;
 
 let musicPreference=true,musicAutostartTimer=null;
-const SPOTIFY_PARANOID="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator&autoplay=1";
 function setMusicButtons(enabled){
  $("musicYes").setAttribute("aria-pressed",String(enabled));
  $("musicNo").setAttribute("aria-pressed",String(!enabled));
 }
 function startSiteMusic(){
  musicPreference=true;try{localStorage.setItem("siteMusicEnabled","true");}catch(_){}
- const frame=$("musicPlayer");
- frame.src=SPOTIFY_PARANOID;
  setMusicButtons(true);
+ const audio=$("musicPlayer");
+ if(audio){const attempt=audio.play();if(attempt&&typeof attempt.catch==="function")attempt.catch(()=>{});}
 }
 function stopSiteMusic(){
  musicPreference=false;try{localStorage.setItem("siteMusicEnabled","false");}catch(_){}
  if(musicAutostartTimer){clearTimeout(musicAutostartTimer);musicAutostartTimer=null;}
- $("musicPlayer").src="about:blank";
+ const audio=$("musicPlayer");if(audio){audio.pause();try{audio.currentTime=0;}catch(_){}}
  setMusicButtons(false);
 }
 function initMusicAutostart(){
  try{musicPreference=localStorage.getItem("siteMusicEnabled")!=="false";}catch(_){musicPreference=true;}
  setMusicButtons(musicPreference);
  if(!musicPreference)return;
- musicAutostartTimer=setTimeout(()=>{
-  if(!musicPreference)return;
-  $("musicPlayer").src=SPOTIFY_PARANOID;
- },3000);
+ musicAutostartTimer=setTimeout(()=>{if(musicPreference){const audio=$("musicPlayer");if(audio){const attempt=audio.play();if(attempt&&typeof attempt.catch==="function")attempt.catch(()=>{});}}},500);
+ const retry=()=>{if(!musicPreference)return;const audio=$("musicPlayer");if(audio&&audio.paused){const attempt=audio.play();if(attempt&&typeof attempt.catch==="function")attempt.catch(()=>{});}};
+ document.addEventListener("pointerdown",retry,{passive:true});
+ document.addEventListener("keydown",retry);
 }
 function startCooldownTimer(until){cooldownUntil=until;if(cooldownTimer)clearInterval(cooldownTimer);const tick=()=>{const left=new Date(cooldownUntil).getTime()-Date.now(),el=$("questionResetTimer");if(el)el.textContent=left>0?"Prossimo ripristino tra "+formatRemaining(left):"Domande di nuovo disponibili. Puoi avviare un quiz.";if($("startQuiz"))$("startQuiz").disabled=left>0;if(left<=0){clearInterval(cooldownTimer);cooldownTimer=null;cooldownUntil=null;}};tick();cooldownTimer=setInterval(tick,1000);}
 async function refreshQuizCooldown(){if(!user)return;try{const {data,error}=await db.functions.invoke("quiz-engine",{body:{action:"status",category:$("quizCategory")?.value||"Tutte le materie"}});if(error)throw error;if(data?.cooldown_until)startCooldownTimer(data.cooldown_until);else{if(cooldownTimer)clearInterval(cooldownTimer);cooldownTimer=null;cooldownUntil=null;const el=$("questionResetTimer");if(el)el.textContent="Domande disponibili. Il sistema evita di riproporre quelle svolte nelle ultime 24 ore.";if($("startQuiz"))$("startQuiz").disabled=false;}}catch(e){console.warn("Timer ripristino non disponibile",e);const el=$("questionResetTimer");if(el)el.textContent="Disponibilità verificata all’avvio del quiz.";}}
