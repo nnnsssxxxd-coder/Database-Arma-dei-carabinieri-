@@ -1,2 +1,0 @@
-create index if not exists department_memberships_department_id_idx on public.department_memberships(department_id);
-create index if not exists department_quiz_attempts_department_id_idx on public.department_quiz_attempts(department_id);
