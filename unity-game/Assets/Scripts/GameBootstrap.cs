@@ -2,11 +2,13 @@ using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
 {
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void AutoStart(){ if(FindObjectOfType<GameBootstrap>()==null) new GameObject("GameBootstrap").AddComponent<GameBootstrap>(); }
     void Start()
     {
         Application.targetFrameRate = 60;
         BuildWorld();
-        if (FindObjectOfType<SupabaseSession>() == null) gameObject.AddComponent<SupabaseSession>();
+        if (FindObjectOfType<SupabaseSession>() == null) { var session=gameObject.AddComponent<SupabaseSession>(); session.config=ScriptableObject.CreateInstance<SupabaseConfig>(); }\n        gameObject.AddComponent<GameHUD>();
     }
 
     void BuildWorld()
