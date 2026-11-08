@@ -888,7 +888,7 @@ async function login(e){
 async function logout(){
  if(typeof stopGps==="function")stopGps();
  if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}cooldownUntil=null;
- const was=user;user=null;profile=null;departmentMembership=null;departmentQuiz=null;departmentAnswerIndex=null;renderDepartmentIdentity();quiz=null;answerIndex=null;resetQuizView();
+ const was=user;if(departmentTimer){clearInterval(departmentTimer);departmentTimer=null;}user=null;profile=null;departmentMembership=null;departmentQuiz=null;departmentAnswerIndex=null;renderDepartmentIdentity();quiz=null;answerIndex=null;resetQuizView();
  ["userList","auditList","history","quizResult"].forEach(id=>{const el=$(id);if(el)el.replaceChildren();});
  $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("headUser").textContent="";$("password").value="";
  try{if(was)await Promise.race([logEvent("session_end"),new Promise(resolve=>setTimeout(resolve,1500))]);}catch(e){console.warn("logout audit",e);}
