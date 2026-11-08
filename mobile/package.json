@@ -1,6 +1,6 @@
 {
   "name": "database-arma-carabinieri-mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "App Android/iOS del portale personale Database Arma dei Carabinieri",
   "scripts": {
