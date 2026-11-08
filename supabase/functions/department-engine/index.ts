@@ -1,12 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const ORIGIN = "https://nnnsssxxxd-coder.github.io";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ORIGIN, "Vary": "Origin",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-};
+const ALLOWED_ORIGINS = new Set([
+  "https://nnnsssxxxd-coder.github.io",
+  "https://localhost",
+  "http://localhost",
+  "capacitor://localhost",
+  "ionic://localhost"
+]);
+function corsHeadersFor(req: Request) {
+  const origin = req.headers.get("Origin") ?? "";
+  const headers: Record<string, string> = {
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400"
+  };
+  if (ALLOWED_ORIGINS.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+}
 function reply(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  return new Response(JSON.stringify(data), { status, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", "Vary": "Origin", "Content-Type": "application/json", "Cache-Control": "no-store" } });
 }
 const url = Deno.env.get("SUPABASE_URL")!;
 const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -28,6 +40,7 @@ async function getMembership(userId: string) {
   return { ...data, rank_name: DEPT_RANKS[Math.min(7, Math.max(0, Number(data.rank) || 0))], department };
 }
 Deno.serve(async (req: Request) => {
+  const corsHeaders = corsHeadersFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ error: "Metodo non consentito" }, 405);
   try {
