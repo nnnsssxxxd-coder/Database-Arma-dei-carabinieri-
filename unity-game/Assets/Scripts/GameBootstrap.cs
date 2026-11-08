@@ -8,7 +8,8 @@ public class GameBootstrap : MonoBehaviour
     {
         Application.targetFrameRate = 60;
         BuildWorld();
-        if (FindObjectOfType<SupabaseSession>() == null) { var session=gameObject.AddComponent<SupabaseSession>(); session.config=ScriptableObject.CreateInstance<SupabaseConfig>(); }\n        gameObject.AddComponent<GameHUD>();
+        if (FindObjectOfType<SupabaseSession>() == null) { var session=gameObject.AddComponent<SupabaseSession>(); session.config=ScriptableObject.CreateInstance<SupabaseConfig>(); }
+        gameObject.AddComponent<GameHUD>();
     }
 
     void BuildWorld()
