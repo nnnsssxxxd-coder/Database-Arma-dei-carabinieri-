@@ -8,8 +8,8 @@
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
-    "@colyseus/schema": "^4.0.0",
-    "@colyseus/ws-transport": "^0.16.5",
-    "colyseus": "^0.16.5"
+    "@colyseus/schema": "^5.0.8",
+    "@colyseus/ws-transport": "^0.18.1",
+    "colyseus": "^0.18.1"
   }
 }
