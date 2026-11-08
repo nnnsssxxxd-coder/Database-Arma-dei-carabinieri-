@@ -216,6 +216,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "save") {
       if(isCommander) return reply({error:"Il comandante non può più svolgere quiz personali di reparto."},403);
+      if(Number(membership.rank)>=6 && Number(membership.exp)>=2100) return reply({error:"Hai raggiunto il 100% EXP: è disponibile il Test di comando."},403);
       const attemptId = String(body.attempt_id ?? "");
       const answers = body.answers;
       if (!/^[0-9a-f-]{36}$/i.test(attemptId) || !Array.isArray(answers) || answers.length < 1 || answers.length > 4 || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) return reply({ error: "Checkpoint non valido" }, 400);
