@@ -9,6 +9,22 @@ if (missing.length) throw new Error("Elementi essenziali mancanti nell'app: " + 
 const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
   .filter(([, attributes]) => !/\bsrc\s*=/.test(attributes));
 if (!scripts.length) throw new Error("Nessuno script applicativo trovato.");
+const ids = [...html.matchAll(/\\bid=["']([^"']+)["']/g)].map(([, id]) => id);
+if (new Set(ids).size !== ids.length) throw new Error("Sono presenti ID HTML duplicati.");
+
+const idSet = new Set(ids);
+const referencedIds = [...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(([, id]) => id);
+const missingRefs = [...new Set(referencedIds.filter(id => !idSet.has(id)))];
+if (missingRefs.length) throw new Error("Riferimenti DOM senza elemento: " + missingRefs.join(", "));
+
+for (const invariant of [
+  'personnelRole=isSubOfficer?"OPERATORE":"UFFICIALE"',
+  'textContent=isCommander?DEPARTMENT_RANKS[7]:DEPARTMENT_RANKS[r]',
+  'commandBoard=null;commandExamAttempt=null'
+]) {
+  if (!html.includes(invariant)) throw new Error("Controllo funzionale non superato: " + invariant);
+}
+
 for (let i = 0; i < scripts.length; i++) {
   new Script(scripts[i][2], { filename: "index.html:inline-script-" + (i + 1) });
 }
