@@ -37,7 +37,8 @@ async function getMembership(userId: string) {
   if (deptError) throw deptError;
   const { data: command, error: commandError } = await db.from("department_commanders").select("commander_user_id").eq("department_id", data.department_id).maybeSingle();
   if (commandError) throw commandError;
-  return { ...data, is_commander: command?.commander_user_id === userId, rank_name: DEPT_RANKS[Math.min(7, Math.max(0, Number(data.rank) || 0))], department };
+  const isCommander = command?.commander_user_id === userId;
+  return { ...data, is_commander: isCommander, rank_name: DEPT_RANKS[isCommander ? 7 : Math.min(6, Math.max(0, Number(data.rank) || 0))], department };
 }
 Deno.serve(async (req: Request) => {
   const corsHeaders = corsHeadersFor(req);
