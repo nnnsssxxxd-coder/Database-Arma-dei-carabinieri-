@@ -817,7 +817,7 @@ function render(){
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
- $("homeRank").textContent=RANKS[rank];
+ $("homeRank").textContent=RANKS[rank];renderDepartmentUI();
  $("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?"ISTRUTTORE":"ALLIEVO";
  $("adminTab").classList.toggle("hidden",!["admin","istruttore"].includes(profile.role));
  $("quizCount").textContent=progress.quizCount||0;$("correctCount").textContent=progress.correct||0;$("exp").textContent=exp+" / "+(Number(progress.totalExp)||0);$("streak").textContent=progress.streak||0;renderPerformanceChart();
