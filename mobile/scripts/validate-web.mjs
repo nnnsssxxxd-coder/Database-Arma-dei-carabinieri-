@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { Script } from "node:vm";
 
 const html = await readFile(new URL("../www/index.html", import.meta.url), "utf8");
@@ -32,4 +32,19 @@ for (let i = 0; i < scripts.length; i++) {
 if (/<button\b(?=[^>]*\bdata-tab=["']gps["'])/i.test(html)) {
   throw new Error("La scheda GPS risulta ancora presente nella navigazione.");
 }
+const functionsRoot = new URL("../../supabase/functions/", import.meta.url);
+for (const entry of await readdir(functionsRoot, { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const sourceUrl = new URL(entry.name + "/index.ts", functionsRoot);
+  let source;
+  try { source = await readFile(sourceUrl, "utf8"); } catch { continue; }
+  if (!/function\\s+reply\\s*\\(\\s*req\\s*:\\s*Request/i.test(source)) continue;
+  for (const [index, line] of source.split("\\n").entries()) {
+    const match = line.match(/\\breply\\s*\\(([^,\\n)]*)/);
+    if (match && match[1].trim() !== "req") {
+      throw new Error(entry.name + "/index.ts:" + (index + 1) + " usa reply() senza passare Request come primo argomento.");
+    }
+  }
+}
+
 console.log("Controlli superati: elementi essenziali presenti, JavaScript valido, scheda GPS assente.");
