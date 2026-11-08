@@ -157,7 +157,7 @@ Deno.serve(async (req: Request) => {
       const assignmentId=String(body.assignment_id??"");
       const {data:assignment,error}=await db.from("department_exercise_assignments").select("id,exercise_id").eq("id",assignmentId).eq("user_id",user.id).maybeSingle();
       if(error||!assignment)return reply(req,{error:"Esercitazione non assegnata a questo account."},404);
-      const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("active",true).maybeSingle();
+      const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active,assigned_by").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("active",true).maybeSingle();
       if(exerciseError||!exercise) return reply(req,{error:"Test non appartenente al tuo reparto o non disponibile."},403);
       const {data:existing}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
       if(existing?.completed_at)return reply(req,{error:"Esercitazione già completata."},409);
@@ -165,7 +165,8 @@ Deno.serve(async (req: Request) => {
       if(!attempt)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
       const {data:questions,error:questionError}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).order("id");
       if(questionError||!questions||questions.length!==6) return reply(req,{error:"Domande del test non disponibili."},500);
-      return reply(req,{attempt_id:attempt.id,title:exercise.title,questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
+      const {data:assigner}=exercise.assigned_by?await db.from("profiles").select("display_name,username").eq("id",exercise.assigned_by).maybeSingle():{data:null};
+      return reply(req,{attempt_id:attempt.id,title:exercise.title,assigned_by:{name:assigner?.display_name||assigner?.username||"Comandante di reparto",role:"Comandante di reparto"},questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
     }
     if (action === "exercise_submit") {
       if(isCommander) return reply(req,{error:"Il comandante non può svolgere test assegnati."},403);
