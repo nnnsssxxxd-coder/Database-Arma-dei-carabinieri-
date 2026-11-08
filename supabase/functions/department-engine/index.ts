@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
         const exMap=new Map((exercises??[]).map((x:any)=>[x.id,x]));
         const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)):{data:[]};
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
-        return reply({is_commander:false,commander,roster,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
+        return reply({is_commander:false,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
       const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("active",true).order("created_at",{ascending:false});
       const exIds=(exercises??[]).map((x:any)=>x.id);
