@@ -139,7 +139,7 @@ Deno.serve(async (req: Request) => {
       const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
       const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
       const results=(assignments??[]).map((a:any)=>({assignment_id:a.id,user_id:a.user_id,name:names.get(a.user_id)?.display_name||names.get(a.user_id)?.username||"Utente",title:exerciseMap.get(a.exercise_id)?.title||"Test di reparto",score:attemptMap.get(a.id)?.score??null,correct_answers:attemptMap.get(a.id)?.correct_answers??null,exp_awarded:attemptMap.get(a.id)?.exp_awarded??null,completed_at:attemptMap.get(a.id)?.completed_at??null}));
-      return reply(req,{is_commander:true,commander,roster,results});
+      return reply(req,{is_commander:true,commander:command,roster,results});
     }
     if (action === "assign_test" || action === "assign_cqb") {
       if(!isCommander || Number(membership.rank)!==7) return reply(req,{error:"Solo il comandante in carica può assegnare test."},403);
