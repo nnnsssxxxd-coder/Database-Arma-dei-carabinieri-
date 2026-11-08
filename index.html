@@ -935,6 +935,7 @@ function setMusicButtons(enabled){
 }
 function startSiteMusic(){
  musicPreference=true;try{localStorage.setItem("siteMusicEnabled","true");}catch(_){}
+ const frame=$("musicPlayer");if(!frame.src||frame.src==="about:blank")frame.src="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator";
  setMusicButtons(true);
  $("musicStatus").textContent="Lettore Spotify pronto: premi Play per ascoltare Paranoid.";
 }
