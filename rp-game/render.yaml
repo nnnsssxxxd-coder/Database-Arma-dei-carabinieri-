@@ -6,4 +6,3 @@ services:
     rootDir: rp-game/server
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /
