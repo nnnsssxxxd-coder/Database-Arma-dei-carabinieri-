@@ -35,6 +35,10 @@ jobs:
         working-directory: mobile
         run: npm install
 
+      - name: Prepare web assets
+        working-directory: mobile
+        run: npm run prepare:web
+
       - name: Generate Android project
         working-directory: mobile
         run: npx cap add android
