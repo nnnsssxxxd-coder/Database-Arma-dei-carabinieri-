@@ -3,6 +3,8 @@ name: Pubblica Simulatore Carabinieri
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,12 +25,27 @@ jobs:
     steps:
       - name: Scarica repository
         uses: actions/checkout@v4
+      - name: Verifica sintassi JavaScript incorporato
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+            .filter(([, attrs, body]) => !/\bsrc\s*=/.test(attrs) && body.trim());
+          if (!scripts.length) throw new Error('Nessuno script JavaScript incorporato trovato');
+          scripts.forEach(([, , body], index) => new vm.Script(body, { filename: "index.html:inline-script-" + (index + 1) }));
+          console.log("Sintassi valida: " + scripts.length + " script incorporati verificati.");
+          NODE
       - name: Configura GitHub Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
       - name: Prepara sito statico
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
       - name: Pubblica sito
+        if: github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
