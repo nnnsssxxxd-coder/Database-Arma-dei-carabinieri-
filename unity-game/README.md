@@ -1,27 +1,31 @@
 # Simulatore Operativo 3D — Unity Android
 
-Espansione separata del progetto Database Arma dei Carabinieri. Il client Unity legge lo stesso profilo e la stessa progressione Supabase dell'app originale.
+Client di gioco separato dall'app Database Arma dei Carabinieri. Le due app condividono lo stesso account e i dati di carriera tramite Supabase; non vengono creati profili duplicati.
 
-## Stato del progetto
-Questa è la base sorgente Unity (MVP tecnico), non un APK già compilato. Per produrre l'APK serve Unity Editor con Android Build Support installato.
+## Protezione dei dati
+- Il gioco legge lo stato tramite la Edge Function `game-engine`, non accede direttamente alle tabelle protette.
+- La funzione verifica il JWT e lo stato attivo del profilo.
+- Il client non aggiorna mai direttamente EXP, gradi o reparto.
+- Le missioni sono validate lato server e registrate in `game_mission_completions`, con vincolo univoco utente/missione per impedire ricompense duplicate.
+- I dati di gioco sono separati dai dati personali e di carriera dell'app.
+- Non sono state modificate le tabelle principali per collegare il client Unity.
 
-## Versione consigliata
-Unity 2022.3 LTS o Unity 6 LTS, template 3D Core.
+## Contenuti attuali
+- Scena iniziale inclusa in Build Settings.
+- Caserma e piazzale procedurali, personaggio terza persona e camera.
+- Login username/password tramite la funzione `username-login` esistente.
+- Sincronizzazione profilo, grado, EXP e reparto tramite `game-engine`.
+- Quattro missioni demo con ricompense server-side una tantum.
+- Controlli touch direzionali e supporto tastiera quando il vecchio Input Manager è attivo.
 
-## Avvio
-1. Aprire questa cartella come progetto Unity.
-2. In Project Settings > Player impostare Android, package id `it.simulatoreoperativo.game`.
-3. Creare un oggetto vuoto con `GameBootstrap`.
-4. Inserire URL e publishable key Supabase in `SupabaseConfig` (sono valori pubblici, mai usare service-role).
-5. Avviare in Play Mode.
+## Apertura e build
+1. Aprire `unity-game` con Unity 2022.3.62f1.
+2. Installare Android Build Support, SDK/NDK e OpenJDK tramite Unity Hub.
+3. Verificare che Android sia la piattaforma attiva e il package id sia `it.simulatoreoperativo.game`.
+4. Aprire la scena `Assets/Scenes/Boot.unity` e premere Play.
+5. Per APK: File > Build Settings > Android > Build.
 
-## Accesso e progressione
-Il login username/password chiama la Edge Function `username-login` già usata dall'app originale. Il gioco legge `profiles` e `progress.payload` con il token dell'utente. Non crea profili duplicati e non scrive EXP dal client. Le ricompense missione resteranno disabilitate finché non sarà disponibile un endpoint server-side dedicato e idempotente per il gioco: così il client non può falsificare EXP.
+La cartella contiene il progetto sorgente, non un APK già compilato. In questo ambiente non è stato possibile eseguire Unity Editor, compilare C# o testare su dispositivo Android: la build finale va quindi verificata in Unity prima della distribuzione.
 
-## Contenuti MVP
-- Ambiente 3D procedurale: cortile, caserma, blocco uffici e autorimessa.
-- Personaggio in terza persona e controlli tastiera; joystick touch previsto come passaggio successivo.
-- Pannello login, profilo, grado, reparto ed EXP.
-- Missioni dimostrative non letali, senza ricompense non ancora autorizzate dal server.
-
-Il progetto non è un prodotto ufficiale dell'Arma dei Carabinieri.
+## Nota
+Progetto indipendente e non ufficiale dell'Arma dei Carabinieri.
