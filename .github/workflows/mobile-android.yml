@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   android:
-    name: Build installable APK
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,14 +47,50 @@ jobs:
         working-directory: mobile
         run: npm run android:sync
 
-      - name: Build debug APK
+      - name: Build debug APK (always available)
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK artifact
+      - name: Configure private release signing
+        id: signing
+        working-directory: mobile
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release-key.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release-key.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+            node scripts/configure-release.mjs
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Chiave di firma non configurata: viene prodotta solo la APK debug."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build signed release APK
+        if: steps.signing.outputs.enabled == 'true'
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: database-arma-carabinieri-debug-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload signed release APK
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-arma-carabinieri-release-apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 90
