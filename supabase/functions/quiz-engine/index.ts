@@ -62,7 +62,7 @@ Deno.serve(async(req)=>{
    if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==5||answers.some((a:any)=>!Number.isInteger(a)||a<0||a>3))return reply(req,{error:"Risposte non valide."},400);
    const {data,error}=await db.rpc("complete_rank_exam",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
    if(error){const code=error.code==="23505"?409:error.code==="42501"?403:400;return reply(req,{error:error.message==="Esame già consegnato"?"Questo esame è già stato consegnato":error.message==="Esame scaduto"?"Il tempo dell'esame è scaduto.":error.message==="Non hai ancora raggiunto i requisiti EXP"?"Non hai ancora raggiunto gli EXP richiesti.":error.message},code);}
-   return reply(data);
+   return reply(req,data);
   }
   if(body.action==="status"){
    const status=await cooldownFor(user.id,category);
@@ -114,7 +114,7 @@ Deno.serve(async(req)=>{
    if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==4||answers.some((a:any)=>!Number.isInteger(a)||a<0||a>3))return reply(req,{error:"Risposte non valide"},400);
    const {data,error}=await db.rpc("complete_quiz_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
    if(error){const code=error.code==="23505"?409:error.code==="42501"?403:400;return reply(req,{error:error.message==="Quiz già consegnato"?"Questo quiz è già stato consegnato":error.message==="Quiz scaduto"?"Il tempo della sessione è scaduto. Avvia un nuovo quiz.":"Impossibile registrare il risultato"},code);}
-   return reply(data);
+   return reply(req,data);
   }
   return reply(req,{error:"Azione non riconosciuta"},400);
  }catch(e){console.error("quiz-engine",e);return reply(req,{error:"Errore durante il quiz"},500);}
