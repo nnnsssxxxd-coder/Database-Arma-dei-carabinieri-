@@ -1,0 +1,1 @@
+alter table public.department_memberships add constraint department_memberships_exp_cap_check check (exp <= 2100);
