@@ -86,7 +86,7 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: database-arma-carabinieri-debug-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
@@ -106,7 +106,7 @@ jobs:
 
       - name: Upload signed release APK
         if: steps.signing.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: database-arma-carabinieri-release-apk
           path: mobile/android/app/build/outputs/apk/release/app-release.apk
