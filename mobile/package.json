@@ -1,6 +1,6 @@
 {
   "name": "database-arma-carabinieri-mobile",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "App Android/iOS del portale Database Arma dei Carabinieri, sincronizzata con il sito principale.",
   "scripts": {
@@ -8,7 +8,9 @@
     "android:sync": "npm run prepare:web && cap sync android",
     "android:icon": "node scripts/prepare-android-icon.mjs",
     "android:open": "cap open android",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "validate:web": "node scripts/validate-web.mjs",
+    "android:version": "node scripts/prepare-android-version.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",
