@@ -917,6 +917,16 @@ const RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","
 const SUPABASE_URL="https://rwjrchcorlcvdqzvyafg.supabase.co",KEY="sb_publishable_0ymp6m0qlOUbtYHIpblirg_L6aZA_VM";
 const db=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
+function retireLegacyPushWorker(){
+ if(!("serviceWorker" in navigator))return;
+ navigator.serviceWorker.getRegistrations().then(registrations=>Promise.all(registrations.filter(reg=>{
+  try{return new URL(reg.scope).pathname.startsWith("/Database-Arma-dei-carabinieri-/")&&/\/sw\.js(?:\?|$)/.test(reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||"");}catch(_){return false;}
+ }).map(async reg=>{
+  try{const subscription=await reg.pushManager?.getSubscription();if(subscription)await subscription.unsubscribe();}catch(_){}
+  try{await reg.unregister();}catch(_){}
+ }))).catch(()=>{});
+}
+void retireLegacyPushWorker();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const threshold=i=>Math.round((250+i*60+i*i*4)/10)*10;
 let user=null,profile=null,progress={rank:0,exp:0,totalExp:0,quizCount:0,correct:0,streak:0,history:[]},quiz=null,answerIndex=null,cooldownUntil=null,cooldownTimer=null,sessionTimer=null;
