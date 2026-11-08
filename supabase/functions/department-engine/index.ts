@@ -95,9 +95,23 @@ Deno.serve(async (req: Request) => {
     ];
     if (action === "command_exam_start") {
       if (!commandExamReady) return reply(req,{ error: "Il Test di comando si sblocca al grado Vice comandante di reparto e al 100% degli EXP (2100)." }, 403);
-      const {data: attempt,error} = await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id}).select("id,started_at").single();
-      if(error) return reply(req,{error:"Impossibile avviare la prova di comando."},500);
-      return reply(req,{attempt_id:attempt.id,questions:commandExam.map(({prompt,options})=>({prompt,options})),expires_at:new Date(new Date(attempt.started_at).getTime()+30*60*1000).toISOString()});
+      const {data:open,error:openError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+      if(openError)return reply(req,{error:"Impossibile verificare una prova di comando già aperta."},500);
+      let attempt=open;
+      if(attempt&&new Date(attempt.started_at).getTime()<Date.now()-30*60*1000){
+        const {error:closeError}=await db.from("department_command_exam_attempts").update({completed_at:new Date().toISOString()}).eq("id",attempt.id).eq("user_id",user.id).is("completed_at",null);
+        if(closeError)return reply(req,{error:"Impossibile chiudere la prova scaduta."},500);
+        attempt=null;
+      }
+      if(!attempt){
+        const {data:created,error:createError}=await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id}).select("id,started_at").single();
+        if(createError){
+          const {data:concurrent,error:concurrentError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+          if(concurrentError||!concurrent)return reply(req,{error:"Impossibile avviare la prova di comando."},500);
+          attempt=concurrent;
+        }else attempt=created;
+      }
+      return reply(req,{attempt_id:attempt.id,questions:commandExam.map(({prompt,options})=>({prompt,options})),expires_at:new Date(new Date(attempt.started_at).getTime()+30*60*1000).toISOString(),resumed:!!open&&attempt.id===open.id});
     }
     if (action === "command_exam_submit") {
       const id=String(body.attempt_id??""); const answers=body.answers;
@@ -159,12 +173,21 @@ Deno.serve(async (req: Request) => {
       if(error||!assignment)return reply(req,{error:"Esercitazione non assegnata a questo account."},404);
       const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active,assigned_by").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("active",true).maybeSingle();
       if(exerciseError||!exercise) return reply(req,{error:"Test non appartenente al tuo reparto o non disponibile."},403);
-      const {data:existing}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
-      if(existing?.completed_at)return reply(req,{error:"Esercitazione già completata."},409);
-      const attempt=existing|| (await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id}).select("id,started_at").single()).data;
-      if(!attempt)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
       const {data:questions,error:questionError}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).order("id");
-      if(questionError||!questions||questions.length!==6) return reply(req,{error:"Domande del test non disponibili."},500);
+       if(questionError||!questions||questions.length!==6) return reply(req,{error:"Domande del test non disponibili."},500);
+       const {data:existing,error:existingError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
+       if(existingError)return reply(req,{error:"Impossibile verificare il tentativo già aperto."},500);
+       if(existing?.completed_at)return reply(req,{error:"Esercitazione già completata."},409);
+       let attempt=existing;
+       if(!attempt){
+         const {data:created,error:createError}=await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id}).select("id,answers,started_at,completed_at").single();
+         if(createError){
+           const {data:concurrent,error:concurrentError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
+           if(concurrentError||!concurrent||concurrent.completed_at)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
+           attempt=concurrent;
+         }else attempt=created;
+       }
+       if(!attempt)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
       const {data:assigner}=exercise.assigned_by?await db.from("profiles").select("display_name,username").eq("id",exercise.assigned_by).maybeSingle():{data:null};
       return reply(req,{attempt_id:attempt.id,title:exercise.title,assigned_by:{name:assigner?.display_name||assigner?.username||"Comandante di reparto",role:"Comandante di reparto"},questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
     }
