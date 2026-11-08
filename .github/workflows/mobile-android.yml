@@ -5,7 +5,10 @@ on:
     branches: [mobile-app]
     paths:
       - 'index.html'
+      - 'app-icon.svg'
+      - 'manifest.webmanifest'
       - 'mobile/**'
+      - 'supabase/**'
       - '.github/workflows/mobile-android.yml'
   workflow_dispatch:
 
@@ -47,6 +50,10 @@ jobs:
         working-directory: mobile
         run: npm run android:sync
 
+      - name: Apply app icon to Android launcher
+        working-directory: mobile
+        run: npm run android:icon
+
       - name: Build debug APK (always available)
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
@@ -85,7 +92,6 @@ jobs:
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-
 
       - name: Publish public download link
         env:
