@@ -1,4 +1,0 @@
-create policy "deny client access to department catalog" on public.department_catalog for all to anon,authenticated using (false) with check (false);
-create policy "deny client access to department memberships" on public.department_memberships for all to anon,authenticated using (false) with check (false);
-create policy "deny client access to department questions" on public.department_questions for all to anon,authenticated using (false) with check (false);
-create policy "deny client access to department quiz attempts" on public.department_quiz_attempts for all to anon,authenticated using (false) with check (false);
