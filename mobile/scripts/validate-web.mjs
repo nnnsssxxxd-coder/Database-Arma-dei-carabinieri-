@@ -9,11 +9,11 @@ if (missing.length) throw new Error("Elementi essenziali mancanti nell'app: " + 
 const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
   .filter(([, attributes]) => !/\bsrc\s*=/.test(attributes));
 if (!scripts.length) throw new Error("Nessuno script applicativo trovato.");
-const ids = [...html.matchAll(/\\bid=["']([^"']+)["']/g)].map(([, id]) => id);
+const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(([, id]) => id);
 if (new Set(ids).size !== ids.length) throw new Error("Sono presenti ID HTML duplicati.");
 
 const idSet = new Set(ids);
-const referencedIds = [...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(([, id]) => id);
+const referencedIds = [...html.matchAll(/\$\(["']([^"']+)["']\)/g)].map(([, id]) => id);
 const missingRefs = [...new Set(referencedIds.filter(id => !idSet.has(id)))];
 if (missingRefs.length) throw new Error("Riferimenti DOM senza elemento: " + missingRefs.join(", "));
 
