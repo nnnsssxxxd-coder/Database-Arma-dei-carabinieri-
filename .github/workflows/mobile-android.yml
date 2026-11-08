@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   android:
@@ -85,6 +85,18 @@ jobs:
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+
+      - name: Publish public download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+          if gh release view android-beta >/dev/null 2>&1; then
+            gh release upload android-beta "$APK#Database-Arma-Carabinieri.apk" --clobber
+          else
+            gh release create android-beta "$APK#Database-Arma-Carabinieri.apk" --target mobile-app --title "Database Arma dei Carabinieri - APK" --notes "Versione Android di prova. Richiede connessione Internet per le funzioni online. Questa build debug è destinata ai test e può mostrare avvisi Android."
+          fi
 
       - name: Upload signed release APK
         if: steps.signing.outputs.enabled == 'true'
