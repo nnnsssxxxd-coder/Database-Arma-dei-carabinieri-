@@ -1,0 +1,9 @@
+{
+  "appId": "it.databasearmacarabinieri.portale",
+  "appName": "Database Arma dei Carabinieri",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
