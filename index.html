@@ -949,8 +949,8 @@ function initMusicAutostart(){
  try{musicPreference=localStorage.getItem("siteMusicEnabled")!=="false";}catch(_){musicPreference=true;}
  setMusicButtons(musicPreference);
  if(!musicPreference){$("musicStatus").textContent="Musica disattivata nelle impostazioni.";return;}
- $("musicStatus").textContent="Lettore pronto. Per i limiti di riproduzione automatica, premi Play.";
- $("musicPlayer").src="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator";
+ $("musicStatus").textContent="Caricamento del lettore musicale…";
+ musicAutostartTimer=setTimeout(()=>{if(!musicPreference)return;$("musicPlayer").src="https://open.spotify.com/embed/track/1Y373MqadDRtclJNdnUXVc?utm_source=generator&autoplay=1";$("musicStatus").textContent="Paranoid · se la riproduzione automatica è bloccata, premi Play nel lettore.";},3000);
 }
 async function notifyDevice(title,body,tag){try{if(!("Notification" in window)||Notification.permission!=="granted")return;const options={body,tag:tag||"area-personale",renotify:false};if(notificationRegistration?.showNotification)await notificationRegistration.showNotification(title,options);else new Notification(title,options);}catch(e){console.warn("Notifica non disponibile",e);}}
 function updateNotificationUI(){const b=$("enableNotifications"),p=$("notificationStatus");if(!b||!p)return;if(!("Notification" in window)){b.disabled=true;b.textContent="Notifiche non supportate";p.textContent="Questo browser non supporta le notifiche.";return;}if(Notification.permission==="granted"){b.textContent="Notifiche attive";p.textContent="Avvisi attivi quando il sito è aperto e collegato.";b.disabled=true;}else if(Notification.permission==="denied"){b.textContent="Permesso bloccato";p.textContent="Abilita le notifiche dalle impostazioni del browser per questo sito.";b.disabled=false;}else{b.textContent="Attiva notifiche";p.textContent="Consenti gli avvisi sul dispositivo per timer e nuove esercitazioni.";b.disabled=false;}}
