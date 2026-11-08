@@ -1,5 +1,7 @@
 # App mobile — Database Arma dei Carabinieri
 
+**Versione sorgente: 1.0.3**. La pipeline controlla la presenza delle schermate essenziali e la sintassi JavaScript prima di generare l'APK; imposta inoltre `versionName` e `versionCode` Android in modo coerente.
+
 Progetto Android nativo basato su Capacitor 8.6.0. Il sito principale non viene modificato: la build include una copia locale aggiornata di `index.html` e usa il backend Supabase già configurato dal sito.
 
 ## APK Android
@@ -33,7 +35,7 @@ L'app include il frontend locale e mantiene il collegamento al progetto Supabase
 
 ## Verifiche e limiti
 
-La compilazione automatica verifica che il progetto Android si generi e che l'APK venga prodotto. La verifica finale di login, GPS, fotocamera e comportamento su dispositivi reali richiede test sul telefono: la compilazione da sola non può garantirli. La versione installata non si aggiorna da sola; per aggiornare, scarica e installa una nuova release firmata con la stessa chiave.
+La compilazione automatica verifica prima la presenza degli elementi essenziali (accesso, navigazione, impostazioni e comandi musica), controlla la sintassi degli script JavaScript e poi verifica che il progetto Android si generi e che l'APK venga prodotto. La verifica finale di login, GPS, fotocamera e comportamento su dispositivi reali richiede test sul telefono: la compilazione da sola non può garantirli. La versione installata non si aggiorna da sola; per aggiornare, scarica e installa una nuova release firmata con la stessa chiave.
 
 ## Build locale
 
