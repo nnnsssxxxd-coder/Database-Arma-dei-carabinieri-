@@ -911,7 +911,7 @@ main{padding-bottom:0!important}
 </section>
 
 <section id="assignedExercises" class="panel hidden"><div class="eyebrow">GESTIONE DEL REPARTO · SIMULAZIONE</div><h2>Esercitazioni assegnate</h2><p class="muted small">Pannello interno per assegnare e verificare esercitazioni decisionali. Non contiene procedure operative né addestramento tattico reale.</p><div id="commanderTools" class="notice2 hidden"><label for="exerciseTitle">Titolo esercitazione<input id="exerciseTitle" maxlength="100" value="CQB · valutazione decisionale e sicurezza"></label><button id="assignCqbExercise" class="primary" type="button">Assegna esercitazione CQB</button><p id="assignExerciseMessage" class="small" role="status"></p><h3>Risultati dei subordinati</h3><div id="commanderResults"></div></div><div id="memberExercises" class="notice2 hidden"><h3>Le tue esercitazioni</h3><div id="memberExerciseList"></div></div><div id="exerciseRunner" class="hidden"><h3 id="exerciseRunnerTitle">Esercitazione</h3><div id="exerciseQuestions"></div><button id="submitExercise" class="primary" type="button">Consegna risposte</button><p id="exerciseMessage" class="small" role="status"></p></div><div id="commandRoster" class="notice2"><h3>Organico di reparto</h3><div id="commandRosterList"></div></div></section>
-<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci avvisi e funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Notifiche</h3><p class="small muted">Avvisi per il ripristino del timer e per le esercitazioni di reparto. Richiede il consenso del browser.</p><button id="enableNotifications" class="primary" type="button">Attiva notifiche</button><p id="notificationStatus" class="small muted" role="status" aria-live="polite">Stato notifiche da verificare.</p></article><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><p class="small muted">Composizione originale generata dal dispositivo: ritmo leggero e atmosfera calma. Parte soltanto dopo la tua scelta.</p><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="true">No</button><button id="musicYes" type="button" class="primary" aria-pressed="false">Sì</button></div><p id="musicStatus" class="small muted" role="status" aria-live="polite">Musica disattivata.</p></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
+<section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci avvisi e funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Notifiche</h3><p class="small muted">Avvisi per il ripristino del timer e per le esercitazioni di reparto. Richiede il consenso del browser.</p><button id="enableNotifications" class="primary" type="button">Attiva notifiche</button><p id="notificationStatus" class="small muted" role="status" aria-live="polite">Stato notifiche da verificare.</p></article><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><p class="small muted">Composizione strumentale originale del sito. L’avvio automatico è programmato dopo 3 secondi; il browser potrebbe richiedere un tocco. Puoi disattivarla qui.</p><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="true">No</button><button id="musicYes" type="button" class="primary" aria-pressed="false">Sì</button></div><p id="musicStatus" class="small muted" role="status" aria-live="polite">Musica disattivata.</p></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <a href="https://www.carabinieri.it/" target="_blank" rel="noopener noreferrer">carabinieri.it</a></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
@@ -928,8 +928,52 @@ let lastCooldownNoticeKey=null,notificationRegistration=null,assignmentPollTimer
 let siteAudioContext=null,siteMusicTimer=null,siteMusicStep=0;
 
 function playSoftTone(frequency,start,duration,type,volume){if(!siteAudioContext)return;const osc=siteAudioContext.createOscillator(),gain=siteAudioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(frequency,start);gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(volume,start+.08);gain.gain.exponentialRampToValueAtTime(.0001,start+duration);osc.connect(gain);gain.connect(siteAudioContext.destination);osc.start(start);osc.stop(start+duration+.03);}
-async function startSiteMusic(){const yes=$("musicYes"),no=$("musicNo"),status=$("musicStatus");try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx){status.textContent="Audio non supportato da questo browser.";return;}if(!siteAudioContext)siteAudioContext=new AudioCtx();await siteAudioContext.resume();if(siteMusicTimer)clearInterval(siteMusicTimer);siteMusicStep=0;const chords=[[220,261.63,329.63],[196,246.94,293.66],[174.61,220,261.63],[196,246.94,329.63]];const tick=()=>{if(!siteAudioContext||siteAudioContext.state!=="running")return;const now=siteAudioContext.currentTime+.04,chord=chords[siteMusicStep%chords.length];chord.forEach((n,i)=>playSoftTone(n,now,2.35,"sine",i===0?.012:.008));playSoftTone(chord[0]/2,now,1.2,"triangle",.025);playSoftTone(chord[1]*2,now+.68,.16,"sine",.003);siteMusicStep++;};tick();siteMusicTimer=setInterval(tick,2727);yes.setAttribute("aria-pressed","true");no.setAttribute("aria-pressed","false");status.textContent="Musica attiva · composizione originale in riproduzione.";}catch(e){status.textContent="Non è stato possibile avviare l’audio. Tocca di nuovo Sì.";console.warn("Musica",e);}}
-function stopSiteMusic(){if(siteMusicTimer){clearInterval(siteMusicTimer);siteMusicTimer=null;}if(siteAudioContext&&siteAudioContext.state==="running")siteAudioContext.suspend().catch(()=>{});$("musicYes").setAttribute("aria-pressed","false");$("musicNo").setAttribute("aria-pressed","true");$("musicStatus").textContent="Musica disattivata.";}
+let musicPreference=true,musicAutostartTimer=null,musicGestureHandler=null;
+function setMusicButtons(enabled){$("musicYes").setAttribute("aria-pressed",String(enabled));$("musicNo").setAttribute("aria-pressed",String(!enabled));}
+async function startSiteMusic(fromAuto=false){
+ const yes=$("musicYes"),no=$("musicNo"),status=$("musicStatus");
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx){status.textContent="Audio non supportato da questo browser.";return false;}
+  if(!siteAudioContext)siteAudioContext=new AudioCtx();
+  await siteAudioContext.resume();
+  if(siteAudioContext.state!=="running")throw new Error("Audio non autorizzato dal browser.");
+  if(siteMusicTimer)clearInterval(siteMusicTimer);
+  musicPreference=true;try{localStorage.setItem("siteMusicEnabled","true");}catch(_){}
+  if(musicGestureHandler){document.removeEventListener("pointerdown",musicGestureHandler);document.removeEventListener("keydown",musicGestureHandler);musicGestureHandler=null;}
+  siteMusicStep=0;
+  const chords=[[220,261.63,329.63],[196,246.94,293.66],[174.61,220,261.63],[196,246.94,329.63]];
+  const tick=()=>{if(!siteAudioContext||siteAudioContext.state!=="running")return;const now=siteAudioContext.currentTime+.04,chord=chords[siteMusicStep%chords.length];chord.forEach((n,i)=>playSoftTone(n,now,2.35,"sine",i===0?.055:.035));playSoftTone(chord[0]/2,now,1.2,"triangle",.065);playSoftTone(chord[1]*2,now+.68,.16,"sine",.012);siteMusicStep++;};
+  tick();siteMusicTimer=setInterval(tick,2727);setMusicButtons(true);status.textContent="Musica attiva · volume del lettore al massimo.";return true;
+ }catch(e){
+  console.warn("Avvio musica:",e);setMusicButtons(false);
+  status.textContent=fromAuto?"L’audio automatico è bloccato dal browser. Tocca una volta lo schermo per avviare la musica.":"Il browser richiede un tocco per autorizzare l’audio.";
+  return false;
+ }
+}
+function stopSiteMusic(){
+ musicPreference=false;try{localStorage.setItem("siteMusicEnabled","false");}catch(_){}
+ if(musicAutostartTimer){clearTimeout(musicAutostartTimer);musicAutostartTimer=null;}
+ if(musicGestureHandler){document.removeEventListener("pointerdown",musicGestureHandler);document.removeEventListener("keydown",musicGestureHandler);musicGestureHandler=null;}
+ if(siteMusicTimer){clearInterval(siteMusicTimer);siteMusicTimer=null;}
+ if(siteAudioContext&&siteAudioContext.state==="running")siteAudioContext.suspend().catch(()=>{});
+ setMusicButtons(false);$("musicStatus").textContent="Musica disattivata. La scelta verrà ricordata su questo dispositivo.";
+}
+function initMusicAutostart(){
+ try{musicPreference=localStorage.getItem("siteMusicEnabled")!=="false";}catch(_){musicPreference=true;}
+ setMusicButtons(musicPreference);
+ if(!musicPreference){$("musicStatus").textContent="Musica disattivata nelle impostazioni.";return;}
+ $("musicStatus").textContent="Avvio automatico programmato tra 3 secondi.";
+ musicAutostartTimer=setTimeout(async()=>{
+  musicAutostartTimer=null;if(!musicPreference)return;
+  const started=await startSiteMusic(true);
+  if(!started&&musicPreference){
+   musicGestureHandler=()=>{if(!musicPreference)return;const handler=musicGestureHandler;musicGestureHandler=null;if(handler){document.removeEventListener("pointerdown",handler);document.removeEventListener("keydown",handler);}void startSiteMusic(true);};
+   document.addEventListener("pointerdown",musicGestureHandler,{once:true,passive:true});
+   document.addEventListener("keydown",musicGestureHandler,{once:true});
+  }
+ },3000);
+}
 async function notifyDevice(title,body,tag){try{if(!("Notification" in window)||Notification.permission!=="granted")return;const options={body,tag:tag||"area-personale",renotify:false};if(notificationRegistration?.showNotification)await notificationRegistration.showNotification(title,options);else new Notification(title,options);}catch(e){console.warn("Notifica non disponibile",e);}}
 function updateNotificationUI(){const b=$("enableNotifications"),p=$("notificationStatus");if(!b||!p)return;if(!("Notification" in window)){b.disabled=true;b.textContent="Notifiche non supportate";p.textContent="Questo browser non supporta le notifiche.";return;}if(Notification.permission==="granted"){b.textContent="Notifiche attive";p.textContent="Avvisi attivi quando il sito è aperto e collegato.";b.disabled=true;}else if(Notification.permission==="denied"){b.textContent="Permesso bloccato";p.textContent="Abilita le notifiche dalle impostazioni del browser per questo sito.";b.disabled=false;}else{b.textContent="Attiva notifiche";p.textContent="Consenti gli avvisi sul dispositivo per timer e nuove esercitazioni.";b.disabled=false;}}
 async function enableDeviceNotifications(){const b=$("enableNotifications");if(!("Notification" in window)){updateNotificationUI();return;}try{const permission=await Notification.requestPermission();if(permission!=="granted"){updateNotificationUI();return;}if("serviceWorker" in navigator){try{notificationRegistration=await navigator.serviceWorker.register("./sw.js");}catch(e){console.warn("Service worker non registrato",e);}}updateNotificationUI();await notifyDevice("Notifiche attivate","Riceverai avvisi mentre il sito è aperto e collegato.","notifications-enabled");}catch(e){$("notificationStatus").textContent="Non è stato possibile attivare le notifiche.";}}
@@ -1025,35 +1069,48 @@ async function loadProfile(u){
  logEvent("session_start");
 }
 let loginInProgress=false;
+function isTransientAuthError(error){const m=String(error?.message||error||"");return !navigator.onLine||/failed to fetch|fetch failed|network|timeout|temporar|connection|load failed/i.test(m);}
 async function login(e){
  if(e)e.preventDefault();
  if(loginInProgress)return;
- loginInProgress=true;
  const btn=$("loginBtn"),msg=$("loginMsg"),identifier=$("username").value.trim(),password=$("password").value;
- btn.disabled=true;msg.className="small";msg.textContent="Verifica credenziali…";
+ if(!identifier||!password){msg.textContent="Inserisci nome utente o email e password.";msg.className="small error";return;}
+ loginInProgress=true;btn.disabled=true;msg.className="small";msg.textContent="Verifica credenziali…";
  try{
-  if(!identifier||!password)throw new Error("Inserisci email o nome utente e password.");
   let authUser=null;
   if(identifier.includes("@")){
    const result=await db.auth.signInWithPassword({email:identifier.toLowerCase(),password});
-   if(result.error||!result.data?.user)throw new Error("Email o password non corretti.");
+   if(result.error||!result.data?.user){
+    if(Number(result.error?.status)===429)throw new Error("Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.");
+    if(isTransientAuthError(result.error))throw new Error("Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.");
+    throw new Error("Email o password non corrette. Verifica i dati e riprova.");
+   }
    authUser=result.data.user;
   }else{
    const name=identifier.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"");
    if(!/^[a-z0-9_-]{3,24}$/.test(name))throw new Error("Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.");
    const result=await db.functions.invoke("username-login",{body:{username:name,password}});
-   if(result.error||!result.data?.session?.access_token||!result.data?.session?.refresh_token)throw new Error(await functionError(result.error,"Nome utente o password non corretti."));
+   if(result.error||!result.data?.session?.access_token||!result.data?.session?.refresh_token){
+    if(Number(result.error?.context?.status||result.error?.status)===429)throw new Error("Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.");
+    if(isTransientAuthError(result.error))throw new Error("Connessione temporaneamente non disponibile. Riprova tra poco.");
+    throw new Error("Nome utente o password non corretti. Verifica i dati e riprova.");
+   }
    const session=await db.auth.setSession(result.data.session);
-   if(session.error||!session.data?.user)throw new Error("Non è stato possibile avviare la sessione. Riprova.");
+   if(session.error||!session.data?.user)throw new Error(isTransientAuthError(session.error)?"Connessione instabile: riprova senza modificare la password.":"Sessione non valida. Accedi di nuovo.");
    authUser=session.data.user;
   }
-  await loadProfile(authUser);
-  $("password").value="";msg.textContent="";
+  const verified=await db.auth.getUser();
+  if(verified.error||!verified.data?.user)throw new Error(isTransientAuthError(verified.error)?"Credenziali verificate, ma la connessione è instabile. Riprova tra poco.":"Non è stato possibile verificare la sessione. Accedi di nuovo.");
+  await loadProfile(verified.data.user||authUser);
+  $("password").value="";msg.textContent="";msg.className="small";
  }catch(err){
-  console.error("Login:",err);
-  if(!user||!profile){try{await db.auth.signOut({scope:"local"});}catch(_){}user=null;profile=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");}
-  msg.textContent=err?.message||"Accesso non riuscito. Controlla la connessione e riprova.";msg.className="small error";
-}finally{btn.disabled=false;loginInProgress=false;}
+  console.warn("Login:",err);
+  const message=String(err?.message||"");
+  if(/Account sospeso o disattivato|Sessione non valida/i.test(message)){try{await db.auth.signOut({scope:"local"});}catch(_){}user=null;profile=null;}
+  $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
+  msg.textContent=message||"Accesso non riuscito. Controlla la connessione e riprova.";
+  msg.className="small error";
+ }finally{btn.disabled=false;loginInProgress=false;}
 }
 async function logout(){
  if(typeof stopGps==="function")stopGps();
@@ -1186,6 +1243,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 document.addEventListener("click",e=>{if(!$("tabs").contains(e.target)&&!$("menuToggle").contains(e.target))closeMenu();});
 $("logoutBtn").addEventListener("click",logout);$("menuToggle").addEventListener("click",()=>{const open=!$("tabs").classList.contains("open");$("tabs").classList.toggle("open",open);$("menuToggle").setAttribute("aria-expanded",String(open));});$("startRankExam").addEventListener("click",startRankExam);$("rankExamAnswers").addEventListener("click",e=>{const b=e.target.closest("[data-exam-option]");if(b)chooseRankExamAnswer(Number(b.dataset.examOption));});$("rankExamNext").addEventListener("click",()=>{if(!rankExam)return;if(rankExamAnswer===null)return;if(rankExam.index<4){rankExam.index++;renderRankExamQuestion();}else submitRankExam();});$("startQuiz").addEventListener("click",startQuiz);$("enableNotifications").addEventListener("click",enableDeviceNotifications);$("repairSite").addEventListener("click",()=>{const b=$("repairSite");b.disabled=true;b.textContent="Riparazione in corso…";setTimeout(()=>window.location.reload(),350);});$("musicYes").addEventListener("click",startSiteMusic);$("musicNo").addEventListener("click",stopSiteMusic);$("assignCqbExercise").addEventListener("click",assignCqbExercise);$("startCommandExam").addEventListener("click",startCommandExam);$("submitCommandExam").addEventListener("click",submitCommandExam);$("memberExerciseList").addEventListener("click",e=>{const b=e.target.closest("[data-start-exercise]");if(b)startAssignedExercise(b.dataset.startExercise);});$("quizCategory").addEventListener("change",refreshQuizCooldown);$("answerList").addEventListener("click",e=>{const b=e.target.closest("[data-option]");if(b)chooseAnswer(Number(b.dataset.option));});$("answerList").addEventListener("dblclick",e=>{const b=e.target.closest("[data-option]");if(b){chooseAnswer(Number(b.dataset.option));nextQuestion();}});$("confirmAnswer").addEventListener("click",nextQuestion);$("createUser").addEventListener("click",createUser);$("refreshUsers").addEventListener("click",loadUsers);$("userList").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b)userAction(b.dataset.user,b.dataset.action);});((r,i)=>$("newRank").add(new Option(r,i)));
 $("loginForm").addEventListener("submit",login);
+initMusicAutostart();
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"&&user)setTimeout(()=>logout(),0);});
 (async()=>{try{
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session)return;
