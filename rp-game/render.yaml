@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: carabinieri-rp-server
+    runtime: node
+    plan: free
+    rootDir: rp-game/server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
