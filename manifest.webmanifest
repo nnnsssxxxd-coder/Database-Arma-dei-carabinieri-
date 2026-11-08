@@ -1,0 +1,20 @@
+{
+  "name": "Database Arma dei Carabinieri",
+  "short_name": "Carabinieri",
+  "description": "Portale personale indipendente di simulazione: gradi, quiz, progressione e carriera reparto.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050505",
+  "theme_color": "#101923",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
