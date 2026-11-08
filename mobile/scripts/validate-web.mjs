@@ -40,6 +40,7 @@ for (const entry of await readdir(functionsRoot, { withFileTypes: true })) {
   try { source = await readFile(sourceUrl, "utf8"); } catch { continue; }
   if (!/function\s+reply\s*\(\s*req\s*:\s*Request/i.test(source)) continue;
   for (const [index, line] of source.split("\n").entries()) {
+    if (/function\s+reply\s*\(/.test(line)) continue;
     const match = line.match(/\breply\s*\(([^,\n)]*)/);
     if (match && match[1].trim() !== "req") {
       throw new Error(entry.name + "/index.ts:" + (index + 1) + " usa reply() senza passare Request come primo argomento.");
