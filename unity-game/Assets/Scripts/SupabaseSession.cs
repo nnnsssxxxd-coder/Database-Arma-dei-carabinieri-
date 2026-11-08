@@ -7,6 +7,7 @@ using UnityEngine.Networking;
 [Serializable] public class LoginRequest { public string username; public string password; }
 [Serializable] public class LoginResponse { public string access_token; public string refresh_token; public string error; }
 [Serializable] public class UserProfile { public string id; public string username; public string display_name; public string role; public bool active; public bool deleted; public string matricola; public int initial_rank; }
+[Serializable] public class ProfileEnvelope { public UserProfile[] data; }
 [Serializable] public class ProgressEnvelope { public ProgressPayload[] data; }
 [Serializable] public class ProgressPayload { public ProgressData payload; }
 [Serializable] public class ProgressData { public int rank; public int exp; public int quizCount; public int correct; public int streak; }
