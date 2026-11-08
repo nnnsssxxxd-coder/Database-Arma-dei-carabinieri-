@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101820"><title>Carabinieri RP — Città Aperta</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101820;color:#fff;font-family:system-ui,Arial}#renderCanvas{width:100%;height:100%;display:block;touch-action:none}
+#top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}.brand,.status{background:#101820d9;border:1px solid #ffffff25;border-radius:12px;padding:10px 13px;backdrop-filter:blur(8px)}.brand b{display:block;letter-spacing:1.4px;font-size:12px}.brand small,.status small{color:#b9c5ca;font-size:10px}.status{text-align:right;font-size:12px}
+#mission{position:absolute;left:12px;top:86px;background:#101820d9;border:1px solid #ffffff25;border-radius:12px;padding:10px 12px;max-width:220px;font-size:12px}#mission b{color:#e7c76b}
+#controls{position:absolute;bottom:18px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.pad{width:126px;height:126px;border-radius:50%;border:1px solid #ffffff55;background:#14232b99;position:relative;pointer-events:auto;touch-action:none}.nub{width:48px;height:48px;border-radius:50%;background:#d9e2e6bb;position:absolute;left:39px;top:39px;box-shadow:0 2px 12px #0008}.actions{display:flex;flex-direction:column;gap:9px;pointer-events:auto}.actions button{border:1px solid #ffffff55;background:#101820df;color:white;border-radius:12px;padding:12px 14px;font-weight:700;min-width:92px}.actions button:active{background:#294352}
+#hint{position:absolute;bottom:154px;left:50%;transform:translateX(-50%);font-size:11px;color:#dce5e8;background:#101820bb;padding:7px 11px;border-radius:10px;white-space:nowrap}
+@media(min-width:800px){#controls{max-width:760px;left:50%;transform:translateX(-50%)}}
+</style></head>
+<body><canvas id="renderCanvas"></canvas>
+<div id="top"><div class="brand"><b>CARABINIERI RP</b><small>PROGETTO OPEN WORLD • BUILD 0.1</small></div><div class="status"><div id="clock">08:00</div><small id="mode">A PIEDI • SERVIZIO NON INIZIATO</small></div></div>
+<div id="mission"><b>OBIETTIVO</b><br><span id="objective">Esplora la zona della caserma.</span></div>
+<div id="hint">Joystick per muoverti • Premi AUTO per salire</div>
+<div id="controls"><div class="pad" id="pad"><div class="nub" id="nub"></div></div><div class="actions"><button id="enter">AUTO</button><button id="siren">SIRENA OFF</button><button id="lights">LAMPEGGIANTI</button></div></div>
+<script src="https://cdn.babylonjs.com/babylon.js"></script><script src="game.js"></script>
+</body></html>
