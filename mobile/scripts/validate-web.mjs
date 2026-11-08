@@ -48,4 +48,21 @@ for (const entry of await readdir(functionsRoot, { withFileTypes: true })) {
   }
 }
 
+
+const gameHtml = await readFile(new URL("../../game/index.html", import.meta.url), "utf8");
+if (!gameHtml.includes('id="loginForm"') || !gameHtml.includes('game-engine') || !gameHtml.includes('three.module.js')) {
+  throw new Error("Il simulatore 3D non contiene login, backend o motore grafico richiesti.");
+}
+const gameIds = [...gameHtml.matchAll(/\bid=["']([^"']+)["']/g)].map(([, id]) => id);
+if (new Set(gameIds).size !== gameIds.length) throw new Error("Il simulatore 3D contiene ID HTML duplicati.");
+const gameRefs = [...gameHtml.matchAll(/\$\(["']([^"']+)["']\)/g)].map(([, id]) => id);
+const gameIdSet = new Set(gameIds);
+const missingGameRefs = [...new Set(gameRefs.filter(id => !gameIdSet.has(id)))];
+if (missingGameRefs.length) throw new Error("Riferimenti DOM mancanti nel simulatore 3D: " + missingGameRefs.join(", "));
+const gameScripts = [...gameHtml.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+  .filter(([, attributes]) => !/\bsrc\s*=/.test(attributes));
+for (let i = 0; i < gameScripts.length; i++) {
+  const source = gameScripts[i][2].replace(/^\s*import\s+\*\s+as\s+THREE\s+from\s+["'][^"']+["'];?/m, "const THREE = {};");
+  new Script(source, { filename: "game/index.html:module-script-" + (i + 1) });
+}
 console.log("Controlli superati: elementi essenziali presenti, JavaScript valido, scheda GPS assente.");
