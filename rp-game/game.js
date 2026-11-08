@@ -14,7 +14,24 @@ for(let x=-100;x<=100;x+=8){box("line",x,.065,0,3.5,.02,.18,white)}
 // City blocks: sidewalks, buildings, windows, balconies and rooftop details
 for(let bx=-3;bx<=3;bx++)for(let bz=-5;bz<=5;bz++){if(Math.abs(bx)<=1&&Math.abs(bz)<=1)continue;let x=bx*28+(bx<0?-7:7),z=bz*27+(bz<0?-6:6);box("marciapiede",x,.12,z,20,.22,19,concrete);let h=10+((Math.abs(bx*13+bz*7)%4)*3),w=12+((bx+bz+12)%3)*2;box("palazzo",x,h/2+.2,z,w,h,13,wall);box("tetto",x,h+.25,z,w+.3,.5,13.3,roof);for(let yy=3;yy<h-1;yy+=3)for(let xx=-w/2+2;xx<w/2-1;xx+=3){box("finestra",x+xx,yy,z-6.56,1.35,1.7,.08,dark)}}
 const stationX=0,stationZ=-20;
-box("caserma",stationX,3.5,stationZ,20,7,12,wall);box("caserma-tetto",0,7.1,-20,20.5,.5,12.5,roof);box("ingresso",0,1.5,-13.92,3.2,3,.18,blue);box("targa",0,5,-13.85,8,1.2,.18,blue);
+// Walk-in station shell: open entrance, furnished briefing room and service areas.
+box("caserma-pavimento",0,.24,-20,19.6,.28,11.6,concrete);
+box("caserma-parete-sinistra",-9.7,3.6,-20,.6,7.2,12,wall);
+box("caserma-parete-destra",9.7,3.6,-20,.6,7.2,12,wall);
+box("caserma-parete-fondo",0,3.6,-25.7,19.6,7.2,.6,wall);
+box("caserma-facciata-sx",-5.7,3.6,-14.3,8,.7,.6,wall);
+box("caserma-facciata-dx",5.7,3.6,-14.3,8,.7,.6,wall);
+box("caserma-tetto",0,7.25,-20,20.2,.35,12.5,roof).isVisible=false;
+box("ingresso",0,1.5,-14.05,3.2,3,.12,blue);
+box("targa",0,5,-13.85,8,1.2,.18,blue);
+const wood=mat("arredo-legno","#654a35"),metal=mat("metallo","#66727a"),screen=mat("schermo","#102a38",.2);
+box("bancone",0,1.05,-22,6,.25,1.1,wood);
+for(let x of [-2.2,0,2.2]){box("monitor",x,1.65,-22.25,.85,.55,.12,screen);box("base-monitor",x,1.38,-22.25,.12,.18,.12,metal)}
+for(let x of [-7,7]){box("armadietto",x,1.5,-23.8,1.2,2.8,.8,metal);for(let y=.7;y<2.6;y+=.65)box("anta-armadio",x,y,-23.36,1,.04,.04,white)}
+box("tavolo-briefing",0,.9,-17.7,4.5,.18,2.2,wood);
+for(let x of [-1.5,1.5])for(let z of [-1,1])box("sedia-briefing",x,.55,-17.7+z,.65,.9,.65,blue);
+box("bacheca",0,2.5,-25.35,4,1.5,.12,blue);
+const stationLight=new BABYLON.PointLight("luce-caserma",new BABYLON.Vector3(0,5,-20),scene);stationLight.intensity=.65;stationLight.range=28;
 const sign=BABYLON.MeshBuilder.CreatePlane("scritta",{width:7.4,height:.85},scene);sign.position.set(0,5,-13.7);let dt=new BABYLON.DynamicTexture("targa",{width:1024,height:256},scene);dt.drawText("CARABINIERI",null,175,"bold 112px Arial","white","#132c4c",true);let sm=new BABYLON.StandardMaterial("signmat",scene);sm.diffuseTexture=dt;sign.material=sm;
 // Character with simple articulated silhouette, ready for replacement by a rigged GLB
 const player=new BABYLON.TransformNode("operatore",scene);let torso=BABYLON.MeshBuilder.CreateCapsule("corpo",{height:1.45,radius:.34},scene);torso.parent=player;torso.position.y=1.05;torso.material=uniform;
