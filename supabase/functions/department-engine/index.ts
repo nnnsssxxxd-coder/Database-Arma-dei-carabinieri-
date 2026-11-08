@@ -116,12 +116,6 @@ Deno.serve(async (req: Request) => {
     if (action === "command_board") {
       const {data:command,error:commandError}=await db.from("department_commanders").select("commander_user_id,vice_user_id,appointed_at").eq("department_id",membership.department_id).maybeSingle();
       if(commandError)return reply(req,{error:"Impossibile leggere la catena di comando."},500);
-      const {data:members,error:membersError}=await db.from("department_memberships").select("user_id,rank,exp").eq("department_id",membership.department_id).order("rank",{ascending:false});
-      if(membersError)return reply(req,{error:"Impossibile leggere il personale del reparto."},500);
-      const ids=(members??[]).map((m:any)=>m.user_id);
-      const {data:profiles}=ids.length?await db.from("profiles").select("id,display_name,username").in("id",ids):{data:[]};
-      const names=new Map((profiles??[]).map((p:any)=>[p.id,p]));
-      const roster=(members??[]).map((m:any)=>({user_id:m.user_id,rank:m.rank,exp:m.exp,name:names.get(m.user_id)?.display_name||names.get(m.user_id)?.username||"Utente"}));
       if(command?.commander_user_id!==user.id) {
         const {data:assigned}=await db.from("department_exercise_assignments").select("id,exercise_id,assigned_at").eq("user_id",user.id).order("assigned_at",{ascending:false});
         const ids2=(assigned??[]).map((a:any)=>a.exercise_id);
@@ -131,6 +125,13 @@ Deno.serve(async (req: Request) => {
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
         return reply(req,{is_commander:false,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
+      const {data:members,error:membersError}=await db.from("department_memberships").select("user_id,rank,exp").eq("department_id",membership.department_id).order("rank",{ascending:false});
+      if(membersError)return reply(req,{error:"Impossibile leggere il personale del reparto."},500);
+      const ids=(members??[]).map((m:any)=>m.user_id);
+      const {data:profiles,error:profilesError}=ids.length?await db.from("profiles").select("id,display_name,username").in("id",ids):{data:[],error:null};
+      if(profilesError)return reply(req,{error:"Impossibile leggere i nominativi del reparto."},500);
+      const names=new Map((profiles??[]).map((p:any)=>[p.id,p]));
+      const roster=(members??[]).map((m:any)=>({user_id:m.user_id,rank:m.rank,exp:m.exp,name:names.get(m.user_id)?.display_name||names.get(m.user_id)?.username||"Utente"}));
       const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("active",true).order("created_at",{ascending:false});
       const exIds=(exercises??[]).map((x:any)=>x.id);
       const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds):{data:[]};
