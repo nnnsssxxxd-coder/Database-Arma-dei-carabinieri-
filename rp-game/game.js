@@ -55,12 +55,34 @@ function pointer(e){let r=pad.getBoundingClientRect(),dx=e.clientX-(r.left+r.wid
 pad.addEventListener("pointerdown",e=>{active=true;pad.setPointerCapture(e.pointerId);pointer(e)});pad.addEventListener("pointermove",e=>{if(active)pointer(e)});function release(){active=false;steer=0;throttle=0;nub.style.transform="translate(0,0)"}pad.addEventListener("pointerup",release);pad.addEventListener("pointercancel",release);
 const keys={};addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 let t=0;
+// A short, playable patrol route with visible checkpoints and local rewards.
+const patrolStops=[
+ {x:28,z:-18,label:"Piazza centrale"},
+ {x:28,z:24,label:"Incrocio commerciale"},
+ {x:-26,z:24,label:"Lungomare"}
+];
+let patrolStage=0, patrolCredits=0, patrolActive=false;
+const checkpointMat=new BABYLON.StandardMaterial("checkpoint-material",scene);
+checkpointMat.emissiveColor=new BABYLON.Color3(.95,.62,.12);
+const checkpointMeshes=patrolStops.map((stop,i)=>{
+ const marker=BABYLON.MeshBuilder.CreateCylinder("checkpoint-"+i,{height:.22,diameter:5,tessellation:32},scene);
+ marker.position.set(stop.x,.18,stop.z);marker.material=checkpointMat;marker.isVisible=false;return marker;
+});
+const updatePatrolHud=()=>{
+ const stop=patrolStops[patrolStage];
+ document.getElementById("objective").textContent=patrolActive&&stop
+  ? "Pattuglia: raggiungi "+stop.label+" ("+(patrolStage+1)+"/"+patrolStops.length+")."
+  : "Esplora la zona della caserma.";
+ const economy=document.getElementById("economy");
+ if(economy)economy.textContent="Crediti: "+patrolCredits;
+ checkpointMeshes.forEach((mesh,i)=>mesh.isVisible=patrolActive&&i===patrolStage);
+};
 // RP progression and multiplayer client connection.
 let onDuty=false, money=2500, rankName="Civile", netRoom=null, netClient=null, netReady=false, lastNetSend=0;
 const remotePlayers=new Map();
 const statusEl=document.getElementById("mpstatus");
 const addChat=(line)=>{const log=document.getElementById("chatlog");const row=document.createElement("div");row.textContent=line;log.appendChild(row);log.scrollTop=log.scrollHeight};
-document.getElementById("duty").onclick=()=>{if(document.getElementById("playerrole").value!=="Carabiniere"){statusEl.textContent="Seleziona il ruolo Carabiniere per iniziare il servizio.";return}onDuty=!onDuty;document.getElementById("duty").textContent=onDuty?"TERMINA SERVIZIO":"INIZIA SERVIZIO";rankName="Carabiniere";if(netRoom)netRoom.send("duty",{active:onDuty});document.getElementById("objective").textContent=onDuty?"Servizio attivo: raggiungi una zona di pattuglia.":"Esplora la città e raggiungi la caserma.";setMode()};
+document.getElementById("duty").onclick=()=>{if(document.getElementById("playerrole").value!=="Carabiniere"){statusEl.textContent="Seleziona il ruolo Carabiniere per iniziare il servizio.";return}onDuty=!onDuty;document.getElementById("duty").textContent=onDuty?"TERMINA SERVIZIO":"INIZIA SERVIZIO";rankName="Carabiniere";patrolActive=onDuty;patrolStage=0;if(netRoom)netRoom.send("duty",{active:onDuty});updatePatrolHud();setMode()};
 document.getElementById("interact").onclick=()=>{const target=driving?car.position:player.position;const d=Math.hypot(target.x,target.z+20);if(d<14){document.getElementById("objective").textContent="Sei alla caserma: servizio, briefing e rimessa.";addChat("Sistema: sei entrato nell'area della caserma.")}else if(Math.hypot(target.x-4,target.z+5)<5&&!driving){document.getElementById("objective").textContent="Veicolo di servizio disponibile: premi AUTO.";addChat("Sistema: avvicinati alla pattuglia.")}else{document.getElementById("objective").textContent="Nessuna interazione disponibile qui. Esplora la città.";addChat("Sistema: nessun punto interattivo nelle vicinanze.")}};
 document.getElementById("chatbtn").onclick=()=>{if(!netRoom){addChat("Chat disponibile quando il server multiplayer sarà collegato.");return}const message=prompt("Scrivi un messaggio in chat");if(message)netRoom.send("chat",{message})};
 document.getElementById("connect").onclick=async()=>{
@@ -81,6 +103,6 @@ document.getElementById("connect").onclick=async()=>{
 };
 
 engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);t+=dt;let forward=throttle||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),turn=steer||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
-if(driving){speed+=(forward*13-speed*1.8)*dt;speed=Math.max(-5,Math.min(22,speed));car.rotation.y+=turn*dt*(.8+Math.abs(speed)*.035);car.position.x+=Math.sin(car.rotation.y)*speed*dt;car.position.z+=Math.cos(car.rotation.y)*speed*dt;redLight.isVisible=flash&&Math.sin(t*12)>0;blueLight.isVisible=flash&&!redLight.isVisible}else{let move=forward||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);let turn2=turn||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);if(Math.abs(move)>.04){player.rotation.y+=turn2*dt*2.2;player.position.x+=Math.sin(player.rotation.y)*move*dt*4.2;player.position.z+=Math.cos(player.rotation.y)*move*dt*4.2}}if(netRoom&&t-lastNetSend>.12){const p=driving?car.position:player.position;netRoom.send("move",{x:p.x,z:p.z,rotation:driving?car.rotation.y:player.rotation.y,vehicle:driving});lastNetSend=t}document.getElementById("clock").textContent="08:"+String(Math.floor(t*3)%60).padStart(2,"0");scene.render()});
+if(driving){speed+=(forward*13-speed*1.8)*dt;speed=Math.max(-5,Math.min(22,speed));car.rotation.y+=turn*dt*(.8+Math.abs(speed)*.035);car.position.x+=Math.sin(car.rotation.y)*speed*dt;car.position.z+=Math.cos(car.rotation.y)*speed*dt;redLight.isVisible=flash&&Math.sin(t*12)>0;blueLight.isVisible=flash&&!redLight.isVisible}else{let move=forward||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);let turn2=turn||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);if(Math.abs(move)>.04){player.rotation.y+=turn2*dt*2.2;player.position.x+=Math.sin(player.rotation.y)*move*dt*4.2;player.position.z+=Math.cos(player.rotation.y)*move*dt*4.2}}if(patrolActive){const current=patrolStops[patrolStage],pos=driving?car.position:player.position;if(Math.hypot(pos.x-current.x,pos.z-current.z)<5){patrolStage++;patrolCredits+=150;if(patrolStage>=patrolStops.length){patrolActive=false;addChat("Pattuglia completata: +450 crediti.");}else{addChat("Zona controllata: +150 crediti.");}updatePatrolHud();}}if(netRoom&&t-lastNetSend>.12){const p=driving?car.position:player.position;netRoom.send("move",{x:p.x,z:p.z,rotation:driving?car.rotation.y:player.rotation.y,vehicle:driving});lastNetSend=t}document.getElementById("clock").textContent="08:"+String(Math.floor(t*3)%60).padStart(2,"0");scene.render()});
 addEventListener("resize",()=>engine.resize());
 })();
