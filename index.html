@@ -1019,7 +1019,7 @@ async function loadProfile(u){
  if(p.error)throw new Error("Profilo non leggibile: "+p.error.message);
  const nextProfile=p.data;
  if(!nextProfile||!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
- profile=nextProfile;user=u;departmentMembership=null;renderDepartmentIdentity();
+ profile=nextProfile;user=u;departmentMembership=null;commandBoard=null;commandExamAttempt=null;departmentQuiz=null;departmentAnswerIndex=null;if(departmentTimer){clearInterval(departmentTimer);departmentTimer=null;}if($("assignedExercisesTab"))$("assignedExercisesTab").classList.add("hidden");if($("commanderTools"))$("commanderTools").classList.add("hidden");if($("memberExercises"))$("memberExercises").classList.add("hidden");renderDepartmentIdentity();
  progress={rank:profile.initial_rank||0,exp:0,quizCount:0,correct:0,streak:0,history:[]};
  const g=await db.from("progress").select("payload").eq("user_id",u.id).maybeSingle();
  const progressSynced=!g.error;
@@ -1080,7 +1080,7 @@ async function login(e){
 async function logout(){
  if(typeof stopGps==="function")stopGps();
  if(cooldownTimer){clearInterval(cooldownTimer);cooldownTimer=null;}if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}cooldownUntil=null;
- const was=user;if(departmentTimer){clearInterval(departmentTimer);departmentTimer=null;}user=null;profile=null;departmentMembership=null;departmentQuiz=null;departmentAnswerIndex=null;renderDepartmentIdentity();quiz=null;answerIndex=null;resetQuizView();
+ const was=user;if(departmentTimer){clearInterval(departmentTimer);departmentTimer=null;}user=null;profile=null;departmentMembership=null;departmentQuiz=null;departmentAnswerIndex=null;commandBoard=null;commandExamAttempt=null;if($("assignedExercisesTab"))$("assignedExercisesTab").classList.add("hidden");if($("commanderTools"))$("commanderTools").classList.add("hidden");if($("memberExercises"))$("memberExercises").classList.add("hidden");renderDepartmentIdentity();quiz=null;answerIndex=null;resetQuizView();
  ["userList","history","quizResult"].forEach(id=>{const el=$(id);if(el)el.replaceChildren();});
  $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("headUser").textContent="";$("password").value="";
  try{if(was)await Promise.race([logEvent("session_end"),new Promise(resolve=>setTimeout(resolve,1500))]);}catch(e){console.warn("logout audit",e);}
