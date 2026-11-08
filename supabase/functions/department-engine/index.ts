@@ -37,7 +37,9 @@ async function getMembership(userId: string) {
   if (!data) return null;
   const { data: department, error: deptError } = await db.from("department_catalog").select("id,name,description,source_url").eq("id", data.department_id).single();
   if (deptError) throw deptError;
-  return { ...data, rank_name: DEPT_RANKS[Math.min(7, Math.max(0, Number(data.rank) || 0))], department };
+  const { data: command, error: commandError } = await db.from("department_commanders").select("commander_user_id").eq("department_id", data.department_id).maybeSingle();
+  if (commandError) throw commandError;
+  return { ...data, is_commander: command?.commander_user_id === userId, rank_name: DEPT_RANKS[Math.min(7, Math.max(0, Number(data.rank) || 0))], department };
 }
 Deno.serve(async (req: Request) => {
   const corsHeaders = corsHeadersFor(req);
@@ -73,6 +75,8 @@ Deno.serve(async (req: Request) => {
     }
     const membership = await getMembership(user.id);
     if (!membership) return reply({ error: "Non hai ancora scelto un reparto." }, 403);
+    const isCommander = membership.is_commander === true;
+    const commandExamReady = Number(membership.rank) === 6 && Number(membership.exp) >= 2100 && !isCommander;
 
     const safeCqb = [
       {prompt:"Durante un’esercitazione simulata, una persona non identificata entra nell’area delimitata. Qual è la prima condotta corretta?",options:["Interrompere l’attività, mantenere distanza e chiedere identificazione tramite il responsabile","Avvicinarsi rapidamente senza comunicare","Dare per scontato che sia una minaccia","Proseguire ignorando la presenza"],correct_index:0,explanation:"La priorità è fermare l’attività, evitare escalation e chiarire la situazione in sicurezza."},
@@ -91,9 +95,7 @@ Deno.serve(async (req: Request) => {
       {prompt:"Quale condotta dimostra imparzialità nella valutazione?",options:["Modificare la soglia dopo aver visto i risultati","Applicare gli stessi criteri e registrare l’esito in modo verificabile","Favorire il proprio gruppo","Ignorare gli errori dei preferiti"],correct_index:1}
     ];
     if (action === "command_exam_start") {
-      if (membership.rank < 6) return reply({ error: "La prova di comando è disponibile dal grado Vice comandante di reparto." }, 403);
-      const current = await db.from("department_commanders").select("commander_user_id").eq("department_id",membership.department_id).maybeSingle();
-      if (current.data?.commander_user_id === user.id) return reply({ error: "Sei già comandante di reparto." }, 409);
+      if (!commandExamReady) return reply({ error: "Il Test di comando si sblocca al grado Vice comandante di reparto e al 100% degli EXP (2100)." }, 403);
       const {data: attempt,error} = await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id}).select("id,started_at").single();
       if(error) return reply({error:"Impossibile avviare la prova di comando."},500);
       return reply({attempt_id:attempt.id,questions:commandExam.map(({prompt,options})=>({prompt,options})),expires_at:new Date(new Date(attempt.started_at).getTime()+30*60*1000).toISOString()});
@@ -103,7 +105,8 @@ Deno.serve(async (req: Request) => {
       if(!/^[0-9a-f-]{36}$/i.test(id)||!Array.isArray(answers)||answers.length!==6||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3)) return reply({error:"Risposte non valide."},400);
       const {data:attempt,error}=await db.from("department_command_exam_attempts").select("*").eq("id",id).eq("user_id",user.id).eq("department_id",membership.department_id).maybeSingle();
       if(error||!attempt||attempt.completed_at||new Date(attempt.started_at).getTime()<Date.now()-30*60*1000) return reply({error:"Prova non valida o scaduta."},409);
-      const score=answers.reduce((n:number,a:number,i:number)=>n+(a===commandExam[i].correct_index?1:0),0),passed=score>=5;
+      if (!commandExamReady) return reply({ error: "Requisiti del Test di comando non più soddisfatti." }, 403);
+      const score=answers.reduce((n:number,a:number,i:number)=>n+(a===commandExam[i].correct_index?1:0),0),passed=score>=4;
       const {error:saveError}=await db.from("department_command_exam_attempts").update({answers,score,passed,completed_at:passed?null:new Date().toISOString()}).eq("id",id).is("completed_at",null);
       if(saveError)return reply({error:"Impossibile registrare la prova."},500);
       if(!passed)return reply({score,total:6,passed:false,message:"Prova non superata. Puoi riprovare dopo aver ripassato i criteri di comando."});
@@ -125,56 +128,60 @@ Deno.serve(async (req: Request) => {
         const ids2=(assigned??[]).map((a:any)=>a.exercise_id);
         const {data:exercises}=ids2.length?await db.from("department_exercises").select("id,title,created_at").in("id",ids2):{data:[]};
         const exMap=new Map((exercises??[]).map((x:any)=>[x.id,x]));
-        const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)):{data:[]};
+        const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)):{data:[]};
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
         return reply({is_commander:false,commander,roster,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
       const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("active",true).order("created_at",{ascending:false});
       const exIds=(exercises??[]).map((x:any)=>x.id);
       const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds):{data:[]};
-      const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)):{data:[]};
+      const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)):{data:[]};
       const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
       const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
-      const results=(assignments??[]).map((a:any)=>({assignment_id:a.id,user_id:a.user_id,name:names.get(a.user_id)?.display_name||names.get(a.user_id)?.username||"Utente",title:exerciseMap.get(a.exercise_id)?.title||"Esercitazione",score:attemptMap.get(a.id)?.score??null,correct_answers:attemptMap.get(a.id)?.correct_answers??null,completed_at:attemptMap.get(a.id)?.completed_at??null}));
+      const results=(assignments??[]).map((a:any)=>({assignment_id:a.id,user_id:a.user_id,name:names.get(a.user_id)?.display_name||names.get(a.user_id)?.username||"Utente",title:exerciseMap.get(a.exercise_id)?.title||"Test di reparto",score:attemptMap.get(a.id)?.score??null,correct_answers:attemptMap.get(a.id)?.correct_answers??null,exp_awarded:attemptMap.get(a.id)?.exp_awarded??null,completed_at:attemptMap.get(a.id)?.completed_at??null}));
       return reply({is_commander:true,commander,roster,results});
     }
-    if (action === "assign_cqb") {
-      const {data:command}=await db.from("department_commanders").select("commander_user_id").eq("department_id",membership.department_id).maybeSingle();
-      if(command?.commander_user_id!==user.id||membership.rank!==7)return reply({error:"Solo il comandante in carica può assegnare esercitazioni."},403);
-      const title=String(body.title||"Esercitazione CQB · valutazione decisionale").trim().slice(0,100);
-      const {data:exercise,error}=await db.from("department_exercises").insert({department_id:membership.department_id,assigned_by:user.id,title}).select("id").single();
-      if(error)return reply({error:"Impossibile creare l’esercitazione."},500);
-      const {data:questions,error:qError}=await db.from("department_exercise_questions").insert(safeCqb.map(q=>({exercise_id:exercise.id,...q}))).select("id");
-      if(qError)return reply({error:"Impossibile preparare le domande."},500);
-      const {data:members,error:mError}=await db.from("department_memberships").select("user_id").eq("department_id",membership.department_id).neq("user_id",user.id);
-      if(mError)return reply({error:"Impossibile individuare i subordinati."},500);
-      if((members??[]).length){const {error:aError}=await db.from("department_exercise_assignments").insert(members.map((m:any)=>({exercise_id:exercise.id,user_id:m.user_id})));if(aError)return reply({error:"Impossibile assegnare l’esercitazione."},500);}
-      return reply({assigned:(members??[]).length,title});
+    if (action === "assign_test" || action === "assign_cqb") {
+      if(!isCommander || Number(membership.rank)!==7) return reply({error:"Solo il comandante in carica può assegnare test."},403);
+      const title=String(body.title||"Test di reparto · valutazione e sicurezza").trim().slice(0,100);
+      if(title.length<3) return reply({error:"Il titolo del test deve contenere almeno 3 caratteri."},400);
+      const {data:assignment,error}=await db.rpc("assign_department_exercise",{
+        p_user_id:user.id,p_department_id:membership.department_id,p_title:title,
+        p_questions:safeCqb
+      });
+      if(error) return reply({error:error.message||"Impossibile assegnare il test."},400);
+      return reply(assignment,201);
     }
     if (action === "exercise_start") {
+      if(isCommander) return reply({error:"Il comandante non può svolgere test di reparto assegnati."},403);
       const assignmentId=String(body.assignment_id??"");
       const {data:assignment,error}=await db.from("department_exercise_assignments").select("id,exercise_id").eq("id",assignmentId).eq("user_id",user.id).maybeSingle();
       if(error||!assignment)return reply({error:"Esercitazione non assegnata a questo account."},404);
+      const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("active",true).maybeSingle();
+      if(exerciseError||!exercise) return reply({error:"Test non appartenente al tuo reparto o non disponibile."},403);
       const {data:existing}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
       if(existing?.completed_at)return reply({error:"Esercitazione già completata."},409);
       const attempt=existing|| (await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id}).select("id,started_at").single()).data;
       if(!attempt)return reply({error:"Impossibile avviare l’esercitazione."},500);
-      const {data:questions}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).order("id");
-      return reply({attempt_id:attempt.id,questions:questions??[],answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
+      const {data:questions,error:questionError}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).order("id");
+      if(questionError||!questions||questions.length!==6) return reply({error:"Domande del test non disponibili."},500);
+      return reply({attempt_id:attempt.id,title:exercise.title,questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
     }
     if (action === "exercise_submit") {
+      if(isCommander) return reply({error:"Il comandante non può svolgere test assegnati."},403);
       const id=String(body.attempt_id??""),answers=body.answers;
       if(!/^[0-9a-f-]{36}$/i.test(id)||!Array.isArray(answers)||answers.length!==6||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3))return reply({error:"Risposte non valide."},400);
-      const {data:attempt,error}=await db.from("department_exercise_attempts").select("id,assignment_id,started_at,completed_at").eq("id",id).eq("user_id",user.id).maybeSingle();
-      if(error||!attempt||attempt.completed_at||new Date(attempt.started_at).getTime()<Date.now()-45*60*1000)return reply({error:"Sessione non valida o scaduta."},409);
-      const {data:questions}=await db.from("department_exercise_questions").select("correct_index").eq("exercise_id",(await db.from("department_exercise_assignments").select("exercise_id").eq("id",attempt.assignment_id).single()).data.exercise_id).order("id");
-      if(!questions||questions.length!==6)return reply({error:"Banca domande non disponibile."},500);
-      const score=answers.reduce((n:number,a:number,i:number)=>n+(a===questions[i].correct_index?1:0),0);
-      const {error:saveError}=await db.from("department_exercise_attempts").update({answers,score,correct_answers:score,completed_at:new Date().toISOString()}).eq("id",id).is("completed_at",null);
-      if(saveError)return reply({error:"Impossibile registrare il risultato."},500);
-      return reply({score,total:6,correct_answers:score});
+      const {data,error}=await db.rpc("complete_department_exercise",{p_user_id:user.id,p_attempt_id:id,p_answers:answers});
+      if(error){
+        const msg=String(error.message||"");
+        const status=/già completato/.test(msg)?409:/non appartieni|comandante/.test(msg)?403:400;
+        return reply({error:msg||"Impossibile registrare il risultato del test."},status);
+      }
+      return reply(data);
     }
     if (action === "start") {
+      if(isCommander) return reply({error:"Il comandante non può più svolgere quiz personali di reparto."},403);
+      if(Number(membership.rank)>=6 && Number(membership.exp)>=2100) return reply({error:"Hai raggiunto il 100% EXP: è disponibile il Test di comando."},403);
       const { data: open, error: openError } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id", user.id).eq("department_id", membership.department_id).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle();
       if (openError) return reply({ error: "Impossibile verificare la sessione reparto" }, 500);
       if (open && new Date(open.started_at).getTime() >= Date.now() - SESSION_MS) {
@@ -208,6 +215,7 @@ Deno.serve(async (req: Request) => {
       return reply({ attempt_id: attempt.id, questions: selected, answers: [], expires_at: new Date(new Date(attempt.started_at).getTime() + SESSION_MS).toISOString(), resumed: false, membership });
     }
     if (action === "save") {
+      if(isCommander) return reply({error:"Il comandante non può più svolgere quiz personali di reparto."},403);
       const attemptId = String(body.attempt_id ?? "");
       const answers = body.answers;
       if (!/^[0-9a-f-]{36}$/i.test(attemptId) || !Array.isArray(answers) || answers.length < 1 || answers.length > 4 || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) return reply({ error: "Checkpoint non valido" }, 400);
@@ -220,6 +228,8 @@ Deno.serve(async (req: Request) => {
       return reply({ saved: true, count: answers.length });
     }
     if (action === "submit") {
+      if(isCommander) return reply({error:"Il comandante non può più svolgere quiz personali di reparto."},403);
+      if(Number(membership.rank)>=6 && Number(membership.exp)>=2100) return reply({error:"Hai raggiunto il 100% EXP: è disponibile il Test di comando."},403);
       const attemptId = String(body.attempt_id ?? "");
       const answers = body.answers;
       if (!/^[0-9a-f-]{36}$/i.test(attemptId) || !Array.isArray(answers) || answers.length !== 4 || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) return reply({ error: "Risposte non valide" }, 400);
