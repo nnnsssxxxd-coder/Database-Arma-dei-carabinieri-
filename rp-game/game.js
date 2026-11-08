@@ -62,7 +62,8 @@ document.getElementById("connect").onclick=async()=>{
   addChat("Connesso alla sessione RP.");
  }catch(e){netReady=false;statusEl.textContent="Connessione non riuscita: verifica indirizzo e server.";console.error(e)}
 };
-\nengine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);t+=dt;let forward=throttle||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),turn=steer||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
+
+engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);t+=dt;let forward=throttle||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),turn=steer||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
 if(driving){speed+=(forward*13-speed*1.8)*dt;speed=Math.max(-5,Math.min(22,speed));car.rotation.y+=turn*dt*(.8+Math.abs(speed)*.035);car.position.x+=Math.sin(car.rotation.y)*speed*dt;car.position.z+=Math.cos(car.rotation.y)*speed*dt;redLight.isVisible=flash&&Math.sin(t*12)>0;blueLight.isVisible=flash&&!redLight.isVisible}else{let move=forward||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);let turn2=turn||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);if(Math.abs(move)>.04){player.rotation.y+=turn2*dt*2.2;player.position.x+=Math.sin(player.rotation.y)*move*dt*4.2;player.position.z+=Math.cos(player.rotation.y)*move*dt*4.2}}if(netRoom&&t-lastNetSend>.12){const p=driving?car.position:player.position;netRoom.send("move",{x:p.x,z:p.z,rotation:driving?car.rotation.y:player.rotation.y,vehicle:driving});lastNetSend=t}document.getElementById("clock").textContent="08:"+String(Math.floor(t*3)%60).padStart(2,"0");scene.render()});
 addEventListener("resize",()=>engine.resize());
 })();
