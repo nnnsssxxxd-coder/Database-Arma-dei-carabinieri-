@@ -905,7 +905,7 @@ async function submitQuiz(){
  let data,error;
  try{({data,error}=await db.functions.invoke("quiz-engine",{body:{action:"submit",attempt_id:quiz.id,answers:quiz.answers}}));}
  catch(e){console.error("submitQuiz",e);error=e;}
- if(error||!data?.progress){quiz.submitting=false;$("answerHint").textContent=data?.error||"Connessione o salvataggio non riuscito. Le risposte restano disponibili: riprova.";$("answerHint").textContent="Invio non riuscito. Controlla la connessione e premi nuovamente Conferma per riprovare.";return;}
+ if(error||!data?.progress){quiz.submitting=false;$("confirmAnswer").disabled=false;$("answerHint").textContent=await functionError(error,data?.error||"Invio non riuscito. Controlla la connessione e premi nuovamente Conferma per riprovare.");return;}
  progress=data.progress;
  if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}
  const review=quiz.questions.map((q,i)=>{
