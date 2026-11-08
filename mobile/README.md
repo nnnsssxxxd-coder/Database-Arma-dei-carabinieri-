@@ -1,20 +1,43 @@
 # App mobile — Database Arma dei Carabinieri
 
-Questa cartella contiene il progetto nativo basato su Capacitor. Il sito principale nella root del repository non viene modificato: prima di ogni build, `scripts/prepare-web.mjs` ne copia l'ultima versione in `mobile/www/index.html`.
+Progetto Android nativo basato su Capacitor 8.6.0. Il sito principale non viene modificato: la build include una copia locale aggiornata di `index.html` e usa il backend Supabase già configurato dal sito.
 
-## Android (APK installabile, senza Play Store)
+## APK Android
 
-La build automatica è disponibile in GitHub Actions sul branch `mobile-app`:
-1. Apri **Actions** nel repository.
-2. Avvia **Build app Android (APK)** con **Run workflow**, oppure attendi il completamento dopo un commit sul branch.
-3. Scarica l'artifact `database-arma-carabinieri-debug-apk`.
-4. Estrai `app-debug.apk` e installalo sul dispositivo Android. Potrebbe essere necessario autorizzare l'installazione da questa origine.
+La build automatica si trova nel branch `mobile-app` e viene eseguita da GitHub Actions:
+- `database-arma-carabinieri-debug-apk`: build di test installabile.
+- `database-arma-carabinieri-release-apk`: release firmata con la chiave privata personale, disponibile dopo aver configurato i segreti descritti sotto.
 
-Il file è una build **debug** per installazione personale/test, non una release firmata per gli store.
+Apri la scheda Actions del repository e scarica l'artifact della compilazione più recente. Estrai lo ZIP e installa l'APK sul dispositivo Android.
+
+## Attivare la firma release (una sola volta)
+
+Android richiede che ogni APK sia firmato. Per mantenere gli aggiornamenti installabili sopra la versione precedente, bisogna usare sempre la stessa chiave privata. Non caricare mai il keystore nel repository.
+
+1. Genera un keystore personale sul tuo computer con Android Studio (Build > Generate Signed Bundle / APK > Create new) oppure con `keytool`.
+2. Converti il file keystore in Base64:
+   - Linux/macOS: `base64 -w 0 release-key.jks`
+   - macOS (alternativa): `base64 < release-key.jks | tr -d '\\n'`
+3. Nel repository GitHub apri Settings > Secrets and variables > Actions > New repository secret e crea questi quattro segreti:
+   - `ANDROID_KEYSTORE_BASE64`: contenuto Base64 del keystore.
+   - `ANDROID_KEYSTORE_PASSWORD`: password del keystore.
+   - `ANDROID_KEY_ALIAS`: alias della chiave.
+   - `ANDROID_KEY_PASSWORD`: password della chiave.
+4. Conserva una copia sicura del keystore e delle password. Se perdi la chiave, non potrai firmare aggiornamenti compatibili con quella installazione.
+
+Dopo aver configurato i segreti, avvia nuovamente il workflow: verrà generata anche la release firmata. Senza questi segreti, il workflow produce soltanto la build debug e non finge di produrre una release personale firmata.
+
+## Servizi e dati
+
+L'app include il frontend locale e mantiene il collegamento al progetto Supabase già presente nel sito (autenticazione e database). Le funzioni che dipendono da Supabase richiedono Internet. Non vengono create o modificate tabelle, account, password o dati. Le chiavi privilegiate non devono mai essere incluse nell'app.
+
+## Verifiche e limiti
+
+La compilazione automatica verifica che il progetto Android si generi e che l'APK venga prodotto. La verifica finale di login, GPS, fotocamera e comportamento su dispositivi reali richiede test sul telefono: la compilazione da sola non può garantirli. La versione installata non si aggiorna da sola; per aggiornare, scarica e installa una nuova release firmata con la stessa chiave.
 
 ## Build locale
 
-Requisiti: Node.js 22+, Android Studio/Android SDK e JDK 21.
+Requisiti: Node.js 22+, Android Studio con Android SDK e JDK 21.
 
 ```bash
 cd mobile
@@ -25,28 +48,3 @@ npx cap sync android
 cd android
 ./gradlew assembleDebug
 ```
-
-APK: `mobile/android/app/build/outputs/apk/debug/app-debug.apk`.
-
-## iPhone / iOS
-
-Il progetto include il runtime Capacitor iOS. Per generare e installare l'app servono macOS, Xcode e una firma di sviluppo Apple. Da Mac:
-
-```bash
-cd mobile
-npm install
-npm run prepare:web
-npx cap add ios
-npx cap sync ios
-npx cap open ios
-```
-
-Un iPhone richiede un provisioning profile/firma valida; non è possibile installare un'app iOS arbitraria come un APK Android.
-
-## Servizi e dati
-
-L'app carica una copia locale del frontend e continua a collegarsi ai servizi Supabase già configurati nel progetto (Auth, database e funzioni Edge). È necessaria una connessione Internet per le funzioni che dipendono da Supabase. Non vengono create tabelle, non vengono modificati utenti, password o dati esistenti. Le chiavi privilegiate non devono mai essere inserite nell'app.
-
-## Aggiornamenti
-
-Le modifiche future al sito principale vengono incluse nella prossima build mobile eseguendo lo script di preparazione. L'app installata non si aggiorna da sola: occorre installare una nuova APK quando viene prodotta una nuova versione.
