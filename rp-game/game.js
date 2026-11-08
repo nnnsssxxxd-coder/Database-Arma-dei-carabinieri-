@@ -37,7 +37,32 @@ const pad=document.getElementById("pad"),nub=document.getElementById("nub");let 
 function pointer(e){let r=pad.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),len=Math.hypot(dx,dy),max=42;if(len>max){dx=dx/len*max;dy=dy/len*max}nub.style.transform="translate("+dx+"px,"+dy+"px)";steer=dx/max;throttle=-dy/max}
 pad.addEventListener("pointerdown",e=>{active=true;pad.setPointerCapture(e.pointerId);pointer(e)});pad.addEventListener("pointermove",e=>{if(active)pointer(e)});function release(){active=false;steer=0;throttle=0;nub.style.transform="translate(0,0)"}pad.addEventListener("pointerup",release);pad.addEventListener("pointercancel",release);
 const keys={};addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-let t=0;engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);t+=dt;let forward=throttle||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),turn=steer||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
-if(driving){speed+=(forward*13-speed*1.8)*dt;speed=Math.max(-5,Math.min(22,speed));car.rotation.y+=turn*dt*(.8+Math.abs(speed)*.035);car.position.x+=Math.sin(car.rotation.y)*speed*dt;car.position.z+=Math.cos(car.rotation.y)*speed*dt;redLight.isVisible=flash&&Math.sin(t*12)>0;blueLight.isVisible=flash&&!redLight.isVisible}else{let move=forward||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);let turn2=turn||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);if(Math.abs(move)>.04){player.rotation.y+=turn2*dt*2.2;player.position.x+=Math.sin(player.rotation.y)*move*dt*4.2;player.position.z+=Math.cos(player.rotation.y)*move*dt*4.2}}document.getElementById("clock").textContent="08:"+String(Math.floor(t*3)%60).padStart(2,"0");scene.render()});
+let t=0;
+// RP progression and multiplayer client connection.
+let onDuty=false, money=2500, rankName="Civile", netRoom=null, netClient=null, netReady=false, lastNetSend=0;
+const remotePlayers=new Map();
+const statusEl=document.getElementById("mpstatus");
+const addChat=(line)=>{const log=document.getElementById("chatlog");const row=document.createElement("div");row.textContent=line;log.appendChild(row);log.scrollTop=log.scrollHeight};
+document.getElementById("duty").onclick=()=>{if(document.getElementById("playerrole").value!=="Carabiniere"){statusEl.textContent="Seleziona il ruolo Carabiniere per iniziare il servizio.";return}onDuty=!onDuty;document.getElementById("duty").textContent=onDuty?"TERMINA SERVIZIO":"INIZIA SERVIZIO";rankName="Carabiniere";if(netRoom)netRoom.send("duty",{active:onDuty});document.getElementById("objective").textContent=onDuty?"Servizio attivo: raggiungi una zona di pattuglia.":"Esplora la città e raggiungi la caserma.";setMode()};
+document.getElementById("interact").onclick=()=>{const target=driving?car.position:player.position;const d=Math.hypot(target.x,target.z+20);if(d<14){document.getElementById("objective").textContent="Sei alla caserma: servizio, briefing e rimessa.";addChat("Sistema: sei entrato nell'area della caserma.")}else if(Math.hypot(target.x-4,target.z+5)<5&&!driving){document.getElementById("objective").textContent="Veicolo di servizio disponibile: premi AUTO.";addChat("Sistema: avvicinati alla pattuglia.")}else{document.getElementById("objective").textContent="Nessuna interazione disponibile qui. Esplora la città.";addChat("Sistema: nessun punto interattivo nelle vicinanze.")}};
+document.getElementById("chatbtn").onclick=()=>{if(!netRoom){addChat("Chat disponibile quando il server multiplayer sarà collegato.");return}const message=prompt("Scrivi un messaggio in chat");if(message)netRoom.send("chat",{message})};
+document.getElementById("connect").onclick=async()=>{
+ const url=document.getElementById("serverurl").value.trim();
+ if(!url){statusEl.textContent="Il server online deve essere pubblicato e il suo indirizzo inserito qui.";return}
+ if(!window.Colyseus||!window.Colyseus.Client){statusEl.textContent="SDK multiplayer non caricato. Riprova con connessione internet.";return}
+ try{
+  netClient=new window.Colyseus.Client(url);
+  netRoom=await netClient.joinOrCreate("italian_city");
+  netReady=true;statusEl.textContent="Connesso alla città • "+netRoom.sessionId.slice(0,6);
+  netRoom.send("profile",{name:document.getElementById("playername").value,role:document.getElementById("playerrole").value});
+  netRoom.onMessage("chat",m=>addChat((m.name||"Giocatore")+": "+m.message));
+  netRoom.onMessage("system",m=>addChat(m.message));
+  netRoom.state.players.onAdd((p,id)=>{if(id===netRoom.sessionId)return;const mesh=BABYLON.MeshBuilder.CreateCapsule("remote-"+id,{height:2,radius:.35},scene);mesh.material=uniform;remotePlayers.set(id,{mesh,p});p.onChange(()=>{mesh.position.set(p.x,1,p.z);mesh.rotation.y=p.rotation})});
+  netRoom.state.players.onRemove((p,id)=>{const item=remotePlayers.get(id);if(item)item.mesh.dispose();remotePlayers.delete(id)});
+  addChat("Connesso alla sessione RP.");
+ }catch(e){netReady=false;statusEl.textContent="Connessione non riuscita: verifica indirizzo e server.";console.error(e)}
+};
+\nengine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);t+=dt;let forward=throttle||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0),turn=steer||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
+if(driving){speed+=(forward*13-speed*1.8)*dt;speed=Math.max(-5,Math.min(22,speed));car.rotation.y+=turn*dt*(.8+Math.abs(speed)*.035);car.position.x+=Math.sin(car.rotation.y)*speed*dt;car.position.z+=Math.cos(car.rotation.y)*speed*dt;redLight.isVisible=flash&&Math.sin(t*12)>0;blueLight.isVisible=flash&&!redLight.isVisible}else{let move=forward||((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);let turn2=turn||((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);if(Math.abs(move)>.04){player.rotation.y+=turn2*dt*2.2;player.position.x+=Math.sin(player.rotation.y)*move*dt*4.2;player.position.z+=Math.cos(player.rotation.y)*move*dt*4.2}}if(netRoom&&t-lastNetSend>.12){const p=driving?car.position:player.position;netRoom.send("move",{x:p.x,z:p.z,rotation:driving?car.rotation.y:player.rotation.y,vehicle:driving});lastNetSend=t}document.getElementById("clock").textContent="08:"+String(Math.floor(t*3)%60).padStart(2,"0");scene.render()});
 addEventListener("resize",()=>engine.resize());
 })();
