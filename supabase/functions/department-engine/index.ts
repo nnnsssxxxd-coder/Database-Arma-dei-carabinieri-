@@ -77,7 +77,20 @@ Deno.serve(async (req: Request) => {
       if (poolError || !pool || pool.length < 4) return reply({ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       const selected = pool.sort(() => Math.random() - 0.5).slice(0, 4);
       const { data: attempt, error: insertError } = await db.from("department_quiz_attempts").insert({ user_id: user.id, department_id: membership.department_id, question_ids: selected.map(q => q.id) }).select("id,started_at").single();
-      if (insertError) return reply({ error: "Impossibile avviare il quiz reparto" }, 500);
+      if (insertError) {
+        if (insertError.code === "23505") {
+          const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).is("completed_at",null).maybeSingle();
+          if (concurrent) {
+            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids);
+            if (!concurrentError && concurrentRows) {
+              const concurrentById = new Map(concurrentRows.map(q => [q.id,q]));
+              const concurrentQuestions = concurrent.question_ids.map((id: string) => concurrentById.get(id)).filter(Boolean);
+              if (concurrentQuestions.length === 4) return reply({ attempt_id: concurrent.id, questions: concurrentQuestions, answers: concurrent.answers ?? [], expires_at: new Date(new Date(concurrent.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
+            }
+          }
+        }
+        return reply({ error: "Impossibile avviare il quiz reparto" }, 500);
+      }
       return reply({ attempt_id: attempt.id, questions: selected, answers: [], expires_at: new Date(new Date(attempt.started_at).getTime() + SESSION_MS).toISOString(), resumed: false, membership });
     }
     if (action === "save") {
