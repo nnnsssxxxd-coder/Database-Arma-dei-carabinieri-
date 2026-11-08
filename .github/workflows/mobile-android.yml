@@ -42,6 +42,10 @@ jobs:
         working-directory: mobile
         run: npm run prepare:web
 
+      - name: Validate app bundle and JavaScript
+        working-directory: mobile
+        run: npm run validate:web
+
       - name: Generate Android project
         working-directory: mobile
         run: npx cap add android
@@ -49,6 +53,10 @@ jobs:
       - name: Copy current website and sync native project
         working-directory: mobile
         run: npm run android:sync
+
+      - name: Set Android app version
+        working-directory: mobile
+        run: npm run android:version
 
       - name: Apply app icon to Android launcher
         working-directory: mobile
