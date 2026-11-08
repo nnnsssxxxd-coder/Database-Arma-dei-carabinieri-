@@ -196,7 +196,7 @@ Deno.serve(async (req: Request) => {
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
       const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply({ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
-      const selected = pool.sort(() => Math.random() - 0.5).slice(0, 4);
+      const shuffled = [...pool]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } const selected = shuffled.slice(0, 4);
       const { data: attempt, error: insertError } = await db.from("department_quiz_attempts").insert({ user_id: user.id, department_id: membership.department_id, question_ids: selected.map(q => q.id) }).select("id,started_at").single();
       if (insertError) {
         if (insertError.code === "23505") {
