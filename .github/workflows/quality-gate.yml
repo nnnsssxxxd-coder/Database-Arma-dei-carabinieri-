@@ -78,6 +78,11 @@ jobs:
           if(!instructor.includes('["istruttore","admin"].includes(creatorMembership.role)'))throw new Error('Authorized administrator role missing from provisioning guard');
           if(!ministry.includes('display.length<2'))throw new Error('Command administrator name validation is inconsistent');
           console.log('PASS consistent account-name validation and role authorization');
+          const migration=fs.readFileSync('supabase/migrations/20261109212000_prevent_rank_exam_beyond_maximum.sql','utf8');
+          for(const required of ['if v_rank>=v_max_rank','v_max_rank:=23','v_max_rank:=24','Esame già consegnato','a.started_at<now()-interval \'20 minutes\'']){
+            if(!migration.includes(required))throw new Error('Missing rank-exam safeguard: '+required);
+          }
+          console.log('PASS rank-exam terminal-grade guard for both service branches');
           NODE
           for file in supabase/functions/command-general-action/index.ts supabase/functions/ministry-admin-action/index.ts supabase/functions/admin-create-user/index.ts; do
             test -s "$file"
