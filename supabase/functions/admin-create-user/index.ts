@@ -60,7 +60,7 @@ Deno.serve(async(req)=>{
   if(profileError){await db.from("matricole").delete().eq("user_id",created.user.id);await db.auth.admin.deleteUser(created.user.id);return reply(req,{error:"Non è stato possibile completare il profilo."},500);}
   const {error:membershipError}=await db.from("profile_memberships").insert({user_id:created.user.id,service_branch,role:"user",initial_rank,matricola});
   if(membershipError){await db.from("profiles").delete().eq("id",created.user.id);await db.from("matricole").delete().eq("user_id",created.user.id);await db.auth.admin.deleteUser(created.user.id);return reply(req,{error:"Non è stato possibile creare l'appartenenza al Corpo."},500);}
-  const {error:auditError}=await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event:"account_created",details:{username,initial_rank,matricola,service_branch}});
+  const {error:auditError}=await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event:"account_created",service_branch,details:{username,initial_rank,matricola,service_branch}});
   if(auditError)console.error("audit account_created",auditError.message);
   return reply(req,{ok:true,username,matricola,user_id:created.user.id});
  }catch(e){console.error("admin-create-user",e);return reply(req,{error:"Errore durante la creazione dell'account."},500);}
