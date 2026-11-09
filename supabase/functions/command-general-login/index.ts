@@ -5,9 +5,22 @@ const allowed=new Set(["https://nnnsssxxxd-coder.github.io","https://localhost",
 function headers(req:Request){const o=req.headers.get("Origin")??"";return {"Access-Control-Allow-Origin":allowed.has(o)?o:"null","Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function out(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:headers(req)});}
 async function resolveCommandAccess(username:string){
- const {data:existing,error:ae}=await admin.from("command_general_admins").select("user_id,auth_email,display_name,active,must_change_password,username").eq("username",username).maybeSingle();
+ const {data:existing,error:ae}=await admin.from("command_general_admins").select("user_id,auth_email,display_name,active,must_change_password,username,created_by").eq("username",username).maybeSingle();
  if(ae)throw ae;
- if(existing)return existing.active?existing:null;
+ if(existing){
+  if(!existing.active)return null;
+  if(existing.created_by===null){
+   const {data:current,error:ce}=await admin.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",existing.user_id).eq("active",true);
+   if(ce)throw ce;
+   const stillEligible=(current??[]).some(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===24));
+   if(!stillEligible){
+    const {error:off}=await admin.from("command_general_admins").update({active:false}).eq("user_id",existing.user_id);if(off)throw off;
+    const {error:log}=await admin.from("command_general_audit").insert({actor_id:existing.user_id,actor_username:existing.username,event:"automatic_command_access_revoked",target_user_id:existing.user_id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
+    return null;
+   }
+  }
+  return existing;
+ }
  const {data:profile,error:pe}=await admin.from("profiles").select("id,username,display_name,active,deleted").eq("username",username).maybeSingle();
  if(pe)throw pe;
  if(!profile||!profile.active||profile.deleted)return null;
@@ -18,8 +31,8 @@ async function resolveCommandAccess(username:string){
  if(!eligible)return null;
  const {data:authUser,error:ue}=await admin.auth.admin.getUserById(profile.id);
  if(ue||!authUser?.user?.email)throw ue??new Error("Account Auth senza email associata.");
- const row={user_id:profile.id,username:profile.username,display_name:profile.display_name,auth_email:authUser.user.email,active:true,must_change_password:false};
- const {data:created,error:ce}=await admin.from("command_general_admins").insert(row).select("user_id,auth_email,display_name,active,must_change_password,username").single();
+ const row={user_id:profile.id,username:profile.username,display_name:profile.display_name,auth_email:authUser.user.email,active:true,must_change_password:false,created_by:null};
+ const {data:created,error:ce}=await admin.from("command_general_admins").insert(row).select("user_id,auth_email,display_name,active,must_change_password,username,created_by").single();
  if(ce)throw ce;
  const {error:ae2}=await admin.from("command_general_audit").insert({actor_id:profile.id,actor_username:profile.username,event:"automatic_command_access_granted",target_user_id:profile.id,details:{reason:"highest_rank_reached",eligibility:"active highest-rank membership",service_branches:(memberships??[]).filter(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===24)).map(m=>m.service_branch)}});
  if(ae2){await admin.from("command_general_admins").delete().eq("user_id",profile.id);throw ae2;}
