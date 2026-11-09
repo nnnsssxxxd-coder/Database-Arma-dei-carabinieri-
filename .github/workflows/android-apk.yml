@@ -73,6 +73,21 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Generate Android launcher icons
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          mkdir -p www
+          rsvg-convert -w 512 -h 512 app-icon.svg -o www/app-icon-512.png
+          for spec in 'mdpi 48' 'hdpi 72' 'xhdpi 96' 'xxhdpi 144' 'xxxhdpi 192'; do
+            set -- $spec
+            density=$1
+            size=$2
+            mkdir -p "android/app/src/main/res/mipmap-$density"
+            rsvg-convert -w "$size" -h "$size" app-icon.svg -o "android/app/src/main/res/mipmap-$density/ic_launcher.png"
+            cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
+          done
+
       - name: Sync web app
         run: npx cap sync android
 
