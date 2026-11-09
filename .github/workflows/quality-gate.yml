@@ -70,5 +70,7 @@ jobs:
             test -s "$file"
             grep -q "account provisioning rollback" "$file"
             grep -q "field:" "$file"
+            grep -q "from(\"progress\").upsert" "$file"
+            grep -q "from(\"progress\").delete" "$file"
           done
-          echo "PASS server-side account provisioning, validation and rollback guards"
+          echo "PASS server-side account provisioning, progression initialization, validation and rollback guards"
