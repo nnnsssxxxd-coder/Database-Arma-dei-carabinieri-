@@ -1032,6 +1032,7 @@ async function loadProfile(u){
  try{render();showTab("home");refreshQuizCooldown();void loadDepartmentData();}catch(viewError){console.error("Dashboard:",viewError);let banner=$("dashboardLoadError");if(!banner){banner=document.createElement("div");banner.id="dashboardLoadError";banner.className="notice2 error";banner.style.margin="12px 0";$("appView").prepend(banner);}banner.textContent="Accesso effettuato. Alcuni contenuti non si sono caricati: aggiorna la pagina. La sessione resta attiva.";try{showTab("home");}catch(navError){console.error("Navigazione iniziale:",navError);}}
  logEvent("session_start");
 }
+let sessionRestorePromise=Promise.resolve();
 let loginInProgress=false;
 function isTransientAuthError(error){const m=String(error?.message||error||"");return !navigator.onLine||/failed to fetch|fetch failed|network|timeout|temporar|connection|load failed/i.test(m);}
 async function login(e){
@@ -1041,6 +1042,8 @@ async function login(e){
  if(!identifier||!password){msg.textContent="Inserisci nome utente o email e password.";msg.className="small error";return;}
  loginInProgress=true;btn.disabled=true;msg.className="small";msg.textContent="Verifica credenziali…";
  try{
+  await sessionRestorePromise;
+  if(user){msg.textContent="Sessione già attiva.";return;}
   let authUser=null;
   if(identifier.includes("@")){
    const result=await db.auth.signInWithPassword({email:identifier.toLowerCase(),password});
@@ -1194,7 +1197,7 @@ $("logoutBtn").addEventListener("click",logout);$("menuToggle").addEventListener
 $("loginForm").addEventListener("submit",login);
 initMusicAutostart();
 db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"&&user)setTimeout(()=>logout(),0);});
-(async()=>{try{
+sessionRestorePromise=(async()=>{try{
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session)return;
  const {data,error:verifyError}=await db.auth.getUser();if(verifyError)throw verifyError;if(!data?.user)throw new Error("Sessione non valida.");
  await loadProfile(data.user);
