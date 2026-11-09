@@ -1230,7 +1230,15 @@ footer{padding:14px 8px 22px;font-size:10px}
 <div id="centralWorkspace" class="panel hidden">
  <div class="central-head"><div><span class="central-level" id="centralAuthority">AUTORITÀ</span><h2 id="centralWelcome">Area riservata</h2><p class="muted small" id="centralSubhead"></p></div><button type="button" onclick="window.centralLogout()">Esci</button></div>
  <div class="central-nav"><button class="active" data-central-tab="users">Utenti</button><button data-central-tab="audit">Registro attività</button><button data-central-tab="rules">Gerarchia</button></div>
- <section id="centralUsers"><div class="row between"><h3>Elenco account</h3><button type="button" onclick="window.centralRefresh()">Aggiorna</button></div><input id="centralSearch" placeholder="Cerca per nome o username"><div id="centralUserList" class="small muted">Caricamento...</div></section>
+ <section id="centralUsers"><div class="row between"><h3>Elenco account</h3><button type="button" onclick="window.centralRefresh()">Aggiorna</button></div>
+<form id="centralCreateUser" class="rankrow" style="display:none;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0">
+<label>Username<input id="centralNewUsername" required minlength="3" maxlength="24" pattern="[a-z0-9_-]+" autocomplete="off"></label>
+<label>Nome visualizzato<input id="centralNewName" required maxlength="60"></label>
+<label>Corpo<select id="centralNewBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label>
+<label>Grado iniziale<input id="centralNewRank" type="number" min="0" max="23" value="0" required></label>
+<label>Password iniziale<input id="centralNewPassword" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
+<button class="primary" type="submit" id="centralCreateSubmit">Crea account</button><p id="centralCreateMsg" class="small" role="status" aria-live="polite"></p></form>
+<input id="centralSearch" placeholder="Cerca per nome o username"><div id="centralUserList" class="small muted">Caricamento...</div></section>
  <section id="centralAudit" class="hidden"><h3>Registro delle operazioni</h3><div id="centralAuditList" class="small muted">Caricamento...</div></section>
  <section id="centralRules" class="hidden"><h3>Catena di autorità</h3><ol><li><strong>Ministero</strong> – autorità superiore e decisione finale.</li><li><strong>Comando Generale</strong> – coordinamento dei Corpi, subordinato al Ministero.</li><li><strong>Carabinieri / Guardia di Finanza</strong> – amministrazione e attività del rispettivo Corpo.</li></ol><p class="muted small">Le autorizzazioni effettive sono verificate dal server, non dalla sola interfaccia.</p></section>
 </div>
@@ -1711,16 +1719,36 @@ if ("serviceWorker" in navigator) {
  window.centralRefresh=async()=>{
   $c("centralUserList").textContent="Caricamento account...";
   try{
-   const data=await invoke("list_users");
-   const q=($c("centralSearch").value||"").toLowerCase();
+   const data=await invoke("list_users"),q=($c("centralSearch").value||"").toLowerCase();
    const rows=(data.users||[]).filter(u=>(u.username+" "+u.display_name).toLowerCase().includes(q));
-   $c("centralUserList").innerHTML=rows.length?'<table class="central-table"><thead><tr><th>Utente</th><th>Ruolo</th><th>Stato</th><th>Corpi</th></tr></thead><tbody>'+rows.map(u=>'<tr><td><strong>'+String(u.display_name||u.username).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</strong><br><span class="muted">'+String(u.username||"")+'</span></td><td>'+String(u.role||"utente")+'</td><td>'+(u.active&&!u.deleted?"Attivo":"Sospeso")+'</td><td>'+((u.profile_memberships||[]).map(m=>m.service_branch==="finanza"?"GdF":"Carabinieri").join(", ")||"—")+'</td></tr>').join("")+'</tbody></table>':'Nessun account trovato.';
+   $c("centralUserList").innerHTML=rows.length?'<table class="central-table"><thead><tr><th>Utente</th><th>Stato</th><th>Appartenenze e grado</th><th>Gestione</th></tr></thead><tbody>'+rows.map(u=>{
+    const memberships=u.profile_memberships||[];
+    const branches=["carabinieri","finanza"].map(b=>{const m=memberships.find(x=>x.service_branch===b);return '<div class="tiny">'+(b==="finanza"?"GdF":"Carabinieri")+': '+(m?(m.active?"Attivo":"Sospeso"):"Non abilitato")+(m?' · grado '+m.initial_rank:'')+(authority==="ministry"?' <button type="button" data-ca="access" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-enabled="'+(!m||!m.active)+'">'+(m&&m.active?"Disabilita":"Abilita")+'</button>':'')+(m&&authority==="ministry"?' <button type="button" data-ca="grade" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-rank="'+m.initial_rank+'">Grado</button>':'')+'</div>';}).join("");
+    return '<tr><td><strong>'+safe(u.display_name||u.username)+'</strong><br><span class="muted">'+safe(u.username)+'</span><br><span class="tiny muted">'+safe(u.matricola||"Matricola non assegnata")+'</span></td><td>'+(u.active&&!u.deleted?"Attivo":"Sospeso")+(authority==="ministry"?' <button type="button" data-ca="account" data-user="'+safe(u.id)+'" data-enabled="'+(!u.active||u.deleted)+'">'+(u.active&&!u.deleted?"Sospendi":"Riattiva")+'</button>':'')+'</td><td>'+branches+'</td><td>'+(authority==="ministry"&&memberships.length?'<button type="button" data-ca="transfer" data-user="'+safe(u.id)+'">Trasferisci</button>':"—")+'</td></tr>';
+   }).join("")+'</tbody></table>':'Nessun account trovato.';
   }catch(e){$c("centralUserList").textContent=e.message||"Impossibile caricare gli account.";}
  };
  const refreshAudit=async()=>{
   $c("centralAuditList").textContent="Caricamento registro...";
   try{const data=await invoke("audit_list");$c("centralAuditList").innerHTML=(data.events||[]).map(e=>'<div class="rankrow"><div><strong>'+String(e.event||"Operazione")+'</strong><div class="muted tiny">'+String(e.actor_username||"")+' · '+new Date(e.created_at).toLocaleString("it-IT")+'</div></div><span class="muted tiny">'+String(e.target_user_id||"")+'</span></div>').join("")||"Nessuna operazione registrata.";}catch(e){$c("centralAuditList").textContent=e.message||"Registro non disponibile.";}
  };
+ $c("centralCreateUser").addEventListener("submit",async e=>{
+  e.preventDefault();if(authority!=="ministry")return;const btn=$c("centralCreateSubmit"),branch=$c("centralNewBranch").value;
+  btn.disabled=true;$c("centralCreateMsg").textContent="Creazione account...";
+  try{const d=await invoke("create_user",{username:$c("centralNewUsername").value.trim().toLowerCase(),display_name:$c("centralNewName").value.trim(),password:$c("centralNewPassword").value,service_branch:branch,initial_rank:Number($c("centralNewRank").value)});$c("centralCreateMsg").textContent="Creato: "+d.username+" · "+d.matricola;$c("centralCreateUser").reset();await window.centralRefresh();await refreshAudit();}
+  catch(err){$c("centralCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
+ });
+ $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
+ $c("centralUserList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-ca]");if(!b||authority!=="ministry")return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;b.disabled=true;
+  try{
+   if(action==="access"){const enabled=b.dataset.enabled==="true";await invoke("set_access",{user_id,service_branch:branch,enabled});}
+   if(action==="account"){const enable=b.dataset.enabled==="true";if(!confirm(enable?"Riattivare l'account?":"Sospendere l'account su entrambi i Corpi?"))return;await invoke(enable?"reactivate":"suspend",{user_id});}
+   if(action==="grade"){const rank=Number(prompt("Nuovo indice grado (0-"+(branch==="finanza"?24:23)+")",b.dataset.rank));if(!Number.isInteger(rank)||rank<0||rank>(branch==="finanza"?24:23))return;await invoke("change_grade",{user_id,service_branch:branch,initial_rank:rank});}
+   if(action==="transfer"){const from=prompt("Corpo attuale: scrivi carabinieri oppure finanza");if(!["carabinieri","finanza"].includes(from))return;const to=from==="carabinieri"?"finanza":"carabinieri",rank=Number(prompt("Indice grado nel nuovo Corpo (0-"+(to==="finanza"?24:23)+")","0"));if(!Number.isInteger(rank)||rank<0||rank>(to==="finanza"?24:23))return;await invoke("transfer",{user_id,from_branch:from,service_branch:to,initial_rank:rank});}
+   await window.centralRefresh();await refreshAudit();
+  }catch(err){alert(err.message||"Operazione non riuscita.");}finally{b.disabled=false;}
+ });
  $c("centralPasswordForm").addEventListener("submit",async e=>{
   e.preventDefault();const password=$c("centralNewPassword").value,confirm=$c("centralConfirmPassword").value,btn=$c("centralPasswordSave");
   if(password.length<12||password.length>72){$c("centralPasswordMsg").textContent="La password deve contenere da 12 a 72 caratteri.";return;}
@@ -1736,6 +1764,7 @@ if ("serviceWorker" in navigator) {
    await window.centralRefresh();await refreshAudit();
    $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
+    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");
   }catch(err){$c("centralPasswordMsg").textContent=err.message||"Cambio password non riuscito.";}
