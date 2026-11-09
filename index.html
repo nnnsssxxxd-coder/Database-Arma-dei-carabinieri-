@@ -1247,6 +1247,10 @@ footer{padding:14px 8px 22px;font-size:10px}
 <button class="primary" type="submit" id="centralCommandCreateSubmit">Crea amministratore</button>
 <p id="centralCommandCreateMsg" class="small" role="status" aria-live="polite">L'account dovrà cambiare password al primo accesso.</p>
 </form>
+<section id="centralCommandAdmins" class="hidden" style="margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px">
+ <div class="row between"><strong>Amministratori Comando Generale</strong><button type="button" id="centralRefreshCommandAdmins">Aggiorna amministratori</button></div>
+ <div id="centralCommandAdminList" class="small muted">Caricamento...</div>
+</section>
 <input id="centralSearch" placeholder="Cerca per nome o username"><div id="centralUserList" class="small muted">Caricamento...</div></section>
  <section id="centralAudit" class="hidden"><h3>Registro delle operazioni</h3><div id="centralAuditList" class="small muted">Caricamento...</div></section>
  <section id="centralRules" class="hidden"><h3>Catena di autorità</h3><ol><li><strong>Ministero</strong> – autorità superiore e decisione finale.</li><li><strong>Comando Generale</strong> – coordinamento dei Corpi, subordinato al Ministero.</li><li><strong>Carabinieri / Guardia di Finanza</strong> – amministrazione e attività del rispettivo Corpo.</li></ol><p class="muted small">Le autorizzazioni effettive sono verificate dal server, non dalla sola interfaccia.</p></section>
@@ -1742,21 +1746,40 @@ if ("serviceWorker" in navigator) {
    }).join("")+'</tbody></table>':'Nessun account trovato.';
   }catch(e){$c("centralUserList").textContent=e.message||"Impossibile caricare gli account.";}
  };
+ window.centralRefreshCommandAdmins=async()=>{
+  if(authority!=="ministry")return;
+  $c("centralCommandAdminList").textContent="Caricamento amministratori...";
+  try{
+   const data=await invoke("list_command_admins");
+   const rows=data.admins||[];
+   $c("centralCommandAdminList").innerHTML=rows.length?rows.map(a=>'<div class="rankrow"><div><strong>'+safe(a.display_name||a.username)+'</strong><div class="tiny muted">@'+safe(a.username)+' · '+(a.must_change_password?"Cambio password richiesto":"Password aggiornata")+'</div></div><div class="actions"><span class="badge">'+(a.active?"Attivo":"Sospeso")+'</span><button type="button" data-cga="toggle" data-user="'+safe(a.user_id)+'" data-enabled="'+(!a.active)+'">'+(a.active?"Sospendi":"Riattiva")+'</button><button type="button" data-cga="reset" data-user="'+safe(a.user_id)+'">Reimposta password</button></div></div>').join(""):"Nessun amministratore del Comando Generale registrato.";
+  }catch(e){$c("centralCommandAdminList").textContent=e.message||"Elenco amministratori non disponibile.";}
+ };
  const refreshAudit=async()=>{
   $c("centralAuditList").textContent="Caricamento registro...";
   try{const data=await invoke("audit_list");$c("centralAuditList").innerHTML=(data.events||[]).map(e=>'<div class="rankrow"><div><strong>'+String(e.event||"Operazione")+'</strong><div class="muted tiny">'+String(e.actor_username||"")+' · '+new Date(e.created_at).toLocaleString("it-IT")+'</div></div><span class="muted tiny">'+String(e.target_user_id||"")+'</span></div>').join("")||"Nessuna operazione registrata.";}catch(e){$c("centralAuditList").textContent=e.message||"Registro non disponibile.";}
  };
+ $c("centralCommandAdminList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-cga]");if(!b||authority!=="ministry")return;
+  const action=b.dataset.cga,user_id=b.dataset.user;b.disabled=true;
+  try{
+   if(action==="toggle"){const enabled=b.dataset.enabled==="true";if(!confirm(enabled?"Riattivare l'amministratore del Comando Generale?":"Sospendere l'amministratore del Comando Generale?"))return;await invoke("set_command_admin_access",{user_id,enabled});}
+   if(action==="reset"){const password=prompt("Nuova password temporanea (almeno 12 caratteri):");if(password===null)return;if(password.length<12||password.length>72)throw new Error("La password deve contenere 12-72 caratteri.");await invoke("reset_command_admin_password",{user_id,password});}
+   await window.centralRefreshCommandAdmins();await refreshAudit();
+  }catch(err){alert(err.message||"Operazione non riuscita.");}finally{b.disabled=false;}
+ });
+ $c("centralRefreshCommandAdmins").addEventListener("click",window.centralRefreshCommandAdmins);
  $c("centralCreateUser").addEventListener("submit",async e=>{
   e.preventDefault();if(!authority)return;const btn=$c("centralCreateSubmit"),branch=$c("centralNewBranch").value;
   btn.disabled=true;$c("centralCreateMsg").textContent="Creazione account...";
-  try{const d=await invoke("create_user",{username:$c("centralNewUsername").value.trim().toLowerCase(),display_name:$c("centralNewName").value.trim(),password:$c("centralNewPassword").value,service_branch:branch,initial_rank:Number($c("centralNewRank").value)});$c("centralCreateMsg").textContent="Creato: "+d.username+" · "+d.matricola;$c("centralCreateUser").reset();await window.centralRefresh();await refreshAudit();}
+  try{const d=await invoke("create_user",{username:$c("centralNewUsername").value.trim().toLowerCase(),display_name:$c("centralNewName").value.trim(),password:$c("centralNewPassword").value,service_branch:branch,initial_rank:Number($c("centralNewRank").value)});$c("centralCreateMsg").textContent="Creato: "+d.username+" · "+d.matricola;$c("centralCreateUser").reset();await window.centralRefresh();await refreshAudit();if(authority==="ministry"){ $c("centralCommandAdmins").classList.remove("hidden"); await window.centralRefreshCommandAdmins(); } else { $c("centralCommandAdmins").classList.add("hidden"); }}
   catch(err){$c("centralCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
  });
 
  $c("centralCreateCommandAdmin").addEventListener("submit",async e=>{
   e.preventDefault();if(authority!=="ministry")return;const btn=$c("centralCommandCreateSubmit");
   btn.disabled=true;$c("centralCommandCreateMsg").textContent="Creazione amministratore...";
-  try{const d=await invoke("create_command_admin",{username:$c("centralCommandUsername").value.trim().toLowerCase(),display_name:$c("centralCommandName").value.trim(),password:$c("centralCommandPassword").value});$c("centralCommandCreateMsg").textContent="Creato: "+d.username+" · cambio password obbligatorio al primo accesso.";$c("centralCreateCommandAdmin").reset();await refreshAudit();}
+  try{const d=await invoke("create_command_admin",{username:$c("centralCommandUsername").value.trim().toLowerCase(),display_name:$c("centralCommandName").value.trim(),password:$c("centralCommandPassword").value});$c("centralCommandCreateMsg").textContent="Creato: "+d.username+" · cambio password obbligatorio al primo accesso.";$c("centralCreateCommandAdmin").reset();await refreshAudit();await window.centralRefreshCommandAdmins();}
   catch(err){$c("centralCommandCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
  });
  $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
