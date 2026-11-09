@@ -58,6 +58,12 @@ Deno.serve(async(req:Request)=>{
    }catch(e){await db.from("command_general_admins").delete().eq("user_id",created.user.id);await db.auth.admin.deleteUser(created.user.id);throw e;}
    return out(req,{ok:true,username,display_name:display,must_change_password:true});
   }
+  if(action==="change_password"){
+   const password=String(b.password??"");if(password.length<12||password.length>72)return out(req,{error:"La nuova password deve contenere 12-72 caratteri."},400);
+   const {error}=await db.auth.admin.updateUserById(user.id,{password});if(error)throw error;
+   const {error:up}=await db.from("ministry_admins").update({must_change_password:false}).eq("user_id",user.id);if(up)throw up;
+   await audit("ministry_password_changed",user.id,{});return out(req,{ok:true});
+  }
   const target=String(b.user_id??"");if(!/^[0-9a-f-]{36}$/i.test(target)||target===user.id)return out(req,{error:"Utente non valido."},400);
   const {data:profile,error:pe}=await db.from("profiles").select("id,username,display_name,active,deleted,matricola,initial_rank").eq("id",target).maybeSingle();if(pe||!profile)return out(req,{error:"Utente non trovato."},404);
   if(action==="change_grade"||action==="set_access"||action==="transfer"){
@@ -97,12 +103,6 @@ Deno.serve(async(req:Request)=>{
   if(action==="suspend"||action==="reactivate"){
    const {error}=await db.from("profiles").update({active:action==="reactivate",updated_at:new Date().toISOString()}).eq("id",target);if(error)throw error;
    await audit(action==="suspend"?"account_suspended":"account_reactivated",target,{username:profile.username});return out(req,{ok:true});
-  }
-  if(action==="change_password"){
-   const password=String(b.password??"");if(password.length<12||password.length>72)return out(req,{error:"La nuova password deve contenere 12-72 caratteri."},400);
-   const {error}=await db.auth.admin.updateUserById(user.id,{password});if(error)throw error;
-   const {error:up}=await db.from("ministry_admins").update({must_change_password:false}).eq("user_id",user.id);if(up)throw up;
-   await audit("ministry_password_changed",user.id,{});return out(req,{ok:true});
   }
   return out(req,{error:"Azione non riconosciuta."},400);
  }catch(e){console.error("ministry-admin-action",e);return out(req,{error:"Operazione non riuscita. Nessuna modifica confermata."},500);}
