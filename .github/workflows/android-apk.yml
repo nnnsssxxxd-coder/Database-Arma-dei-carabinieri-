@@ -12,49 +12,95 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.json'
+      - 'supabase/**'
       - '.github/workflows/android-apk.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
+
+      - name: Validate app metadata
+        run: |
+          node -e "const fs=require('fs'); const p=require('./package.json'); const c=require('./capacitor.config.json'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!p.dependencies?.['@capacitor/android'] || !c.appId || !c.appName || c.webDir!=='www' || !m.name || !m.start_url) throw new Error('Invalid app metadata'); console.log('App ID:',c.appId); console.log('Capacitor:',p.dependencies['@capacitor/android']);"
+
       - name: Prepare app web assets
         run: |
           mkdir -p www
           cp index.html manifest.webmanifest app-icon.svg service-worker.js www/
+          test -s www/index.html
+          test -s www/manifest.webmanifest
+          test -s www/service-worker.js
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Verify dependency tree
+        run: npm ls --depth=0
+
       - name: Generate Android project
         run: npx cap add android
+
       - name: Sync web app
         run: npx cap sync android
+
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
-      - name: Verify APK
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK signature and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n1)"
+          test -x "$APKSIGNER"
+          test -x "$AAPT"
+          "$APKSIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='it.databaseforzeordine.app'"
+          mkdir -p build-output
+          cp "$APK" build-output/Simulatore-Carabinieri-debug.apk
+          sha256sum build-output/Simulatore-Carabinieri-debug.apk | tee build-output/SHA256SUMS.txt
+          {
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Build: ${GITHUB_RUN_NUMBER}"
+            echo "Type: debug APK (not a production-signed release)"
+            echo "Application ID: it.databaseforzeordine.app"
+          } > build-output/BUILD-INFO.txt
+
+      - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: Database-Forze-Ordine-Android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Simulatore-Carabinieri-Android-debug
+          path: build-output/*
           if-no-files-found: error
           retention-days: 30
