@@ -1716,6 +1716,7 @@ if ("serviceWorker" in navigator) {
   const {data,error}=await db.functions.invoke(fn,{body:{action,...extra}});
   if(error)throw error;if(!data?.ok)throw new Error(data?.error||"Operazione non riuscita");return data;
  };
+ const safe=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
  window.centralRefresh=async()=>{
   $c("centralUserList").textContent="Caricamento account...";
   try{
@@ -1765,6 +1766,7 @@ if ("serviceWorker" in navigator) {
    $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
     $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");
   }catch(err){$c("centralPasswordMsg").textContent=err.message||"Cambio password non riuscito.";}
@@ -1779,6 +1781,7 @@ if ("serviceWorker" in navigator) {
    const {error:se}=await db.auth.setSession(data.session);if(se)throw se;centralSession=data;
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");$c("centralWelcome").textContent=data.identity?.display_name||data.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
+    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    if(data.identity?.must_change_password||data.ministry?.must_change_password){
     $c("centralWorkspace").classList.add("hidden");$c("centralLoginPanel").classList.remove("hidden");
