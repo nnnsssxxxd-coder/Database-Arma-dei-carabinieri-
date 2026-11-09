@@ -35,6 +35,10 @@ jobs:
           java-version: '21'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Prepare app web assets
+        run: |
+          mkdir -p www
+          cp index.html manifest.webmanifest app-icon.svg service-worker.js www/
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Generate Android project
