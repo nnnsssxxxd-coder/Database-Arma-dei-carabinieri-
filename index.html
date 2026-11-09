@@ -869,7 +869,19 @@ body{touch-action:pan-y pinch-zoom}
 \n/* Navigazione a menu: il pannello resta chiuso finché l’utente non lo apre. */\n#menuToggle:not(.hidden){display:inline-flex!important;align-items:center;gap:9px}\n#menuToggle.hidden{display:none!important}\n#tabs{display:none!important;position:relative!important;top:auto!important;max-height:min(70dvh,560px)!important;overflow-y:auto!important;overflow-x:hidden!important;flex-direction:column!important;align-items:stretch!important;margin:0 0 14px!important;padding:8px!important}\n#tabs.open{display:flex!important}\n#tabs button{width:100%!important;min-width:0!important;flex:0 0 auto!important;justify-content:flex-start!important;text-align:left!important}\nbody.inner-page #tabs{display:none!important}\nbody.inner-page #menuToggle{display:none!important}\n.page-toolbar:not(.hidden){display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:10px 0;border-bottom:1px solid #343b43;color:#f2f4f6;font-size:.78rem;font-weight:800;letter-spacing:.12em}\n@media(min-width:821px){#tabs{max-width:380px;box-shadow:0 14px 30px #0006}}\n/* Selezione iniziale dei due ambienti */
 .service-choice{max-width:1000px;margin:0 auto}.service-choice-intro{text-align:center;margin:0 auto 22px;max-width:650px}.service-choice-intro h2{font-size:clamp(1.6rem,4vw,2.3rem);margin:14px 0 8px}.service-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.service-choice-card{min-height:290px;padding:26px;border:1px solid #3b4651;border-radius:18px;background:linear-gradient(145deg,#18232d,#10151b);display:flex;flex-direction:column;align-items:flex-start;box-shadow:0 18px 42px #0006}.service-choice-card h3{font-size:1.2rem;letter-spacing:.1em;margin:12px 0 5px}.service-choice-card p{color:#b7c0c9;line-height:1.6;flex:1}.service-choice-card button{width:100%;margin-top:14px}.service-choice-emblem{width:66px;height:66px;border-radius:16px;display:grid;place-items:center;background:#202b35;border:1px solid #8a744e;color:#f0d69a;font-size:1.15rem;font-weight:900}.finanza-choice{background:linear-gradient(145deg,#18251f,#101713);border-color:#46634f}.finanza-choice .service-choice-emblem{background:#1b3023;border-color:#8aa18e;color:#d9eadc}
 @media(max-width:650px){.service-choice-grid{grid-template-columns:1fr}.service-choice-card{min-height:230px;padding:20px}.service-choice-intro{margin-bottom:16px}}
-</style></head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
+</style>
+<style id="force-world-themes">
+:root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
+:root[data-service="finanza"]{--gold:#d5b45b;--gold2:#f1d88a;--line:#526348;--surface:#111a12;--surface2:#1b2a1b;--bg:#071008;color-scheme:dark}
+:root[data-service="finanza"] body{background:radial-gradient(ellipse at 50% -20%,#24432a 0%,#071008 62%)}
+:root[data-service="finanza"] header{background:#0c1a10ee;border-bottom-color:#d5b45b}
+:root[data-service="finanza"] .panel{background:linear-gradient(150deg,#17251a,#0d170f);border-color:#526348}
+:root[data-service="finanza"] .crest{border-color:#d5b45b;color:#f1d88a}
+:root[data-service="finanza"] .service-choice-card{border-color:#526348}
+:root[data-service="finanza"] .service-choice-card.finanza-choice{border-color:#d5b45b;box-shadow:0 0 22px #d5b45b22}
+:root[data-service="carabinieri"] .service-choice-card.carabinieri-choice{border-color:#d71930;box-shadow:0 0 22px #d7193022}
+</style>
+</head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
 <header><div class="head"><div class="brand"><div class="crest" role="img" aria-label="Emblema grafico dell’area personale"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/><path d="M32 32v-5h5v5" fill="none" stroke="#171b20" stroke-width="3"/></svg></div><div><h1 id="brandTitle">SIMULATORE</h1><p>AREA PERSONALE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <div class="project-disclaimer compact-disclaimer" role="note"><strong>NOTA</strong><span>Progetto indipendente, non sito ufficiale dell’Arma. Non conferisce qualifiche o incarichi.</span></div><main class="wrap">
 
@@ -954,6 +966,14 @@ void retireLegacyPushWorker();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function applyServiceBranding(branch){
  const finanza=branch==="finanza",name=finanza?"GUARDIA DI FINANZA":"ARMA DEI CARABINIERI";
+ document.documentElement.dataset.service=branch;
+ document.documentElement.style.setProperty("--gold",finanza?"#d5b45b":"#d71930");
+ document.documentElement.style.setProperty("--gold2",finanza?"#f1d88a":"#ff5360");
+ document.documentElement.style.setProperty("--line",finanza?"#526348":"#3a3a3a");
+ document.documentElement.style.setProperty("--surface",finanza?"#111a12":"#111111");
+ document.documentElement.style.setProperty("--surface2",finanza?"#1b2a1b":"#1a1a1a");
+ document.documentElement.style.setProperty("--bg",finanza?"#071008":"#050505");
+ document.querySelector('meta[name="theme-color"]')?.setAttribute("content",finanza?"#173b22":"#8f1425");
  RANKS=finanza?FINANZA_RANKS:CARABINIERI_RANKS;
  $("brandTitle").textContent=name;document.title=finanza?"Guardia di Finanza · Area personale":"Arma dei Carabinieri · Area personale";
  $("selectedServiceBadge").textContent=finanza?"GUARDIA DI FINANZA · AREA RISERVATA":"CARABINIERI · AREA RISERVATA";
@@ -1066,13 +1086,15 @@ async function loadProfile(u){
  if(p.error)throw new Error("Profilo non leggibile: "+p.error.message);
  const nextProfile=p.data;
  if(!nextProfile||!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
- if(!["carabinieri","finanza"].includes(nextProfile.service_branch))throw new Error("Corpo di appartenenza non configurato.");
- if(selectedBranch&&selectedBranch!==nextProfile.service_branch)throw new Error("Questo account appartiene a un altro Corpo. Torna alla scelta iniziale.");
- selectedBranch=nextProfile.service_branch;applyServiceBranding(selectedBranch);
+ if(!["carabinieri","finanza"].includes(selectedBranch))throw new Error("Seleziona il Corpo prima dell'accesso.");
+ const membership=await db.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",u.id).eq("service_branch",selectedBranch).maybeSingle();
+ if(membership.error||!membership.data)throw new Error("Questo account non è abilitato per il Corpo selezionato.");
+ nextProfile.role=membership.data.role;nextProfile.initial_rank=membership.data.initial_rank;nextProfile.matricola=membership.data.matricola||nextProfile.matricola;nextProfile.service_branch=selectedBranch;
+ applyServiceBranding(selectedBranch);
  profile=nextProfile;user=u;departmentMembership=null;renderDepartmentIdentity();
- $("newBranch").value=profile.service_branch;$("newBranch").disabled=profile.role!=="admin";
+ $("newBranch").value=selectedBranch;$("newBranch").disabled=profile.role!=="admin";
  progress={rank:profile.initial_rank||0,exp:0,quizCount:0,correct:0,streak:0,history:[]};
- const g=await db.from("progress").select("payload").eq("user_id",u.id).maybeSingle();
+ const g=await db.from("progress").select("payload").eq("user_id",u.id).eq("service_branch",selectedBranch).maybeSingle();
  const progressSynced=!g.error;
  if(!g.error&&g.data?.payload)progress={...progress,...g.data.payload};
  else if(g.error)console.warn("Progressi non caricati:",g.error.message);
@@ -1238,7 +1260,7 @@ $("departmentAnswerList")?.addEventListener("dblclick",e=>{const b=e.target.clos
 $("departmentConfirmAnswer")?.addEventListener("click",nextDepartmentQuestion);
 
 async function createUser(){const username=$("newUsername").value.trim().toLowerCase(),display_name=$("newName").value.trim(),password=$("newPassword").value,initial_rank=Number($("newRank").value),service_branch=$("newBranch").value;if(!/^[a-z0-9_-]{3,24}$/.test(username)){ $("adminMsg").textContent="Username non valido: usa 3-24 caratteri, lettere minuscole, numeri, _ o -.";return;}if(display_name.length<1||display_name.length>60){$("adminMsg").textContent="Il nome deve contenere da 1 a 60 caratteri.";return;}if(password.length<12||password.length>72){$("adminMsg").textContent="La password deve contenere da 12 a 72 caratteri.";return;}if(!Number.isInteger(initial_rank)||initial_rank<0||initial_rank>(service_branch==="finanza"?22:17)){$("adminMsg").textContent="Grado iniziale non valido.";return;}const body={username,display_name,password,initial_rank,service_branch};$("adminMsg").textContent="Creazione account in corso…";$("createUser").disabled=true;try{const {data,error}=await db.functions.invoke("admin-create-user",{body});if(error||!data?.ok){$("adminMsg").textContent=await functionError(error,data?.error||"Creazione non riuscita.");return;}$("adminMsg").textContent="Account creato: "+data.username+" · Matricola "+data.matricola;$("newUsername").value="";$("newName").value="";$("newPassword").value="";await loadUsers();}catch(e){console.error("createUser",e);$("adminMsg").textContent="Connessione non disponibile. Verifica l'elenco prima di riprovare.";}finally{$("createUser").disabled=false;}}
-async function loadUsers(){let query=db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").order("created_at",{ascending:false});if(profile?.role!=="admin")query=query.eq("service_branch",profile?.service_branch||"carabinieri");const {data,error}=await query;if(error){$("userList").textContent="Errore nel caricamento degli account.";return;}$("userList").innerHTML=(data||[]).map(p=>'<div class="userrow"><div><strong>'+esc(p.display_name)+'</strong> · '+esc(p.username)+'<div class="tiny muted">'+(p.service_branch==="finanza"?"Guardia di Finanza":"Carabinieri")+" · "+esc(p.matricola||"—")+' · '+esc((p.service_branch==="finanza"?FINANZA_RANKS:CARABINIERI_RANKS)[p.initial_rank]||"")+' · '+(p.deleted?"Archiviato":p.active?"Attivo":"Sospeso")+'</div></div><div class="actions">'+(p.role!=="admin"&&p.id!==user.id?'<button data-user="'+p.id+'" data-action="'+(p.active&&!p.deleted?"suspend":"reactivate")+'">'+(p.active&&!p.deleted?"Sospendi":"Riattiva")+'</button><button data-user="'+p.id+'" data-action="reset_password">Reimposta password</button><button data-user="'+p.id+'" data-action="remove">Archivia</button>':"")+'</div></div>').join("")||'<div class="empty">Nessun account creato.</div>';}
+async function loadUsers(){let query=db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").order("created_at",{ascending:false});if(profile?.role!=="admin")query=query.eq("service_branch",selectedBranch||"carabinieri");const {data,error}=await query;if(error){$("userList").textContent="Errore nel caricamento degli account.";return;}$("userList").innerHTML=(data||[]).map(p=>'<div class="userrow"><div><strong>'+esc(p.display_name)+'</strong> · '+esc(p.username)+'<div class="tiny muted">'+(p.service_branch==="finanza"?"Guardia di Finanza":"Carabinieri")+" · "+esc(p.matricola||"—")+' · '+esc((p.service_branch==="finanza"?FINANZA_RANKS:CARABINIERI_RANKS)[p.initial_rank]||"")+' · '+(p.deleted?"Archiviato":p.active?"Attivo":"Sospeso")+'</div></div><div class="actions">'+(p.role!=="admin"&&p.id!==user.id?'<button data-user="'+p.id+'" data-action="'+(p.active&&!p.deleted?"suspend":"reactivate")+'">'+(p.active&&!p.deleted?"Sospendi":"Riattiva")+'</button><button data-user="'+p.id+'" data-action="reset_password">Reimposta password</button><button data-user="'+p.id+'" data-action="remove">Archivia</button>':"")+'</div></div>').join("")||'<div class="empty">Nessun account creato.</div>';}
 async function userAction(id,action){const body={user_id:id,action};if(action==="remove"&&!confirm("Archiviare questo account? L’accesso verrà disattivato."))return;if(action==="reset_password"){const p=prompt("Inserisci la nuova password (almeno 12 caratteri):");if(p===null)return;if(p.length<12||p.length>72){$("adminMsg").textContent="La password deve avere da 12 a 72 caratteri.";return;}body.password=p;}try{$("adminMsg").textContent="Operazione in corso…";const {data,error}=await db.functions.invoke("admin-user-action",{body});if(error||!data?.ok){$("adminMsg").textContent=await functionError(error,data?.error||"Operazione non riuscita.");return;}$("adminMsg").textContent="Operazione completata.";await loadUsers();}catch(e){console.error("userAction",e);$("adminMsg").textContent=e?.message||"Connessione non disponibile. Riprova.";} }
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
 $("backButton").addEventListener("click",()=>{showTab("home");$("menuToggle").classList.remove("hidden");});
