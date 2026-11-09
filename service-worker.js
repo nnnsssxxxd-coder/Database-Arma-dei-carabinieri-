@@ -1,5 +1,5 @@
-const CACHE_NAME = "database-forze-ordine-v10";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg"];
+const CACHE_NAME = "database-forze-ordine-v11";
+const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-hero.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -37,7 +37,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.endsWith("/manifest.webmanifest") || url.pathname.endsWith("/app-icon.svg")) {
+  if (url.pathname.endsWith("/manifest.webmanifest") || (url.pathname.endsWith("/app-icon.svg") || url.pathname.endsWith("/app-hero.svg"))) {
     event.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(response => {
         if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
