@@ -1203,4 +1203,13 @@ db.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT"&&user)setTimeout(()=
  try{await db.auth.signOut({scope:"local"});}catch(_){}
  user=null;profile=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("loginMsg").textContent=msg||"Sessione scaduta. Accedi di nuovo.";
  }})();
-</script></body></html>
+</script><script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(error => {
+      console.warn("Registrazione PWA non riuscita:", error);
+    });
+  });
+}
+</script>
+</body></html>
