@@ -1238,6 +1238,15 @@ footer{padding:14px 8px 22px;font-size:10px}
 <label>Grado iniziale<input id="centralNewRank" type="number" min="0" max="23" value="0" required></label>
 <label>Password iniziale<input id="centralNewPassword" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
 <button class="primary" type="submit" id="centralCreateSubmit">Crea account</button><p id="centralCreateMsg" class="small" role="status" aria-live="polite"></p></form>
+
+<form id="centralCreateCommandAdmin" class="rankrow" style="display:none;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px">
+<strong style="width:100%">Crea amministratore del Comando Generale</strong>
+<label>Username<input id="centralCommandUsername" required minlength="3" maxlength="24" pattern="[a-z0-9_-]+" autocomplete="off"></label>
+<label>Nome visualizzato<input id="centralCommandName" required maxlength="60"></label>
+<label>Password temporanea<input id="centralCommandPassword" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
+<button class="primary" type="submit" id="centralCommandCreateSubmit">Crea amministratore</button>
+<p id="centralCommandCreateMsg" class="small" role="status" aria-live="polite">L'account dovrà cambiare password al primo accesso.</p>
+</form>
 <input id="centralSearch" placeholder="Cerca per nome o username"><div id="centralUserList" class="small muted">Caricamento...</div></section>
  <section id="centralAudit" class="hidden"><h3>Registro delle operazioni</h3><div id="centralAuditList" class="small muted">Caricamento...</div></section>
  <section id="centralRules" class="hidden"><h3>Catena di autorità</h3><ol><li><strong>Ministero</strong> – autorità superiore e decisione finale.</li><li><strong>Comando Generale</strong> – coordinamento dei Corpi, subordinato al Ministero.</li><li><strong>Carabinieri / Guardia di Finanza</strong> – amministrazione e attività del rispettivo Corpo.</li></ol><p class="muted small">Le autorizzazioni effettive sono verificate dal server, non dalla sola interfaccia.</p></section>
@@ -1743,6 +1752,13 @@ if ("serviceWorker" in navigator) {
   try{const d=await invoke("create_user",{username:$c("centralNewUsername").value.trim().toLowerCase(),display_name:$c("centralNewName").value.trim(),password:$c("centralNewPassword").value,service_branch:branch,initial_rank:Number($c("centralNewRank").value)});$c("centralCreateMsg").textContent="Creato: "+d.username+" · "+d.matricola;$c("centralCreateUser").reset();await window.centralRefresh();await refreshAudit();}
   catch(err){$c("centralCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
  });
+
+ $c("centralCreateCommandAdmin").addEventListener("submit",async e=>{
+  e.preventDefault();if(authority!=="ministry")return;const btn=$c("centralCommandCreateSubmit");
+  btn.disabled=true;$c("centralCommandCreateMsg").textContent="Creazione amministratore...";
+  try{const d=await invoke("create_command_admin",{username:$c("centralCommandUsername").value.trim().toLowerCase(),display_name:$c("centralCommandName").value.trim(),password:$c("centralCommandPassword").value});$c("centralCommandCreateMsg").textContent="Creato: "+d.username+" · cambio password obbligatorio al primo accesso.";$c("centralCreateCommandAdmin").reset();await refreshAudit();}
+  catch(err){$c("centralCommandCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
+ });
  $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
  $c("centralUserList").addEventListener("click",async e=>{
   const b=e.target.closest("[data-ca]");if(!b||!authority)return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;if(authority!=="ministry"&&(action==="account"||action==="transfer"))return;b.disabled=true;
@@ -1770,7 +1786,9 @@ if ("serviceWorker" in navigator) {
    $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
     $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+   $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
     $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+   $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");
   }catch(err){$c("centralPasswordMsg").textContent=err.message||"Cambio password non riuscito.";}
@@ -1786,6 +1804,7 @@ if ("serviceWorker" in navigator) {
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");$c("centralWelcome").textContent=data.identity?.display_name||data.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
     $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+   $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    if(data.identity?.must_change_password||data.ministry?.must_change_password){
     $c("centralWorkspace").classList.add("hidden");$c("centralLoginPanel").classList.remove("hidden");
