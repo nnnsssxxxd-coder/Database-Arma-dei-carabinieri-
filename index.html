@@ -1718,7 +1718,7 @@ if ("serviceWorker" in navigator) {
  const invoke=async(action,extra={})=>{
   const fn=authority==="ministry"?"ministry-admin-action":"command-general-action";
   const {data,error}=await db.functions.invoke(fn,{body:{action,...extra}});
-  if(error)throw error;if(!data?.ok)throw new Error(data?.error||"Operazione non riuscita");return data;
+  if(error){let detail="";try{detail=(await error.context?.json())?.error||"";}catch(_){}throw new Error(detail||error.message||"Operazione non riuscita");}if(!data?.ok)throw new Error(data?.error||"Operazione non riuscita");return data;
  };
  const safe=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
  window.centralRefresh=async()=>{
@@ -1781,7 +1781,7 @@ if ("serviceWorker" in navigator) {
   try{
    const fn=authority==="ministry"?"ministry-login":"command-general-login";
    const {data,error}=await db.functions.invoke(fn,{body:{username:$c("centralUsername").value.trim().toLowerCase(),password:$c("centralPassword").value}});
-   if(error)throw error;if(!data?.session)throw new Error(data?.error||"Credenziali non valide.");
+   if(error){let detail="";try{detail=(await error.context?.json())?.error||"";}catch(_){}throw new Error(detail||error.message||"Accesso non riuscito.");}if(!data?.session)throw new Error(data?.error||"Credenziali non valide.");
    const {error:se}=await db.auth.setSession(data.session);if(se)throw se;centralSession=data;
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");$c("centralWelcome").textContent=data.identity?.display_name||data.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
