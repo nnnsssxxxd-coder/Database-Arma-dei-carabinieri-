@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101923">
+<title>Carabinieri Simulator 3D · Espansione indipendente</title>
+<style>
+:root{color-scheme:dark;--bg:#08111a;--panel:#101d29;--line:#304456;--gold:#dfbd78;--red:#a72d43;--text:#edf2f6;--muted:#9eabb7;--green:#65c79a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,system-ui,Arial;color:var(--text)}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#182838;color:var(--text);border-radius:10px;padding:11px 15px;font-weight:750}button:disabled{opacity:.45;cursor:not-allowed}button.primary{background:linear-gradient(135deg,#b78b48,#e1c17e);color:#121820;border:0}button.ghost{background:#0b1620}input{width:100%;padding:13px;background:#0a1520;color:white;border:1px solid var(--line);border-radius:9px;margin:5px 0 12px}label{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+#world{position:fixed;inset:0}#world canvas{display:block;width:100%;height:100%}
+#topbar{position:fixed;left:14px;right:14px;top:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}#topbar>*{pointer-events:auto}.brand{background:#08131ddf;border:1px solid #344a5c;border-radius:12px;padding:10px 13px;backdrop-filter:blur(12px)}.brand strong{display:block;letter-spacing:.12em;color:var(--gold);font-size:12px}.brand span{font-size:12px;color:#d8e1e8}.statstrip{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.stat{background:#08131ddd;border:1px solid #344a5c;border-radius:10px;padding:9px 12px;min-width:90px;backdrop-filter:blur(12px)}.stat small{display:block;color:var(--muted);font-size:10px;letter-spacing:.1em}.stat b{font-size:14px}
+#leftpanel{position:fixed;left:14px;top:94px;bottom:14px;width:min(340px,calc(100vw - 28px));display:flex;flex-direction:column;gap:10px;pointer-events:none}#leftpanel>*{pointer-events:auto}.panel{background:#0b1723eF;border:1px solid #354b5e;border-radius:14px;padding:14px;backdrop-filter:blur(14px);box-shadow:0 12px 40px #0005}.panel h2,.panel h3{margin:0 0 8px}.eyebrow{font-size:10px;letter-spacing:.16em;color:var(--gold);font-weight:900}.identity{display:flex;justify-content:space-between;gap:12px;align-items:center}.identity strong{font-size:19px}.muted{color:var(--muted);font-size:13px}.progress{height:7px;border-radius:20px;background:#233343;overflow:hidden;margin:8px 0}.progress span{display:block;height:100%;background:linear-gradient(90deg,#b78b48,#e5ca8c);width:0}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.meta-grid div{background:#132333;border-radius:9px;padding:9px}.meta-grid small{display:block;color:var(--muted);font-size:10px}.meta-grid b{font-size:13px}
+.mission-list{overflow:auto;display:grid;gap:7px}.mission{border:1px solid #2b4052;border-radius:10px;padding:10px;background:#101e2b}.mission.active{border-color:var(--gold);background:#30291d}.mission.done{opacity:.55}.mission strong{display:block;font-size:13px}.mission small{color:var(--muted)}.mission button{margin-top:8px;width:100%;padding:8px;font-size:12px}
+#missionpanel{margin-top:auto}#missionHint{color:var(--gold);font-size:13px;min-height:34px;line-height:1.4}
+#bottomhint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:10px 16px;border:1px solid #4c6172;border-radius:30px;background:#07121cdd;color:#dce5eb;font-size:13px;text-align:center;max-width:calc(100% - 30px);pointer-events:none}
+#interact{position:fixed;right:22px;bottom:25px;min-width:150px;padding:16px 18px;box-shadow:0 8px 28px #0008}
+#touch{display:none;position:fixed;left:20px;bottom:20px;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px}.touchkey{border-radius:50%;background:#0a1824c9;border:1px solid #7890a3aa;touch-action:none;font-size:20px;padding:0}.touchkey[data-dir=up]{grid-column:2}.touchkey[data-dir=left]{grid-column:1;grid-row:2}.touchkey[data-dir=down]{grid-column:2;grid-row:2}.touchkey[data-dir=right]{grid-column:3;grid-row:2}
+#login{position:fixed;inset:0;display:grid;place-items:center;padding:18px;background:radial-gradient(ellipse at 50% 20%,#24394c,#08111a 65%);z-index:5}.loginbox{width:min(420px,100%);background:#0d1b28;border:1px solid #52677a;border-radius:18px;padding:25px;box-shadow:0 25px 90px #0009}.loginbox h1{font-size:23px;letter-spacing:.1em;color:var(--gold);margin:8px 0}.loginbox p{color:var(--muted);line-height:1.5}.warning{border-left:3px solid var(--gold);padding:9px 12px;background:#211e18;color:#d8c8a5;font-size:12px;margin-top:12px}.error{color:#ff8793;min-height:22px;font-size:13px}#logout{padding:8px 10px;font-size:11px}
+#toast{position:fixed;top:82px;left:50%;transform:translateX(-50%);background:#0c1c29;border:1px solid var(--gold);border-radius:10px;padding:11px 15px;display:none;z-index:4;max-width:90%;text-align:center}
+@media(max-width:760px){#leftpanel{top:84px;width:calc(100vw - 28px);bottom:110px;max-height:43vh}#profilepanel{padding:10px}.meta-grid{gap:6px;margin-top:6px}.meta-grid div{padding:6px}.mission-list{max-height:170px}.brand{padding:8px 10px}.stat{min-width:70px;padding:7px 9px}.stat b{font-size:12px}.stat:nth-child(3){display:none}#touch{display:grid}#bottomhint{bottom:82px;font-size:11px}#interact{right:18px;bottom:25px;min-width:126px;padding:13px 14px}}
+</style>
+</head>
+<body>
+<div id="world"></div>
+<div id="login">
+ <form class="loginbox" id="loginForm">
+  <div class="eyebrow">SIMULATORE 3D · ESPANSIONE INDIPENDENTE</div>
+  <h1>CARABINIERI<br>SIMULATOR</h1>
+  <p>Accedi con le stesse credenziali dell'app. La tua carriera, il grado e gli EXP vengono letti dal database condiviso.</p>
+  <label for="username">Nome utente</label><input id="username" autocomplete="username" required minlength="3" maxlength="24" placeholder="es. mirkomei">
+  <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+  <button class="primary" id="loginBtn" type="submit" style="width:100%">ACCEDI AL SIMULATORE</button>
+  <div class="error" id="loginError"></div>
+  <div class="warning">Progetto indipendente e non ufficiale. Il gioco non conferisce qualifiche o incarichi. Le promozioni e i test ufficiali del simulatore restano gestiti dall'app principale.</div>
+ </form>
+</div>
+<div id="topbar" class="hidden">
+ <div class="brand"><a href="../" style="color:#dfbd78;text-decoration:none;font-size:11px;font-weight:800">← TORNA ALL’APP</a><strong>CARABINIERI SIMULATOR</strong><span>Centro addestramento · Modalità 3D</span></div>
+ <div class="statstrip">
+  <div class="stat"><small>GRADO</small><b id="topRank">—</b></div>
+  <div class="stat"><small>EXP CARRIERA</small><b id="topExp">0</b></div>
+  <div class="stat"><small>REPARTO</small><b id="topDept">—</b></div>
+  <button id="logout" class="ghost">ESCI</button>
+ </div>
+</div>
+<div id="leftpanel" class="hidden">
+ <section class="panel" id="profilepanel">
+  <div class="eyebrow">SCHEDA PERSONALE</div>
+  <div class="identity"><strong id="displayName">—</strong><span class="muted" id="personnelClass">—</span></div>
+  <div class="muted" id="serial">Matricola —</div>
+  <div style="display:flex;justify-content:space-between;margin-top:12px"><b id="rankLabel">—</b><small id="expLabel" class="muted">0 EXP</small></div>
+  <div class="progress"><span id="rankProgress"></span></div>
+  <div class="muted" id="nextRank">—</div>
+  <div class="meta-grid">
+   <div><small>RUOLO ACCOUNT</small><b id="accountRole">—</b></div>
+   <div><small>QUALIFICA REPARTO</small><b id="departmentRank">—</b></div>
+   <div><small>EXP REPARTO</small><b id="departmentExp">—</b></div>
+   <div><small>COMANDO</small><b id="commandStatus">—</b></div>
+  </div>
+ </section>
+ <section class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
+  <div class="eyebrow">ORDINI DI SERVIZIO</div><h3 style="margin:4px 0 10px">Missioni disponibili</h3>
+  <div class="mission-list" id="missionList"></div>
+ </section>
+ <section class="panel" id="missionpanel">
+  <div class="eyebrow">MISSIONE ATTIVA</div><div id="missionTitle" style="font-weight:800;margin:5px 0">Nessuna missione selezionata</div>
+  <div id="missionHint">Seleziona una missione e raggiungi il punto indicato nel piazzale.</div>
+  <button id="startMission" class="primary" style="width:100%;margin-top:8px" disabled>AVVIA MISSIONE</button>
+ </section>
+</div>
+<div id="bottomhint" class="hidden">WASD / frecce per muoverti · E per interagire · Su mobile usa i comandi</div>
+<button id="interact" class="primary hidden" disabled>INTERAGISCI</button>
+<div id="touch" class="hidden">
+ <button class="touchkey" data-dir="up">▲</button><button class="touchkey" data-dir="left">◀</button><button class="touchkey" data-dir="down">▼</button><button class="touchkey" data-dir="right">▶</button>
+</div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+
+const SUPABASE_URL="https://rwjrchcorlcvdqzvyafg.supabase.co";
+const SUPABASE_KEY="sb_publishable_0ymp6m0qlOUbtYHIpblirg_L6aZA_VM";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","Vice Brigadiere","Brigadiere","Brigadiere Capo","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Maggiore","Luogotenente","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello"];
+const MISSIONS=[
+ {id:"academy_orientation",title:"Briefing iniziale",desc:"Raggiungi la sala briefing e completa l'orientamento.",target:[0,-8],reward:15},
+ {id:"community_assistance",title:"Assistenza al cittadino",desc:"Raggiungi il cancello e presta assistenza al cittadino.",target:[14,7],reward:25},
+ {id:"missing_person",title:"Ricerca persona dispersa",desc:"Raggiungi il punto di ricerca nel parco e segnala il ritrovamento.",target:[-17,-13],reward:35},
+ {id:"safe_patrol",title:"Pattugliamento preventivo",desc:"Raggiungi il checkpoint sul perimetro della caserma.",target:[1,19],reward:20}
+];
+const $=id=>document.getElementById(id);
+let sessionUser=null,serverState=null,activeMission=null,missionDone=new Set(),keys={},touchMove={x:0,z:0},toastTimer=null;
+function threshold(i){return Math.round((250+i*60+i*i*4)/10)*10;}
+function personnelClass(rank){return rank<=11?"Sottufficiale":"Ufficiale";}
+function safeError(e){return e?.message||"Operazione non riuscita. Riprova.";}
+async function invoke(action,extra={}){const {data,error}=await db.functions.invoke("game-engine",{body:{action,...extra}});if(error)throw new Error(data?.error||error.message);if(data?.error)throw new Error(data.error);return data;}
+function toast(msg){const el=$("toast");el.textContent=msg;el.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display="none",3200);}
+async function syncState(){
+ const state=await invoke("status");serverState=state;
+ const p=state.profile,prog=state.progress||{},rank=Math.max(0,Math.min(17,Number(prog.rank)||Number(p.initial_rank)||0)),exp=Math.max(0,Number(prog.exp)||0),need=threshold(rank),pct=rank>=17?100:Math.min(100,exp/need*100);
+ missionDone=new Set((state.completed_missions||[]).map(x=>x.mission_id));
+ $("displayName").textContent=p.display_name||p.username;$("personnelClass").textContent=personnelClass(rank);
+ $("serial").textContent=(p.matricola||"Matricola in assegnazione")+" · "+p.username;
+ $("rankLabel").textContent=RANKS[rank];$("expLabel").textContent=exp+" / "+need+" EXP";
+ $("rankProgress").style.width=pct+"%";
+ $("nextRank").textContent=rank>=17?"Grado massimo raggiunto":Math.max(0,need-exp)+" EXP al requisito per l'esame di "+RANKS[rank+1];
+ $("topRank").textContent=RANKS[rank];$("topExp").textContent=String(exp);$("topDept").textContent=state.department?.name||"Non assegnato";
+ $("accountRole").textContent=p.role==="admin"?"Amministratore":p.role==="istruttore"?"Istruttore":"Utente";
+ $("departmentRank").textContent=state.department_membership?["Operatore","Operatore scelto","Capo squadra","Vice comandante di squadra","Comandante di squadra","Ufficiale di compagnia","Vice comandante di reparto","Comandante di reparto"][state.department_membership.rank]||"—":"Non assegnato";
+ $("departmentExp").textContent=state.department_membership?String(state.department_membership.exp):"—";
+ $("commandStatus").textContent=state.command?.is_commander?"Comandante":state.command?.is_vice_commander?"Vice comandante":"—";
+ renderMissions();
+}
+function renderMissions(){
+ $("missionList").replaceChildren();
+ for(const m of MISSIONS){
+  const done=missionDone.has(m.id),card=document.createElement("div");card.className="mission"+(done?" done":"")+(activeMission?.id===m.id?" active":"");
+  const title=document.createElement("strong");title.textContent=m.title;
+  const desc=document.createElement("small");desc.textContent=done?"Completata · ricompensa già registrata":m.desc;
+  const btn=document.createElement("button");btn.textContent=done?"COMPLETATA":activeMission?.id===m.id?"SELEZIONATA":"SELEZIONA";btn.disabled=done;
+  btn.addEventListener("click",()=>{activeMission=m;renderMissions();$("missionTitle").textContent=m.title;$("missionHint").textContent="Raggiungi il segnalatore dorato nel piazzale e premi INTERAGISCI.";$("startMission").disabled=false;markerPulse();});
+  card.append(title,desc,btn);$("missionList").append(card);
+ }
+}
+$("startMission").addEventListener("click",()=>{if(!activeMission)return;activeMission.started=true;$("missionHint").textContent="Missione avviata. Raggiungi il punto indicato sul terreno.";$("startMission").textContent="MISSIONE IN CORSO";$("startMission").disabled=true;markerPulse();});
+$("interact").addEventListener("click",completeNearbyMission);
+async function completeNearbyMission(){
+ if(!activeMission?.started||!nearMission())return;
+ const btn=$("interact");btn.disabled=true;btn.textContent="REGISTRAZIONE...";
+ try{
+  const result=await invoke("mission_complete",{mission_id:activeMission.id});
+  if(result.duplicate)toast("Questa missione è già stata registrata: nessun EXP aggiunto.");
+  else toast("Missione completata: +"+result.exp_awarded+" EXP carriera sincronizzati!");
+  activeMission=null;$("missionTitle").textContent="Nessuna missione selezionata";$("missionHint").textContent="Scegli una nuova missione."; $("startMission").textContent="AVVIA MISSIONE";$("startMission").disabled=true;
+  await syncState();
+ }catch(e){toast(safeError(e));}
+ finally{btn.disabled=true;btn.textContent="INTERAGISCI";}
+}
+$("logout").addEventListener("click",async()=>{await db.auth.signOut();location.reload();});
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();const btn=$("loginBtn"),err=$("loginError"),username=$("username").value.trim().toLowerCase(),password=$("password").value;
+ if(!/^[a-z0-9_-]{3,24}$/.test(username)){err.textContent="Nome utente non valido.";return;}
+ btn.disabled=true;btn.textContent="ACCESSO...";
+ try{
+  const {data,error}=await db.auth.signInWithPassword({email:username+"@login.simulatore.invalid",password});
+  if(error||!data.user)throw new Error("Nome utente o password non corretti.");
+  sessionUser=data.user;await syncState();
+  $("login").classList.add("hidden");["topbar","leftpanel","bottomhint","interact","touch"].forEach(id=>$(id).classList.remove("hidden"));
+  toast("Benvenuto "+(serverState.profile.display_name||username)+". Carriera sincronizzata.");
+ }catch(ex){err.textContent=safeError(ex);await db.auth.signOut();}
+ finally{btn.disabled=false;btn.textContent="ACCEDI AL SIMULATORE";}
+});
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x91a9b6);scene.fog=new THREE.Fog(0x91a9b6,35,95);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,180);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;$("world").append(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdcecff,0x425344,2.0));
+const sun=new THREE.DirectionalLight(0xffe2b4,2.4);sun.position.set(-18,30,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+const mat=(color,roughness=.85)=>new THREE.MeshStandardMaterial({color,roughness});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),mat(0x657c68));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const road=new THREE.Mesh(new THREE.PlaneGeometry(9,80),mat(0x3c4850));road.rotation.x=-Math.PI/2;road.position.set(0,.025,5);scene.add(road);
+const lineMat=mat(0xe5d5a5);for(let z=-32;z<44;z+=6){const l=new THREE.Mesh(new THREE.BoxGeometry(.12,.035,2.4),lineMat);l.position.set(0,.05,z);scene.add(l);}
+function box(w,h,d,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;}
+function building(x,z,w,d,color,label){
+ box(w,4,d,color,x,0,z);box(w+.4,.35,d+.4,0x263744,x,4,z);
+ for(let px=x-w/2+2;px<x+w/2-1;px+=3){const win=box(1.2,1.3,.12,0x8ba5ae,px,1.7,z-d/2-.07);win.material.emissive=new THREE.Color(0x243a48); }
+ box(w*.28,.22,.18,0xc5a15d,x,2.7,z-d/2-.14);
+ const canvas=document.createElement("canvas");canvas.width=512;canvas.height=128;const ctx=canvas.getContext("2d");ctx.fillStyle="#142333";ctx.fillRect(0,0,512,128);ctx.fillStyle="#e2c27d";ctx.font="bold 44px Arial";ctx.textAlign="center";ctx.fillText(label,256,82);const tex=new THREE.CanvasTexture(canvas);const sign=new THREE.Mesh(new THREE.PlaneGeometry(w*.72,.8),new THREE.MeshBasicMaterial({map:tex}));sign.position.set(x,3.1,z-d/2-.2);scene.add(sign);
+}
+building(-10,-25,25,12,0x7e8580,"CASERMA");
+building(22,-19,13,11,0x777e7b,"UFFICI");
+building(-24,10,10,12,0x6f8178,"MAGAZZINO");
+building(20,23,13,10,0x737d79,"SERVIZI");
+function tree(x,z){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.24,2,7),mat(0x604a35));trunk.position.set(x,1,z);trunk.castShadow=true;scene.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.5,3.8,7),mat(0x315744));crown.position.set(x,3.6,z);crown.castShadow=true;scene.add(crown);}
+for(let i=0;i<38;i++){const x=(Math.sin(i*13.7)*1)*34,z=(Math.cos(i*9.1))*38;if(Math.abs(x)>7)tree(x,z);}
+const fenceMat=mat(0x64727b);for(let x=-38;x<=38;x+=3){box(.12,1.5,.12,0x56646c,x,0,-39);box(.12,1.5,.12,0x56646c,x,0,39);}box(78,.12,.12,0x56646c,0,1.2,-39);box(78,.12,.12,0x56646c,0,1.2,39);
+const player=new THREE.Group();scene.add(player);
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.48,.9,4,8),mat(0x243b4a));body.position.y=1.05;body.castShadow=true;player.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.32,12,10),mat(0xc99e7c));head.position.y=1.95;head.castShadow=true;player.add(head);
+const cap=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.12,12),mat(0x14202a));cap.position.y=2.22;player.add(cap);
+const legs=[];for(const x of [-.22,.22]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,.65,.25),mat(0x1b2932));leg.position.set(x,.34,0);player.add(leg);legs.push(leg);}
+const markers=new Map();
+for(const m of MISSIONS){const g=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(1.25,.12,8,32),new THREE.MeshBasicMaterial({color:0xe7bd67}));ring.rotation.x=Math.PI/2;ring.position.y=.14;g.add(ring);const beam=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,2.6,8),new THREE.MeshBasicMaterial({color:0xe7bd67,transparent:true,opacity:.65}));beam.position.y=1.5;g.add(beam);g.position.set(m.target[0],0,m.target[1]);scene.add(g);markers.set(m.id,g);}
+function markerPulse(){for(const [id,g] of markers)g.visible=activeMission?.id===id;}
+const clock=new THREE.Clock();let walk=0;
+function nearMission(){if(!activeMission?.started)return false;const t=activeMission.target;return Math.hypot(player.position.x-t[0],player.position.z-t[1])<3.5;}
+function updateMove(dt){
+ let x=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0)+touchMove.x;
+ let z=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0)+touchMove.z;
+ const len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}
+ if(len>.05){const speed=6.2;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.position.x=THREE.MathUtils.clamp(player.position.x,-35,35);player.position.z=THREE.MathUtils.clamp(player.position.z,-35,35);player.rotation.y=Math.atan2(x,z);walk+=dt*10;legs[0].rotation.x=Math.sin(walk)*.5;legs[1].rotation.x=-Math.sin(walk)*.5;}else{legs.forEach(l=>l.rotation.x=0);}
+ const target=new THREE.Vector3(player.position.x,0,player.position.z);const camPos=new THREE.Vector3(player.position.x,8,player.position.z+11);camera.position.lerp(camPos,1-Math.pow(.001,dt));camera.lookAt(target.x,1.1,target.z-2);
+ const near=nearMission();$("interact").disabled=!near;$("interact").textContent=near?"COMPLETA OBIETTIVO":"RAGGIUNGI OBIETTIVO";
+ if(near&&activeMission?.started)$("missionHint").textContent="Sei sul posto. Premi INTERAGISCI per registrare la missione.";
+}
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);updateMove(dt);for(const [id,g] of markers){if(g.visible){g.rotation.y+=dt*.6;g.position.y=.05+Math.sin(clock.elapsedTime*2)*.12;}}renderer.render(scene,camera);}
+animate();
+window.addEventListener("keydown",e=>{keys[e.key]=true;if(e.key.toLowerCase()==="e")completeNearbyMission();});
+window.addEventListener("keyup",e=>keys[e.key]=false);
+window.addEventListener("blur",()=>keys={});
+for(const btn of document.querySelectorAll(".touchkey")){const dir=btn.dataset.dir;const map={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};const set=(on)=>{const v=map[dir];if(on){touchMove.x=v[0];touchMove.z=v[1];}else{touchMove.x=0;touchMove.z=0;}};btn.addEventListener("pointerdown",e=>{e.preventDefault();btn.setPointerCapture(e.pointerId);set(true);});for(const ev of ["pointerup","pointercancel","lostpointercapture"])btn.addEventListener(ev,()=>set(false));}
+window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));});
+db.auth.getSession().then(async({data})=>{if(data.session){try{await syncState();$("login").classList.add("hidden");["topbar","leftpanel","bottomhint","interact","touch"].forEach(id=>$(id).classList.remove("hidden"));toast("Sessione ripristinata. Carriera sincronizzata.");}catch(e){await db.auth.signOut();$("loginError").textContent=safeError(e);}}});
+</script>
+</body></html>
