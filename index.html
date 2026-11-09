@@ -939,6 +939,7 @@ let RANKS=CARABINIERI_RANKS;
 const SUPABASE_URL="https://rwjrchcorlcvdqzvyafg.supabase.co",KEY="sb_publishable_0ymp6m0qlOUbtYHIpblirg_L6aZA_VM";
 const db=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
+const CARABINIERI_GRADES_HTML=$("grades").innerHTML;
 function retireLegacyPushWorker(){
  if(!("serviceWorker" in navigator))return;
  navigator.serviceWorker.getRegistrations().then(registrations=>Promise.all(registrations.filter(reg=>{
@@ -963,7 +964,8 @@ function applyServiceBranding(branch){
  if(finanza){
   const groups=[["Ufficiali",FINANZA_RANKS.slice(14)],["Ispettori",FINANZA_RANKS.slice(8,14)],["Sovrintendenti",FINANZA_RANKS.slice(5,8)],["Appuntati e finanzieri",FINANZA_RANKS.slice(0,5)]];
   $("grades").innerHTML='<div class="eyebrow">ORDINAMENTO GERARCHICO</div><h2>Ruoli e gradi della Guardia di Finanza</h2><p class="small muted">Elenco gerarchico del Corpo, organizzato per ruoli. La progressione EXP del simulatore non attribuisce gradi o qualifiche reali.</p>'+groups.map(([title,items])=>'<article class="grade-group"><h3>'+title+'</h3><div class="grade-list">'+items.slice().reverse().map(rank=>'<div class="grade-item"><span class="grade-symbol"><span class="badge">GdF</span></span><strong>'+rank+'</strong></div>').join("")+'</div></article>').join("")+'<p class="rank-source small muted">Riferimento: <a href="https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=099G0078" target="_blank" rel="noopener noreferrer">D.P.R. 29 gennaio 1999, n. 34</a> e successive modifiche.</p>';
- }
+ }else{$("grades").innerHTML=CARABINIERI_GRADES_HTML;}
+}
 }
 }
 const threshold=i=>Math.round((250+i*60+i*i*4)/10)*10;
