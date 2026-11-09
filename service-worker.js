@@ -1,5 +1,5 @@
-const CACHE_NAME = "database-forze-ordine-v11";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-hero.svg"];
+const CACHE_NAME = "database-forze-ordine-v12";
+const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-icon-512.png", "./app-hero.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
