@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#20252a"/><stop offset="1" stop-color="#050708"/></linearGradient><clipPath id="shield"><path d="M256 38 430 94v150c0 116-68 190-174 232C150 434 82 360 82 244V94z"/></clipPath></defs>
-<rect width="512" height="512" rx="108" fill="url(#bg)"/>
-<path d="M256 38 430 94v150c0 116-68 190-174 232C150 434 82 360 82 244V94z" fill="#101418" stroke="#f2f2f2" stroke-width="14"/>
-<g clip-path="url(#shield)"><path d="M70 70h186v430H70z" fill="#9e172a"/><path d="M256 70h186v430H256z" fill="#244b2c"/><path d="M256 70v430" stroke="#d6b45c" stroke-width="10"/></g>
-<path d="M256 128 300 182l-15 75 42 61-71 71-71-71 42-61-15-75z" fill="#f4f0df" stroke="#c8a94f" stroke-width="8"/>
-<circle cx="256" cy="254" r="42" fill="#15202a" stroke="#d8b85c" stroke-width="8"/>
-<path d="M256 219v70m-24-35h48" stroke="#f4f0df" stroke-width="10" stroke-linecap="round"/>
-<text x="256" y="470" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff" letter-spacing="2">DATABASE FDO</text>
+<defs><linearGradient id="frame" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#cbd1d8"/></linearGradient><clipPath id="screen"><rect x="108" y="105" width="296" height="302" rx="22"/></clipPath></defs>
+<rect width="512" height="512" rx="108" fill="#111820"/>
+<rect x="72" y="58" width="368" height="396" rx="38" fill="url(#frame)" stroke="#fff" stroke-width="8"/>
+<rect x="94" y="84" width="324" height="344" rx="28" fill="#0b1118"/>
+<g clip-path="url(#screen)"><rect x="108" y="105" width="148" height="151" fill="#b51228"/><rect x="256" y="105" width="148" height="151" fill="#eab927"/><rect x="108" y="256" width="148" height="151" fill="#0752a2"/><rect x="256" y="256" width="148" height="151" fill="#d7192d"/><path d="M256 256h148v151H256z" fill="#fff" opacity=".22"/><rect x="108" y="105" width="296" height="302" fill="#081018" opacity=".35"/></g>
+<rect x="108" y="105" width="296" height="302" rx="22" fill="none" stroke="#fff" stroke-width="5"/>
+<text x="256" y="232" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="40" font-weight="900">DB</text>
+<path d="M185 287h142M185 308h142M185 329h142" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".9"/>
+<circle cx="256" cy="442" r="5" fill="#626c75"/>
 </svg>
