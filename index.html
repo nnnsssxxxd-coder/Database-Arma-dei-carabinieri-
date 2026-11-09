@@ -945,8 +945,8 @@ body{touch-action:pan-y pinch-zoom}
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <a href="https://www.carabinieri.it/" target="_blank" rel="noopener noreferrer">carabinieri.it</a></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const CARABINIERI_RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","Vice Brigadiere","Brigadiere","Brigadiere Capo","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Maggiore","Luogotenente Carica Speciale","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello"];
-const FINANZA_RANKS=["Allievo Finanziere","Finanziere","Finanziere Scelto","Appuntato","Appuntato Scelto","Vice Brigadiere","Brigadiere","Brigadiere Capo","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Aiutante","Luogotenente","Luogotenente Cariche Speciali","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
+const CARABINIERI_RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Q.S.","Vicebrigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Q.S.","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Maggiore","Luogotenente","Luogotenente C.S.","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
+const FINANZA_RANKS=["Allievo Finanziere","Finanziere","Finanziere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Qualifica Speciale","Vice Brigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Qualifica Speciale","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Aiutante","Luogotenente","Luogotenente Cariche Speciali","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
 let RANKS=CARABINIERI_RANKS;
 const SUPABASE_URL="https://rwjrchcorlcvdqzvyafg.supabase.co",KEY="sb_publishable_0ymp6m0qlOUbtYHIpblirg_L6aZA_VM";
 const db=window.supabase.createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -1059,7 +1059,7 @@ function rankSymbolSvg(rank){
 }
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
- $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=profile.service_branch==="finanza"?(rank>=14?"UFFICIALE":rank>=5?"SOTTUFFICIALE":"APPUNTATI E FINANZIERI"):(rank>=12?"UFFICIALE":"SOTTUFFICIALE");$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
+ $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=profile.service_branch==="finanza"?(rank>=16?"UFFICIALE":rank>=6?"SOTTUFFICIALE":"APPUNTATI E FINANZIERI"):(rank>=15?"UFFICIALE":"SOTTUFFICIALE");$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
