@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
     if (action === "join") {
       const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
-      const personalRank = Math.max(Number(profile.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
+      const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
       if (personalRank < 5) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado di Brigadiere." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
