@@ -45,7 +45,8 @@ jobs:
             ['branch selector persistence',/selectedServiceBranch|selectedBranch/],
             ['branch-aware quiz calls',/quiz-engine[\s\S]{0,1200}service_branch/],
             ['branch-aware department calls',/department-engine[\s\S]{0,1200}service_branch/],
-            ['branch-aware mission calls',/game-engine[\s\S]{0,1200}service_branch/],
+            ['branch-scoped profile reads',/eq\(\"service_branch\",selectedBranch\)/],
+            ['branch-scoped account actions',/service_branch:selectedBranch/],
             ['branch-scoped audit events',/audit-event[\s\S]{0,500}service_branch/]
           ];
           for(const [name,re] of checks){if(!re.test(html))throw new Error('Failed: '+name);console.log('PASS '+name);}
