@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#202020"/><stop offset="1" stop-color="#050505"/></linearGradient></defs>
-<rect width="512" height="512" rx="112" fill="url(#bg)"/>
-<path d="M256 42 423 96v151c0 112-66 183-167 226C155 430 89 359 89 247V96z" fill="#080808" stroke="#f1f1f1" stroke-width="15"/>
-<path d="M256 69 396 115v132c0 94-54 153-140 192-86-39-140-98-140-192V115z" fill="none" stroke="#d71930" stroke-width="9"/>
-<path d="M256 123c15 48 71 70 71 143a71 71 0 1 1-142 0c0-35 21-54 36-88 13 23 17 39 22 47 13-35 13-65 13-102z" fill="#d71930"/>
-<path d="M153 337c22 44 57 69 103 90 46-21 81-46 103-90" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
-<text x="256" y="473" text-anchor="middle" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#fff" letter-spacing="5">CARABINIERI</text>
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#20252a"/><stop offset="1" stop-color="#050708"/></linearGradient><clipPath id="shield"><path d="M256 38 430 94v150c0 116-68 190-174 232C150 434 82 360 82 244V94z"/></clipPath></defs>
+<rect width="512" height="512" rx="108" fill="url(#bg)"/>
+<path d="M256 38 430 94v150c0 116-68 190-174 232C150 434 82 360 82 244V94z" fill="#101418" stroke="#f2f2f2" stroke-width="14"/>
+<g clip-path="url(#shield)"><path d="M70 70h186v430H70z" fill="#9e172a"/><path d="M256 70h186v430H256z" fill="#244b2c"/><path d="M256 70v430" stroke="#d6b45c" stroke-width="10"/></g>
+<path d="M256 128 300 182l-15 75 42 61-71 71-71-71 42-61-15-75z" fill="#f4f0df" stroke="#c8a94f" stroke-width="8"/>
+<circle cx="256" cy="254" r="42" fill="#15202a" stroke="#d8b85c" stroke-width="8"/>
+<path d="M256 219v70m-24-35h48" stroke="#f4f0df" stroke-width="10" stroke-linecap="round"/>
+<text x="256" y="470" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff" letter-spacing="2">DATABASE FDO</text>
 </svg>
