@@ -27,24 +27,37 @@ Deno.serve(async(req:Request)=>{
   if(action==="audit_list"){
    const {data,error}=await db.from("command_general_audit").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;return out(req,{ok:true,events:data??[]});
   }
+
   if(action==="create_user"){
-   const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??""),branch=String(b.service_branch??""),rank=Number(b.initial_rank);
-   if(!/^[a-z0-9_-]{3,24}$/.test(username)||display.length<1||display.length>60||password.length<12||password.length>72||!validBranch(branch)||!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Dati non validi: controlla username, nome, password, Corpo e grado."},400);
-   const {data:existsMin,error:em}=await db.from("ministry_admins").select("user_id").eq("username",username).maybeSingle();if(em)throw em;if(existsMin)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
-   const {data:existsCmd,error:ec}=await db.from("command_general_admins").select("user_id").eq("username",username).maybeSingle();if(ec)throw ec;if(existsCmd)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
-   const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return out(req,{error:"Username già utilizzato."},409);
+   const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??""),branch=String(b.service_branch??b.branch??"").trim().toLowerCase(),rankRaw=b.initial_rank??b.rank;
+   if(!/^[a-z0-9_-]{3,24}$/.test(username))return out(req,{ok:false,error:"Username non valido: usa 3-24 caratteri minuscoli, numeri, _ o -.",field:"username"},400);
+   if(display.length<2||display.length>60)return out(req,{ok:false,error:"Nome visualizzato non valido: inserisci da 2 a 60 caratteri.",field:"display_name"},400);
+   if(password.length<12||password.length>72)return out(req,{ok:false,error:"Password iniziale non valida: servono 12-72 caratteri.",field:"password"},400);
+   if(!validBranch(branch))return out(req,{ok:false,error:"Seleziona un Corpo valido.",field:"service_branch"},400);
+   if(rankRaw===undefined||rankRaw===null||String(rankRaw).trim()==="")return out(req,{ok:false,error:"Seleziona il grado iniziale.",field:"initial_rank"},400);
+   const rank=Number(rankRaw);if(!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{ok:false,error:"Grado non valido per il Corpo selezionato (indice 0-"+maxRank(branch)+").",field:"initial_rank"},400);
+   const {data:existsProfile,error:ep}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ep)throw ep;if(existsProfile)return out(req,{ok:false,error:"Username già utilizzato.",field:"username"},409);
+   const {data:existsMin,error:em}=await db.from("ministry_admins").select("user_id").eq("username",username).maybeSingle();if(em)throw em;if(existsMin)return out(req,{ok:false,error:"Username riservato a un amministratore del Ministero.",field:"username"},409);
+   const {data:existsCmd,error:ec}=await db.from("command_general_admins").select("user_id").eq("username",username).maybeSingle();if(ec)throw ec;if(existsCmd)return out(req,{ok:false,error:"Username riservato a un amministratore del Comando Generale.",field:"username"},409);
    const email=username+"@login.simulatore.invalid";
    const {data:created,error:ce}=await db.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username,display_name:display}});
-   if(ce||!created.user)return out(req,{error:ce?.message??"Creazione account non riuscita."},400);
-   let matricola="";
+   if(ce||!created?.user){const duplicate=/already|exists|registered/i.test(ce?.message??"");return out(req,{ok:false,error:duplicate?"Username già utilizzato.":(ce?.message??"Creazione Auth non riuscita."),field:duplicate?"username":"account"},duplicate?409:400);}
+   const uid=created.user.id;
    try{
-    const {data:serial,error:se}=await db.from("matricole").insert({user_id:created.user.id}).select("id").single();if(se)throw se;
-    matricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
-    const {error:pe}=await db.from("profiles").update({display_name:display,service_branch:branch,initial_rank:rank,matricola}).eq("id",created.user.id);if(pe)throw pe;
-    const {error:me}=await db.from("profile_memberships").insert({user_id:created.user.id,service_branch:branch,role:"user",initial_rank:rank,matricola,active:true});if(me)throw me;
-    await audit("account_created",created.user.id,{username,display_name:display,service_branch:branch,initial_rank:rank,matricola});
-   }catch(e){await db.from("profile_memberships").delete().eq("user_id",created.user.id);await db.from("profiles").delete().eq("id",created.user.id);await db.from("matricole").delete().eq("user_id",created.user.id);await db.auth.admin.deleteUser(created.user.id);throw e;}
-   return out(req,{ok:true,username,matricola,user_id:created.user.id});
+    const {data:profile,error:pr}=await db.from("profiles").select("id,username").eq("id",uid).maybeSingle();if(pr)throw pr;if(!profile)throw new Error("Il trigger Auth non ha creato il profilo: account annullato.");
+    const {data:serial,error:se}=await db.from("matricole").insert({user_id:uid}).select("id").single();if(se||!serial)throw se??new Error("Matricola non assegnata.");
+    const matricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
+    const {data:updated,error:ue}=await db.from("profiles").update({display_name:display,service_branch:branch,initial_rank:rank,matricola}).eq("id",uid).select("id").maybeSingle();if(ue)throw ue;if(!updated)throw new Error("Profilo non aggiornato: account annullato.");
+    const {error:me}=await db.from("profile_memberships").insert({user_id:uid,service_branch:branch,role:"user",initial_rank:rank,matricola,active:true});if(me)throw me;
+    await audit("account_created",uid,{username,display_name:display,service_branch:branch,initial_rank:rank,matricola,provisioning:"auth+profile+membership+matricola"});
+    return out(req,{ok:true,username,display_name:display,service_branch:branch,initial_rank:rank,matricola,user_id:uid},201);
+   }catch(err){
+    console.error("account provisioning rollback",err);
+    await db.from("profile_memberships").delete().eq("user_id",uid);await db.from("matricole").delete().eq("user_id",uid);await db.auth.admin.deleteUser(uid);
+    const msg=err instanceof Error?err.message:"Errore database durante la creazione.";
+    if((err as any)?.code==="23505")return out(req,{ok:false,error:"Username o matricola già presenti: nessun account è stato creato.",field:"username"},409);
+    return out(req,{ok:false,error:msg},500);
+   }
   }
   if(action==="change_password"){
    const password=String(b.password??"");if(password.length<12||password.length>72)return out(req,{error:"La nuova password deve contenere 12-72 caratteri."},400);
