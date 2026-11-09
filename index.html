@@ -912,6 +912,23 @@ body:not(:has(#credentialPanel:not(.hidden))) .project-disclaimer{border-color:#
 .login-footnote{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #34414b;padding-top:16px;margin-top:12px;color:#9caab5;font-size:11px;line-height:1.55}
 .login-footnote span:first-child{color:#c5d0d9;font-size:16px}
 @media(max-width:620px){.loginbox{margin:12px auto 28px;border-radius:18px}.fdo-hero-art{max-width:118px}.service-choice-grid{grid-template-columns:1fr}.service-choice-card p{min-height:0}.login-card{margin:12px 12px 24px;border-radius:18px}.login-card-top{margin-bottom:20px}}
+
+/* Login compatto: una sola colonna, campi ravvicinati e card contenuta */
+.loginbox{max-width:760px;margin:12px auto 26px}
+.loginbox .login-card{display:block;width:min(100% - 24px,510px);margin:12px auto 24px;padding:20px 22px;border-radius:17px}
+.loginbox .login-card-top{margin-bottom:13px}
+.loginbox .login-card-heading{gap:12px;margin-bottom:7px}
+.loginbox .login-symbol{width:42px;height:42px;flex:0 0 42px}
+.loginbox .login-card-heading h2{font-size:clamp(23px,4vw,28px);line-height:1.12;margin:5px 0 0}
+.loginbox .login-card>p{margin:6px 0 10px;font-size:.9rem;line-height:1.45}
+.loginbox .login-card form{display:grid;grid-column:auto;grid-row:auto;gap:11px;margin-top:12px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
+.loginbox .login-card form label{gap:5px;font-size:10px}
+.loginbox .login-card form input{min-height:45px;padding:0 13px;border-radius:10px}
+.loginbox .login-card form button{min-height:45px;margin-top:1px;border-radius:10px;letter-spacing:.04em}
+.loginbox .login-card .login-footnote{margin-top:10px;padding-top:10px;font-size:10px;line-height:1.4}
+.loginbox .login-card .login-message{min-height:0;margin:7px 0 0}
+@media(max-width:520px){.loginbox{margin:8px auto 20px}.loginbox .login-card{width:calc(100% - 20px);padding:17px 16px;margin:8px auto 18px}.loginbox .login-card-top{margin-bottom:11px}.loginbox .login-card-heading{gap:10px}.loginbox .login-card-heading h2{font-size:23px}.loginbox .login-card form{gap:10px}.loginbox .login-card form input{min-height:44px}}
+
 </style>
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
