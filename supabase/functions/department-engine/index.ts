@@ -29,13 +29,13 @@ async function getUser(req: Request) {
   const { data: { user } } = await caller.auth.getUser();
   return user;
 }
-async function getMembership(userId: string) {
-  const { data, error } = await db.from("department_memberships").select("user_id,department_id,exp,rank,quiz_count,correct_answers,perfect_streak,history,selected_at").eq("user_id", userId).maybeSingle();
+async function getMembership(userId: string, branch: string) {
+  const { data, error } = await db.from("department_memberships").select("user_id,department_id,exp,rank,quiz_count,correct_answers,perfect_streak,history,selected_at").eq("user_id", userId).eq("service_branch", branch).maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const { data: department, error: deptError } = await db.from("department_catalog").select("id,name,description,source_url").eq("id", data.department_id).single();
+  const { data: department, error: deptError } = await db.from("department_catalog").select("id,name,description,source_url").eq("id", data.department_id).eq("service_branch", branch).single();
   if (deptError) throw deptError;
-  const { data: command, error: commandError } = await db.from("department_commanders").select("commander_user_id").eq("department_id", data.department_id).maybeSingle();
+  const { data: command, error: commandError } = await db.from("department_commanders").select("commander_user_id").eq("department_id", data.department_id).eq("service_branch", branch).maybeSingle();
   if (commandError) throw commandError;
   const isCommander = command?.commander_user_id === userId;
   return { ...data, is_commander: isCommander, rank_name: DEPT_RANKS[isCommander ? 7 : Math.min(6, Math.max(0, Number(data.rank) || 0))], department };
@@ -47,32 +47,37 @@ Deno.serve(async (req: Request) => {
   try {
     const user = await getUser(req);
     if (!user) return reply(req,{ error: "Sessione non valida" }, 401);
-    const { data: profile, error: profileError } = await db.from("profiles").select("active,deleted,initial_rank").eq("id", user.id).maybeSingle();
-    if (profileError || !profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
     const body = await req.json();
+    const branch=String(body.service_branch??"");
+    if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
+    const { data: profile, error: profileError } = await db.from("profiles").select("active,deleted").eq("id", user.id).maybeSingle();
+    if (profileError || !profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
+    const {data:membershipAccess}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    if(!membershipAccess)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
+    if(branch!=="carabinieri")return reply(req,{error:"La carriera reparti della Guardia di Finanza deve essere configurata con catalogo e prove autonomi. I reparti Carabinieri non sono accessibili da questo ambiente."},403);
     const action = String(body.action ?? "");
     if (action === "catalog") {
-      const { data, error } = await db.from("department_catalog").select("id,name,description,source_url").eq("active", true).order("name");
+      const { data, error } = await db.from("department_catalog").select("id,name,description,source_url").eq("service_branch",branch).eq("active", true).order("name");
       if (error) return reply(req,{ error: "Catalogo reparti non disponibile" }, 500);
       return reply(req,{ departments: data ?? [] });
     }
-    if (action === "status") return reply(req,{ membership: await getMembership(user.id) });
+    if (action === "status") return reply(req,{ membership: await getMembership(user.id, branch) });
     if (action === "join") {
-      const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).maybeSingle();
+      const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(profile.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
       if (personalRank < 5) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado di Brigadiere." }, 403);
       const departmentId = String(body.department_id ?? "");
-      const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("active", true).maybeSingle();
+      const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
       if (departmentError || !department) return reply(req,{ error: "Reparto non valido" }, 400);
-      const existing = await db.from("department_memberships").select("user_id").eq("user_id", user.id).maybeSingle();
+      const existing = await db.from("department_memberships").select("user_id").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (existing.error) return reply(req,{ error: "Impossibile verificare l'appartenenza" }, 500);
       if (existing.data) return reply(req,{ error: "Hai già scelto un reparto. La scelta è unica e non può essere modificata da questa sezione." }, 409);
-      const { error: insertError } = await db.from("department_memberships").insert({ user_id: user.id, department_id: departmentId });
+      const { error: insertError } = await db.from("department_memberships").insert({ user_id: user.id, department_id: departmentId, service_branch:branch });
       if (insertError) return reply(req,{ error: insertError.code === "23505" ? "Hai già scelto un reparto." : "Impossibile registrare la scelta del reparto." }, insertError.code === "23505" ? 409 : 500);
-      return reply(req,{ membership: await getMembership(user.id) }, 201);
+      return reply(req,{ membership: await getMembership(user.id, branch) }, 201);
     }
-    const membership = await getMembership(user.id);
+    const membership = await getMembership(user.id, branch);
     if (!membership) return reply(req,{ error: "Non hai ancora scelto un reparto." }, 403);
     const isCommander = membership.is_commander === true;
     const commandExamReady = Number(membership.rank) === 6 && Number(membership.exp) >= 2100 && !isCommander;
@@ -125,7 +130,7 @@ Deno.serve(async (req: Request) => {
       if(!passed)return reply(req,{score,total:6,passed:false,message:"Prova non superata. Puoi riprovare dopo aver ripassato i criteri di comando."});
       const {data:promotion,error:promotionError}=await db.rpc("promote_department_commander",{p_user_id:user.id,p_department_id:membership.department_id,p_exam_attempt_id:id});
       if(promotionError)return reply(req,{error:"Prova superata, ma la nomina non è stata registrata. Contatta l’amministratore."},409);
-      return reply(req,{score,total:6,passed:true,promotion,membership:await getMembership(user.id)});
+      return reply(req,{score,total:6,passed:true,promotion,membership:await getMembership(user.id, branch)});
     }
     if (action === "command_board") {
       const {data:command,error:commandError}=await db.from("department_commanders").select("commander_user_id,vice_user_id,appointed_at").eq("department_id",membership.department_id).maybeSingle();
@@ -288,7 +293,7 @@ Deno.serve(async (req: Request) => {
         const code = error.code === "23505" ? 409 : error.code === "42501" ? 403 : 400;
         return reply(req,{ error: error.message === "Quiz reparto già consegnato" ? "Questo quiz reparto è già stato consegnato." : error.message === "Sessione reparto scaduta" ? "Il tempo della sessione è scaduto." : "Impossibile registrare il risultato del reparto." }, code);
       }
-      return reply(req,{ ...data, membership: await getMembership(user.id) });
+      return reply(req,{ ...data, membership: await getMembership(user.id, branch) });
     }
     return reply(req,{ error: "Azione non riconosciuta" }, 400);
   } catch (error) {
