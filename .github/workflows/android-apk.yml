@@ -53,7 +53,7 @@ jobs:
       - name: Prepare app web assets
         run: |
           mkdir -p www
-          cp index.html manifest.webmanifest app-icon.svg service-worker.js www/
+          cp index.html manifest.webmanifest app-icon.svg app-hero.svg service-worker.js www/
           test -s www/index.html
           test -s www/manifest.webmanifest
           test -s www/service-worker.js
@@ -63,6 +63,12 @@ jobs:
 
       - name: Verify dependency tree
         run: npm ls --depth=0
+
+      - name: Bundle Supabase client locally
+        run: |
+          test -s node_modules/@supabase/supabase-js/dist/umd/supabase.js
+          cp node_modules/@supabase/supabase-js/dist/umd/supabase.js www/supabase.js
+          test -s www/supabase.js
 
       - name: Generate Android project
         run: npx cap add android
