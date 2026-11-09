@@ -1013,7 +1013,7 @@ function showTab(name){const allowed=["home","quiz","departmentCareer","assigned
 
 function renderPerformanceChart(){const box=$("performanceChart");if(!box)return;const items=(progress.history||[]).slice(-7);if(!items.length){box.innerHTML='<div class="chart-head"><strong>Andamento esercitazioni</strong><span class="badge">Ultimi 7 quiz</span></div><div class="chart-empty">Completa il primo quiz per visualizzare qui il grafico dei risultati.</div>';return;}const bars=items.map((x,i)=>{const n=Math.max(0,Math.min(4,Number(x.correct)||0));const pct=n/4*100;const d=x.date?new Date(x.date):null;const day=d&&!Number.isNaN(d.getTime())?d.toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"}):"Quiz "+(i+1);return '<div class="chart-col" title="'+n+' risposte corrette su 4"><div class="chart-track"><div class="chart-bar" style="height:'+pct+'%"></div></div><small>'+esc(day)+'</small></div>';}).join("");const avg=items.reduce((s,x)=>s+Math.max(0,Math.min(4,Number(x.correct)||0)),0)/items.length;box.innerHTML='<div class="chart-head"><strong>Andamento esercitazioni</strong><span class="badge">Media '+avg.toFixed(1).replace(".",",")+'/4</span></div><div class="chart-bars">'+bars+'</div><div class="chart-legend">Risposte corrette per esercitazione · scala da 0 a 4</div>';}
 function rankSymbolSvg(rank){
- const r=Math.max(0,Math.min(17,Number(rank)||0));let marks="";
+ const r=Math.max(0,Math.min(RANKS.length-1,Number(rank)||0));let marks="";
  const star=(x,y)=>'<path d="M'+x+' '+(y-7)+'l2.2 4.6 5 .5-3.8 3.2 1.3 4.8-4.7-2.5-4.7 2.5 1.3-4.8-3.8-3.2 5-.5z" fill="#f4f4f4" stroke="#d8d8d8" stroke-width=".7"/>';
  if(r===0){marks='<path d="M50 12C41 26 33 39 38 52c2 8 8 13 12 13s10-5 12-13c5-13-3-26-12-40z" fill="#d00000"/><path d="M50 34c-7 9-8 15-4 20 2 3 6 4 8 1 4-5 2-12-4-21z" fill="#ff7777"/>';}
  else if(r<=3){for(let i=0;i<r;i++)marks+='<path d="M'+(29+i*7)+' '+(36+i*10)+'l21 13 21-13" fill="none" stroke="#d00000" stroke-width="5" stroke-linecap="square"/>';}
@@ -1025,7 +1025,7 @@ function rankSymbolSvg(rank){
 }
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
- $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=rank>=12?"UFFICIALE":"SOTTUFFICIALE";$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
+ $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=rank>=(profile.service_branch==="finanza"?14:12)?"UFFICIALE":"SOTTUFFICIALE";$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
