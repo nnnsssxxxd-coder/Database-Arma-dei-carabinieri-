@@ -105,8 +105,12 @@ Deno.serve(async(req:Request)=>{
    const branch=String(b.service_branch??"");if(!validBranch(branch))return out(req,{error:"Corpo non valido."},400);
    if(action==="change_grade"){
     const rank=Number(b.initial_rank);if(!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Grado non valido."},400);
-    const {data:membership,error:me}=await db.from("profile_memberships").select("user_id").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(me)throw me;if(!membership)return out(req,{error:"L'utente non risulta associato al Corpo."},409);
-    const {error}=await db.from("profile_memberships").update({initial_rank:rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);if(error)throw error;
+    const {data:membership,error:me}=await db.from("profile_memberships").select("user_id,initial_rank").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(me)throw me;if(!membership)return out(req,{error:"L'utente non risulta associato al Corpo."},409);
+    const {data:progressRow,error:pr}=await db.from("progress").select("payload").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(pr)throw pr;
+    const nextPayload={...(progressRow?.payload??{}),rank,exp:0};
+    const {error:gradeError}=await db.from("profile_memberships").update({initial_rank:rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);if(gradeError)throw gradeError;
+    const {error:progressError}=await db.from("progress").upsert({user_id:target,service_branch:branch,payload:nextPayload,updated_at:new Date().toISOString()},{onConflict:"user_id,service_branch"});
+    if(progressError){await db.from("profile_memberships").update({initial_rank:membership.initial_rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);throw progressError;}
     await audit("grade_changed",target,{username:profile.username,service_branch:branch,initial_rank:rank});return out(req,{ok:true});
    }
    if(action==="set_access"){
