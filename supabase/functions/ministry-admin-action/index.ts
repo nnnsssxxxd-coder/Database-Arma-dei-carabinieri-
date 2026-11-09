@@ -62,7 +62,7 @@ Deno.serve(async(req:Request)=>{
   }
   if(action==="create_command_admin"){
    const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??"");
-   if(!/^[a-z0-9_-]{3,24}$/.test(username)||display.length<1||display.length>60||password.length<12||password.length>72)return out(req,{error:"Dati non validi: username 3-24 caratteri, nome e password 12-72 caratteri."},400);
+   if(!/^[a-z0-9_-]{3,24}$/.test(username)||display.length<2||display.length>60||password.length<12||password.length>72)return out(req,{error:"Dati non validi: username 3-24 caratteri, nome 2-60 caratteri e password 12-72 caratteri."},400);
    const {data:existingMin,error:em}=await db.from("ministry_admins").select("user_id").eq("username",username).maybeSingle();if(em)throw em;if(existingMin)return out(req,{error:"Username già utilizzato da un amministratore."},409);
    const {data:existingCmd,error:ec}=await db.from("command_general_admins").select("user_id").eq("username",username).maybeSingle();if(ec)throw ec;if(existingCmd)return out(req,{error:"Username già utilizzato."},409);
    const {data:existingProfile,error:ep}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ep)throw ep;if(existingProfile)return out(req,{error:"Username già utilizzato da un account del Corpo."},409);
