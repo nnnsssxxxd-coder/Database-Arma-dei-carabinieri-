@@ -1738,7 +1738,7 @@ if ("serviceWorker" in navigator) {
    $c("centralUserList").innerHTML=rows.length?'<table class="central-table"><thead><tr><th>Utente</th><th>Stato</th><th>Appartenenze e grado</th><th>Gestione</th></tr></thead><tbody>'+rows.map(u=>{
     const memberships=u.profile_memberships||[];
     const branches=["carabinieri","finanza"].map(b=>{const m=memberships.find(x=>x.service_branch===b);return '<div class="tiny">'+(b==="finanza"?"GdF":"Carabinieri")+': '+(m?(m.active?"Attivo":"Sospeso"):"Non abilitato")+(m?' · grado '+m.initial_rank:'')+(authority!==null?' <button type="button" data-ca="access" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-enabled="'+(!m||!m.active)+'">'+(m&&m.active?"Disabilita":"Abilita")+'</button>':'')+(m&&authority!==null?' <button type="button" data-ca="grade" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-rank="'+m.initial_rank+'">Grado</button>':'')+'</div>';}).join("");
-    return '<tr><td><strong>'+safe(u.display_name||u.username)+'</strong><br><span class="muted">'+safe(u.username)+'</span><br><span class="tiny muted">'+safe(u.matricola||"Matricola non assegnata")+'</span></td><td>'+(u.active&&!u.deleted?"Attivo":"Sospeso")+(authority==="ministry"?' <button type="button" data-ca="account" data-user="'+safe(u.id)+'" data-enabled="'+(!u.active||u.deleted)+'">'+(u.active&&!u.deleted?"Sospendi":"Riattiva")+'</button>':'')+'</td><td>'+branches+'</td><td>'+(authority==="ministry"&&memberships.length?'<button type="button" data-ca="transfer" data-user="'+safe(u.id)+'">Trasferisci</button>':"—")+'</td></tr>';
+    return '<tr><td><strong>'+safe(u.display_name||u.username)+'</strong><br><span class="muted">'+safe(u.username)+'</span><br><span class="tiny muted">'+safe(u.matricola||"Matricola non assegnata")+'</span></td><td>'+(u.active&&!u.deleted?"Attivo":"Sospeso")+(authority==="ministry"?' <button type="button" data-ca="account" data-user="'+safe(u.id)+'" data-enabled="'+(!u.active||u.deleted)+'">'+(u.active&&!u.deleted?"Sospendi":"Riattiva")+'</button>':'')+'</td><td>'+branches+'</td><td>'+(authority!==null&&memberships.length?'<button type="button" data-ca="transfer" data-user="'+safe(u.id)+'">Trasferisci</button>':"—")+'</td></tr>';
    }).join("")+'</tbody></table>':'Nessun account trovato.';
   }catch(e){$c("centralUserList").textContent=e.message||"Impossibile caricare gli account.";}
  };
@@ -1747,7 +1747,7 @@ if ("serviceWorker" in navigator) {
   try{const data=await invoke("audit_list");$c("centralAuditList").innerHTML=(data.events||[]).map(e=>'<div class="rankrow"><div><strong>'+String(e.event||"Operazione")+'</strong><div class="muted tiny">'+String(e.actor_username||"")+' · '+new Date(e.created_at).toLocaleString("it-IT")+'</div></div><span class="muted tiny">'+String(e.target_user_id||"")+'</span></div>').join("")||"Nessuna operazione registrata.";}catch(e){$c("centralAuditList").textContent=e.message||"Registro non disponibile.";}
  };
  $c("centralCreateUser").addEventListener("submit",async e=>{
-  e.preventDefault();if(authority!=="ministry")return;const btn=$c("centralCreateSubmit"),branch=$c("centralNewBranch").value;
+  e.preventDefault();if(!authority)return;const btn=$c("centralCreateSubmit"),branch=$c("centralNewBranch").value;
   btn.disabled=true;$c("centralCreateMsg").textContent="Creazione account...";
   try{const d=await invoke("create_user",{username:$c("centralNewUsername").value.trim().toLowerCase(),display_name:$c("centralNewName").value.trim(),password:$c("centralNewPassword").value,service_branch:branch,initial_rank:Number($c("centralNewRank").value)});$c("centralCreateMsg").textContent="Creato: "+d.username+" · "+d.matricola;$c("centralCreateUser").reset();await window.centralRefresh();await refreshAudit();}
   catch(err){$c("centralCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
@@ -1761,7 +1761,7 @@ if ("serviceWorker" in navigator) {
  });
  $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
  $c("centralUserList").addEventListener("click",async e=>{
-  const b=e.target.closest("[data-ca]");if(!b||!authority)return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;if(authority!=="ministry"&&(action==="account"||action==="transfer"))return;b.disabled=true;
+  const b=e.target.closest("[data-ca]");if(!b||!authority)return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;b.disabled=true;
   try{
    if(action==="access"){const enabled=b.dataset.enabled==="true";await invoke("set_access",{user_id,service_branch:branch,enabled});}
    if(action==="account"){const enable=b.dataset.enabled==="true";if(!confirm(enable?"Riattivare l'account?":"Sospendere l'account su entrambi i Corpi?"))return;await invoke(enable?"reactivate":"suspend",{user_id});}
@@ -1785,9 +1785,9 @@ if ("serviceWorker" in navigator) {
    await window.centralRefresh();await refreshAudit();
    $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
-    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+    $c("centralCreateUser").style.display="flex";
    $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
-    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+    $c("centralCreateUser").style.display="flex";
    $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");
@@ -1803,7 +1803,7 @@ if ("serviceWorker" in navigator) {
    const {error:se}=await db.auth.setSession(data.session);if(se)throw se;centralSession=data;
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");$c("centralWelcome").textContent=data.identity?.display_name||data.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
-    $c("centralCreateUser").style.display=authority==="ministry"?"flex":"none";
+    $c("centralCreateUser").style.display="flex";
    $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    if(data.identity?.must_change_password||data.ministry?.must_change_password){
