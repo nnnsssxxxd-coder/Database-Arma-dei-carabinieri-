@@ -1066,9 +1066,8 @@ async function login(e){
    if(session.error||!session.data?.user)throw new Error(isTransientAuthError(session.error)?"Connessione instabile: riprova senza modificare la password.":"Sessione non valida. Accedi di nuovo.");
    authUser=session.data.user;
   }
-  const verified=await db.auth.getUser();
-  if(verified.error||!verified.data?.user)throw new Error(isTransientAuthError(verified.error)?"Credenziali verificate, ma la connessione è instabile. Riprova tra poco.":"Non è stato possibile verificare la sessione. Accedi di nuovo.");
-  await loadProfile(verified.data.user||authUser);
+  if(!authUser?.id)throw new Error("Accesso non completato: profilo autenticato non disponibile. Riprova.");
+  await loadProfile(authUser);
   $("password").value="";msg.textContent="";msg.className="small";
  }catch(err){
   console.warn("Login:",err);
