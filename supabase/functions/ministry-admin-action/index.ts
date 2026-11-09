@@ -28,8 +28,12 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await db.from("ministry_admin_audit").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;return out(req,{ok:true,events:data??[]});
   }
   if(action==="create_user"){
-   const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??""),branch=String(b.service_branch??""),rank=Number(b.initial_rank);
-   if(!/^[a-z0-9_-]{3,24}$/.test(username)||display.length<1||display.length>60||password.length<12||password.length>72||!validBranch(branch)||!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Dati non validi: controlla username, nome, password, Corpo e grado."},400);
+   const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??""),branch=String(b.service_branch??b.branch??""),rank=Number(b.initial_rank??b.rank);
+   if(!/^[a-z0-9_-]{3,24}$/.test(username))return out(req,{error:"Username non valido: usa 3-24 caratteri minuscoli, numeri, trattino o underscore.",field:"username"},400);
+   if(display.length<1||display.length>60)return out(req,{error:"Nome visualizzato obbligatorio (massimo 60 caratteri).",field:"display_name"},400);
+   if(password.length<12||password.length>72)return out(req,{error:"Password iniziale non valida: deve contenere da 12 a 72 caratteri.",field:"password"},400);
+   if(!validBranch(branch))return out(req,{error:"Seleziona un Corpo valido: Carabinieri oppure Guardia di Finanza.",field:"service_branch"},400);
+   if(!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Grado non valido per il Corpo selezionato. Valori ammessi: 0-"+maxRank(branch)+".",field:"initial_rank"},400);
    const {data:existsMin,error:em}=await db.from("ministry_admins").select("user_id").eq("username",username).maybeSingle();if(em)throw em;if(existsMin)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
    const {data:existsCmd,error:ec}=await db.from("command_general_admins").select("user_id").eq("username",username).maybeSingle();if(ec)throw ec;if(existsCmd)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
    const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return out(req,{error:"Username già utilizzato."},409);
