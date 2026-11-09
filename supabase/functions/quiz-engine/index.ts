@@ -49,7 +49,7 @@ Deno.serve(async(req)=>{
    : ["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
   const category=String(body.category??"Tutte le materie");
   if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida per il Corpo selezionato."},400);
-  const maxRank=branch==="finanza"?22:17;
+  const maxRank=branch==="finanza"?24:23;
   if(body.action==="rank_exam_start"){
    const {data:row}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
    const {data:prof}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).single();
@@ -58,8 +58,8 @@ Deno.serve(async(req)=>{
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
    const bands=branch==="finanza"
-    ? (rank<5?["Ordinamento e compiti"]:rank<14?["Ordinamento e compiti","Diritto tributario"]:allowed)
-    : (rank<5?["Arma e ordinamento"]:rank<11?["Arma e ordinamento","Costituzione e istituzioni"]:allowed);
+    ? (rank<5?["Ordinamento e compiti"]:rank<16?["Ordinamento e compiti","Diritto tributario"]:allowed)
+    : (rank<5?["Arma e ordinamento"]:rank<14?["Arma e ordinamento","Costituzione e istituzioni"]:allowed);
    const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch).in("category",bands);
    if(error||!pool||pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},500);
    const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,5);
