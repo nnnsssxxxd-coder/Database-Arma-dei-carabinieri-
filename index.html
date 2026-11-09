@@ -880,6 +880,38 @@ body:not(:has(#credentialPanel:not(.hidden))) .project-disclaimer{border-color:#
 #serviceChoice .service-choice-card.carabinieri-choice,#serviceChoice .service-choice-card.finanza-choice{border-color:#596674}
 #serviceChoice .service-choice-card.carabinieri-choice h3,#serviceChoice .service-choice-card.finanza-choice h3{color:#edf2f7}
 #serviceChoice .service-choice-card.carabinieri-choice button,#serviceChoice .service-choice-card.finanza-choice button{background:linear-gradient(135deg,#526171,#303b47);border-color:#788797;color:#fff}
+
+/* Login redesign: clear hierarchy, accessible controls, neutral first screen */
+.loginbox{max-width:900px;margin:28px auto 48px;overflow:hidden;border:1px solid #35404a;border-radius:24px;background:radial-gradient(ellipse at 50% 0%,#26313b 0%,#121920 55%,#0b1015 100%);box-shadow:0 24px 70px #0009}
+.fdo-hero-art{max-width:170px;margin:22px auto 4px;opacity:.82}
+.service-choice{padding:10px clamp(16px,4vw,42px) 34px}
+.service-choice-intro{text-align:center;max-width:640px;margin:0 auto 22px}
+.service-choice-intro h2{font-size:clamp(24px,4vw,34px);letter-spacing:.02em;margin:12px 0 8px}
+.service-choice-intro p{line-height:1.6}
+.service-choice-grid{gap:16px}
+.service-choice-card{border-radius:18px;padding:22px;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
+.service-choice-card p{line-height:1.55;min-height:48px}
+.service-choice-card button{width:100%;margin-top:auto;min-height:48px;border-radius:12px;font-weight:800;letter-spacing:.035em}
+.login-card{max-width:540px;margin:22px auto 34px;padding:clamp(20px,4vw,34px);border:1px solid #46535f;border-radius:22px;background:linear-gradient(155deg,#1a242d,#10161c 72%);box-shadow:0 22px 60px #0008}
+.login-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.login-card-top .ghost{padding:9px 12px;border:1px solid #52606c;border-radius:10px}
+.login-secure-mark{font-size:10px;letter-spacing:.12em;color:#aebbc6;font-weight:800}
+.login-card-heading{display:flex;align-items:center;gap:15px;margin:0 0 10px}
+.login-symbol{width:54px;height:54px;flex:0 0 54px;display:grid;place-items:center;border:1px solid #667786;border-radius:16px;background:#25323e;color:#f2f5f8;font-size:26px}
+.login-kicker{font-size:10px;letter-spacing:.16em;color:#aab7c2;font-weight:800;margin-bottom:5px}
+.login-card-heading h2{font-size:clamp(25px,5vw,32px);margin:8px 0 0;line-height:1.15}
+#loginDescription{line-height:1.6;margin:10px 0 22px}
+.login-form{display:grid;gap:17px;margin-top:18px}
+.login-form label{display:grid;gap:8px;font-size:11px;font-weight:800;letter-spacing:.1em;color:#c7d0d8}
+.login-form input{width:100%;min-height:52px;box-sizing:border-box;border:1px solid #465561;border-radius:12px;background:#0b1117;color:#f6f8fa;padding:0 15px;font-size:16px;letter-spacing:0;outline:none;transition:border-color .18s,box-shadow .18s}
+.login-form input::placeholder{color:#778590}
+.login-form input:focus{border-color:var(--gold2);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold2) 22%,transparent)}
+.login-submit{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:54px;padding:0 18px;border-radius:12px;font-size:14px;font-weight:850;letter-spacing:.025em}
+.login-submit span:last-child{font-size:22px}
+.login-message{min-height:20px;margin:12px 0 4px;line-height:1.5}
+.login-footnote{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #34414b;padding-top:16px;margin-top:12px;color:#9caab5;font-size:11px;line-height:1.55}
+.login-footnote span:first-child{color:#c5d0d9;font-size:16px}
+@media(max-width:620px){.loginbox{margin:12px auto 28px;border-radius:18px}.fdo-hero-art{max-width:118px}.service-choice-grid{grid-template-columns:1fr}.service-choice-card p{min-height:0}.login-card{margin:12px 12px 24px;border-radius:18px}.login-card-top{margin-bottom:20px}}
 </style>
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
@@ -945,11 +977,12 @@ body:not(:has(#credentialPanel:not(.hidden))) .project-disclaimer{border-color:#
   <article class="service-choice-card finanza-choice"><div class="service-choice-emblem">GdF</div><h3>GUARDIA DI FINANZA</h3><p>Ambiente dedicato con ruoli, gradi, progressione, quiz e percorsi formativi.</p><button class="primary" type="button" data-enter-service="finanza" onclick="window.enterService('finanza')">ENTRA IN FINANZA</button></article>
  </div>
 </div>
-<div id="credentialPanel" class="panel hidden">
- <button id="changeService" class="ghost" type="button">← Cambia Corpo</button><div class="badge" id="selectedServiceBadge">AREA RISERVATA</div>
- <h2 id="loginHeading" style="margin-top:12px">Bentornato</h2><p id="loginDescription" class="muted">Accedi con le credenziali fornite dall’amministratore.</p>
- <form id="loginForm" novalidate><label>Nome utente<input id="username" type="text" placeholder="Inserisci il nome utente" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><button class="primary" id="loginBtn" type="submit" style="width:100%">Accedi all’area personale</button></form>
- <p id="loginMsg" class="small" role="status"></p><p class="tiny muted">Non è prevista la registrazione pubblica. Gli account vengono creati dall’istruttore del rispettivo Corpo.</p>
+<div id="credentialPanel" class="panel hidden login-card">
+ <div class="login-card-top"><button id="changeService" class="ghost" type="button">← Cambia ambiente</button><span class="login-secure-mark">● ACCESSO RISERVATO</span></div>
+ <div class="login-card-heading"><div class="login-symbol" aria-hidden="true">✦</div><div><div class="login-kicker">DATABASE FORZE DELL’ORDINE</div><div class="badge" id="selectedServiceBadge">AREA RISERVATA</div><h2 id="loginHeading">Bentornato</h2></div></div>
+ <p id="loginDescription" class="muted">Accedi con le credenziali assegnate dall’istruttore.</p>
+ <form id="loginForm" class="login-form" novalidate><label for="username">NOME UTENTE<input id="username" type="text" placeholder="Es. nomeutente" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required></label><label for="password">PASSWORD<input id="password" type="password" placeholder="Inserisci la password" autocomplete="current-password" required></label><button class="primary login-submit" id="loginBtn" type="submit"><span>Accedi all’area personale</span><span aria-hidden="true">→</span></button></form>
+ <p id="loginMsg" class="small login-message" role="status" aria-live="polite"></p><div class="login-footnote"><span aria-hidden="true">◈</span><span>Accesso riservato. Gli account sono creati dagli istruttori del rispettivo ambiente.</span></div>
 </div></section>
 <section id="appView" class="hidden">
 <div class="panel"><div class="row between"><div><div class="muted small">AREA PERSONALE</div><div id="welcome" class="welcome"></div><div id="userMeta" class="small muted"></div></div><div class="row"><span id="roleBadge" class="badge"></span><button id="logoutBtn" class="ghost">Esci</button></div></div><div class="identity-strip"><div class="service-card" aria-label="Tessera personale dimostrativa, non documento ufficiale"><div class="service-card-top"><div class="service-card-mark"><span class="service-card-emblem">✦</span><span>ARMA DEI CARABINIERI</span></div><span class="service-card-class">TESSERA DIGITALE · SIMULAZIONE</span></div><div class="service-card-body"><div class="service-card-photo" aria-hidden="true"><svg viewBox="0 0 64 76"><circle cx="32" cy="23" r="13" fill="currentColor" opacity=".9"/><path d="M8 70c1-17 10-26 24-26s23 9 24 26" fill="currentColor" opacity=".9"/></svg></div><div class="service-card-details"><div class="service-card-name"><span>NOMINATIVO</span><strong id="cardName">Utente</strong></div><div class="service-card-fields"><div><span>GRADO</span><strong id="homeRank">—</strong></div><div><span>MATRICOLA</span><strong id="homeMatricola">—</strong></div><div><span>RUOLO</span><strong id="cardRole">ALLIEVO</strong></div><div><span>STATO</span><strong class="card-active">ATTIVO</strong></div></div><div class="service-card-department"><div><span>REPARTO</span><strong id="cardDepartment">NON ASSEGNATO</strong></div><div><span>GRADO REPARTO</span><strong id="cardDepartmentRank">—</strong></div></div></div></div></div></div>
