@@ -1219,6 +1219,13 @@ footer{padding:14px 8px 22px;font-size:10px}
   <button class="primary" id="centralLoginSubmit" type="submit">Accedi</button>
  </form>
  <p id="centralLoginMsg" class="small" role="status" aria-live="polite"></p>
+ <form id="centralPasswordForm" class="hidden">
+  <h3>Imposta una nuova password</h3><p class="muted small">Per proteggere l’account, cambia la password temporanea prima di entrare nell’area riservata. Usa almeno 12 caratteri.</p>
+  <label>Nuova password<input id="centralNewPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
+  <label>Conferma nuova password<input id="centralConfirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
+  <button class="primary" id="centralPasswordSave" type="submit">Salva nuova password</button>
+  <p id="centralPasswordMsg" class="small" role="status" aria-live="polite"></p>
+ </form>
 </div>
 <div id="centralWorkspace" class="panel hidden">
  <div class="central-head"><div><span class="central-level" id="centralAuthority">AUTORITÀ</span><h2 id="centralWelcome">Area riservata</h2><p class="muted small" id="centralSubhead"></p></div><button type="button" onclick="window.centralLogout()">Esci</button></div>
@@ -1714,6 +1721,26 @@ if ("serviceWorker" in navigator) {
   $c("centralAuditList").textContent="Caricamento registro...";
   try{const data=await invoke("audit_list");$c("centralAuditList").innerHTML=(data.events||[]).map(e=>'<div class="rankrow"><div><strong>'+String(e.event||"Operazione")+'</strong><div class="muted tiny">'+String(e.actor_username||"")+' · '+new Date(e.created_at).toLocaleString("it-IT")+'</div></div><span class="muted tiny">'+String(e.target_user_id||"")+'</span></div>').join("")||"Nessuna operazione registrata.";}catch(e){$c("centralAuditList").textContent=e.message||"Registro non disponibile.";}
  };
+ $c("centralPasswordForm").addEventListener("submit",async e=>{
+  e.preventDefault();const password=$c("centralNewPassword").value,confirm=$c("centralConfirmPassword").value,btn=$c("centralPasswordSave");
+  if(password.length<12||password.length>72){$c("centralPasswordMsg").textContent="La password deve contenere da 12 a 72 caratteri.";return;}
+  if(password!==confirm){$c("centralPasswordMsg").textContent="Le due password non coincidono.";return;}
+  btn.disabled=true;$c("centralPasswordMsg").textContent="Aggiornamento password...";
+  try{
+   await invoke("change_password",{password});
+   $c("centralPasswordForm").classList.add("hidden");$c("centralLoginForm").classList.remove("hidden");
+   $c("centralLoginMsg").textContent="Password aggiornata. Accesso amministrativo abilitato.";
+   $c("centralPasswordMsg").textContent="";
+   if(centralSession?.identity)centralSession.identity.must_change_password=false;
+   if(centralSession?.ministry)centralSession.ministry.must_change_password=false;
+   await window.centralRefresh();await refreshAudit();
+   $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
+   $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
+   $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
+   $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");
+  }catch(err){$c("centralPasswordMsg").textContent=err.message||"Cambio password non riuscito.";}
+  finally{btn.disabled=false;}
+ });
  $c("centralLoginForm").addEventListener("submit",async e=>{
   e.preventDefault();const btn=$c("centralLoginSubmit");btn.disabled=true;$c("centralLoginMsg").textContent="Verifica credenziali...";
   try{
@@ -1724,7 +1751,11 @@ if ("serviceWorker" in navigator) {
    $c("centralLoginPanel").classList.add("hidden");$c("centralWorkspace").classList.remove("hidden");$c("centralWelcome").textContent=data.identity?.display_name||data.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
-   if(data.identity?.must_change_password||data.ministry?.must_change_password){$c("centralLoginMsg").textContent="È necessario completare il cambio password al primo accesso."; $c("centralWorkspace").classList.add("hidden");$c("centralLoginPanel").classList.remove("hidden");throw new Error("Cambio password obbligatorio non ancora completato: accesso amministrativo bloccato.");}
+   if(data.identity?.must_change_password||data.ministry?.must_change_password){
+    $c("centralLoginForm").classList.add("hidden");$c("centralPasswordForm").classList.remove("hidden");
+    $c("centralLoginMsg").textContent="Accesso verificato. Prima di continuare devi impostare una password personale.";
+    $c("centralNewPassword").focus();return;
+   }
    await window.centralRefresh();await refreshAudit();
   }catch(err){$c("centralLoginMsg").textContent=err.message||"Accesso non riuscito.";try{await db.auth.signOut({scope:"local"});}catch(_){}}
   finally{btn.disabled=false;}
