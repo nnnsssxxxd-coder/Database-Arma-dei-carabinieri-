@@ -42,27 +42,31 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) return reply(req, { error: "Sessione non valida. Accedi di nuovo." }, 401);
 
     const { data: profile, error: profileError } = await admin.from("profiles")
-      .select("id,username,display_name,role,active,deleted,matricola,initial_rank")
+      .select("id,username,display_name,role,active,deleted,matricola")
       .eq("id", user.id).maybeSingle();
     if (profileError) return reply(req, { error: "Impossibile leggere il profilo." }, 500);
     if (!profile || !profile.active || profile.deleted) return reply(req, { error: "Account sospeso o disattivato." }, 403);
-
     let body: any = {};
     try { body = await req.json(); } catch { return reply(req, { error: "Richiesta non valida." }, 400); }
+    const branch=String(body.service_branch??"");
+    if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
+    const {data:membership}=await admin.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
+    profile.service_branch=branch;profile.initial_rank=membership.initial_rank;profile.role=membership.role;profile.matricola=membership.matricola||profile.matricola;
 
     if (body.action === "status") {
       const [progress, membership, completed] = await Promise.all([
-        admin.from("progress").select("payload").eq("user_id", user.id).maybeSingle(),
-        admin.from("department_memberships").select("department_id,exp,rank,quiz_count,correct_answers,perfect_streak,history").eq("user_id", user.id).maybeSingle(),
-        admin.from("game_mission_completions").select("mission_id,exp_awarded,completed_at").eq("user_id", user.id)
+        admin.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle(),
+        admin.from("department_memberships").select("department_id,exp,rank,quiz_count,correct_answers,perfect_streak,history").eq("user_id", user.id).eq("service_branch",branch).maybeSingle(),
+        admin.from("game_mission_completions").select("mission_id,exp_awarded,completed_at").eq("user_id", user.id).eq("service_branch",branch)
       ]);
       if (progress.error || membership.error || completed.error) return reply(req, { error: "Impossibile sincronizzare la carriera." }, 500);
       let department = null;
       let command = null;
       if (membership.data?.department_id) {
         const [dept, commanders] = await Promise.all([
-          admin.from("department_catalog").select("id,name,description").eq("id", membership.data.department_id).maybeSingle(),
-          admin.from("department_commanders").select("commander_user_id,vice_user_id").eq("department_id", membership.data.department_id).maybeSingle()
+          admin.from("department_catalog").select("id,name,description").eq("id", membership.data.department_id).eq("service_branch",branch).maybeSingle(),
+          admin.from("department_commanders").select("commander_user_id,vice_user_id").eq("department_id", membership.data.department_id).eq("service_branch",branch).maybeSingle()
         ]);
         if (dept.error || commanders.error) return reply(req, { error: "Impossibile leggere il reparto." }, 500);
         department = dept.data;
@@ -89,7 +93,8 @@ Deno.serve(async (req: Request) => {
       }
       const { data, error } = await admin.rpc("complete_game_mission", {
         p_user_id: user.id,
-        p_mission_id: missionId
+        p_mission_id: missionId,
+        p_service_branch: branch
       });
       if (error) {
         console.error("game-engine mission completion:", error.message);
