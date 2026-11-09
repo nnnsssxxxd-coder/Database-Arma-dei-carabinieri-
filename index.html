@@ -1358,6 +1358,8 @@ function enterService(branch){
  document.documentElement.dataset.service=branch;
  try{localStorage.setItem("selectedServiceBranch",branch);}catch(_){}
  $("serviceChoice")?.classList.add("hidden");
+ $("centralChoice")?.classList.add("hidden");
+ $("centralLoginPanel")?.classList.add("hidden");
  $("credentialPanel")?.classList.remove("hidden");
  try{applyServiceBranding(branch);}catch(error){console.error("Branding Corpo:",error);const msg=$("loginMsg");if(msg)msg.textContent="Accesso selezionato. Alcuni elementi grafici non sono disponibili.";}
  const msg=$("loginMsg");if(msg)msg.textContent="";
@@ -1373,6 +1375,8 @@ function returnToServiceChoice(){
  if($("username"))$("username").value="";
  $("credentialPanel")?.classList.add("hidden");
  $("serviceChoice")?.classList.remove("hidden");
+ $("centralChoice")?.classList.remove("hidden");
+ $("centralLoginPanel")?.classList.add("hidden");
  $("brandTitle").textContent="DATABASE FORZE DELL’ORDINE";
  $("selectedServiceBadge").textContent="AREA RISERVATA";
  $("loginMsg").textContent="";
