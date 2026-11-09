@@ -76,7 +76,7 @@ header{border-bottom:1px solid #34404b;background:#0b1016f2}
 #logoutBtn{border-color:#4a5661}
 .workspace{display:grid;grid-template-columns:245px minmax(0,1fr);gap:20px;align-items:start}
 .tabs{display:flex;flex-direction:column;gap:5px;padding:10px;margin:0;overflow:visible;border:1px solid #2b3742;border-radius:16px;background:#10161d;position:sticky;top:88px;max-height:calc(100dvh - 108px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;z-index:4}
-.tabs button:focus-visible,#menuToggle:focus-visible{outline:3px solid #e4c783;outline-offset:3px}
+.tabs button:focus-visible,#menuToggle:focus-visible{outline:3px solid #e4c783;outline-offset:3px}.danger{border-color:#8f2936;background:#32151b;color:#ff9aa4}.danger:hover{border-color:#ff6675;background:#481820}
 #menuToggle{min-width:104px;justify-content:center}
 .workspace-content{scroll-margin-top:88px}
 .tabs button{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#bdc8d2;padding:12px 14px;min-height:46px;border-radius:10px;display:flex;align-items:center;gap:11px}
@@ -1761,7 +1761,7 @@ if ("serviceWorker" in navigator) {
   try{
    const data=await invoke("list_command_admins");
    const rows=data.admins||[];
-   $c("centralCommandAdminList").innerHTML=rows.length?rows.map(a=>'<div class="rankrow"><div><strong>'+safe(a.display_name||a.username)+'</strong><div class="tiny muted">@'+safe(a.username)+' · '+(a.must_change_password?"Cambio password richiesto":"Password aggiornata")+'</div></div><div class="actions"><span class="badge">'+(a.active?"Attivo":"Sospeso")+'</span><button type="button" data-cga="toggle" data-user="'+safe(a.user_id)+'" data-enabled="'+(!a.active)+'">'+(a.active?"Sospendi":"Riattiva")+'</button><button type="button" data-cga="reset" data-user="'+safe(a.user_id)+'">Reimposta password</button></div></div>').join(""):"Nessun amministratore del Comando Generale registrato.";
+   $c("centralCommandAdminList").innerHTML=rows.length?rows.map(a=>'<div class="rankrow"><div><strong>'+safe(a.display_name||a.username)+'</strong><div class="tiny muted">@'+safe(a.username)+' · '+(a.must_change_password?"Cambio password richiesto":"Password aggiornata")+'</div></div><div class="actions"><span class="badge">'+(a.active?"Attivo":"Sospeso")+'</span><button type="button" data-cga="toggle" data-user="'+safe(a.user_id)+'" data-enabled="'+(!a.active)+'">'+(a.active?"Sospendi":"Riattiva")+'</button><button type="button" data-cga="reset" data-user="'+safe(a.user_id)+'">Reimposta password</button><button type="button" class="danger" data-cga="remove" data-user="'+safe(a.user_id)+'">Rimuovi</button></div></div>').join(""):"Nessun amministratore del Comando Generale registrato.";
   }catch(e){$c("centralCommandAdminList").textContent=e.message||"Elenco amministratori non disponibile.";}
  };
  const refreshAudit=async()=>{
@@ -1774,6 +1774,7 @@ if ("serviceWorker" in navigator) {
   try{
    if(action==="toggle"){const enabled=b.dataset.enabled==="true";if(!confirm(enabled?"Riattivare l'amministratore del Comando Generale?":"Sospendere l'amministratore del Comando Generale?"))return;await invoke("set_command_admin_access",{user_id,enabled});}
    if(action==="reset"){const password=prompt("Nuova password temporanea (almeno 12 caratteri):");if(password===null)return;if(password.length<12||password.length>72)throw new Error("La password deve contenere 12-72 caratteri.");await invoke("reset_command_admin_password",{user_id,password});}
+   if(action==="remove"){if(!confirm("Rimuovere l'accesso al Comando Generale per questo membro? L'eventuale accesso al Ministero e il suo profilo personale resteranno intatti."))return;await invoke("remove_command_admin",{user_id});}
    await window.centralRefreshCommandAdmins();await refreshAudit();
   }catch(err){alert(err.message||"Operazione non riuscita.");}finally{b.disabled=false;}
  });
