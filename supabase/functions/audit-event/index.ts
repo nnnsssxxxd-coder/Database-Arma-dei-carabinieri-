@@ -16,11 +16,15 @@ Deno.serve(async(req)=>{
   const {data:profile}=await adminClient.from("profiles").select("username,active,deleted").eq("id",user.id).maybeSingle();
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account sospeso"},403);
   const body=await req.json();if(!allowed.has(body.event))return reply(req,{error:"Evento non consentito"},400);
+  const service_branch=String(body.service_branch??"");
+  if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Corpo non valido"},400);
+  const {data:membership}=await adminClient.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();
+  if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo"},403);
   const event=String(body.event);let details:Record<string,unknown>={};
   if(event==="page_view")details={page:String(body.page??"").slice(0,24)};
   if(event==="quiz_completed")details={correct:Math.max(0,Math.min(4,Number(body.correct)||0)),level:Math.max(0,Math.min(17,Number(body.level)||0))};
   if(event==="gps_opened")details={action:String(body.action??"open").slice(0,20)};
-  const {error}=await adminClient.from("audit_logs").insert({actor_id:user.id,actor_username:profile.username,event,details});
+  const {error}=await adminClient.from("audit_logs").insert({actor_id:user.id,actor_username:profile.username,event,service_branch,details});
   if(error)throw error;return reply(req,{ok:true});
  }catch(_e){return reply(req,{error:"Registrazione evento non riuscita"},400);}
 });
