@@ -1039,7 +1039,7 @@ function rankSymbolSvg(rank){
 }
 function render(){
  const rank=Math.max(0,Math.min(RANKS.length-1,Number(progress.rank)||0)),exp=Math.max(0,Number(progress.exp)||0),need=threshold(rank);
- $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=rank>=(profile.service_branch==="finanza"?14:12)?"UFFICIALE":"SOTTUFFICIALE";$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
+ $("welcome").textContent=profile.display_name||profile.username;$("homeWelcome").textContent=profile.display_name||profile.username;$("cardName").textContent=profile.display_name||profile.username||"Utente";const gradeRole=profile.service_branch==="finanza"?(rank>=14?"UFFICIALE":rank>=5?"SOTTUFFICIALE":"APPUNTATI E FINANZIERI"):(rank>=12?"UFFICIALE":"SOTTUFFICIALE");$("cardRole").textContent=gradeRole;$("roleBadge").textContent=["admin","istruttore"].includes(profile.role)?("ISTRUTTORE · "+gradeRole):("OPERATORE · "+gradeRole);
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
