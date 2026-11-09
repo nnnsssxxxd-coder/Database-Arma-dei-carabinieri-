@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const allowedOrigins = new Set([
-  "https://nnnsssxxxd-coder.github.io",
+  
   "https://localhost",
   "http://localhost",
   "capacitor://localhost",
