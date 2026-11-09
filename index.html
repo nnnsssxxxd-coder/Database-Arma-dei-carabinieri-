@@ -1298,7 +1298,12 @@ async function login(e){
  loginInProgress=true;btn.disabled=true;msg.className="small";msg.textContent="Verifica credenziali…";
  try{
   await sessionRestorePromise;
-  if(user){msg.textContent="Sessione già attiva.";return;}
+  // Non riutilizzare una sessione di un altro Corpo: ogni accesso verifica
+  // nuovamente le credenziali e ricarica il profilo del Corpo selezionato.
+  if(user || profile){
+   try{await db.auth.signOut({scope:"local"});}catch(signOutError){console.warn("Pulizia sessione precedente:",signOutError);}
+   user=null;profile=null;departmentMembership=null;
+  }
   let authUser=null;
   if(identifier.includes("@")){
    const result=await db.auth.signInWithPassword({email:identifier.toLowerCase(),password});
@@ -1323,11 +1328,16 @@ async function login(e){
   }
   if(!authUser?.id)throw new Error("Accesso non completato: profilo autenticato non disponibile. Riprova.");
   await loadProfile(authUser);
+  // Verifica esplicita: il profilo caricato deve appartenere al Corpo scelto.
+  if(!profile || profile.service_branch!==selectedBranch)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
   $("password").value="";msg.textContent="";msg.className="small";
  }catch(err){
   console.warn("Login:",err);
   const message=String(err?.message||"");
-  if(/Account sospeso o disattivato|Sessione non valida|appartiene a un altro Corpo/i.test(message)){try{await db.auth.signOut({scope:"local"});}catch(_){}user=null;profile=null;}
+  // Se la verifica del profilo fallisce, elimina la sessione parziale:
+  // evita che un accesso precedente interferisca con l'altro Corpo.
+  try{await db.auth.signOut({scope:"local"});}catch(signOutError){console.warn("Pulizia sessione dopo errore:",signOutError);}
+  user=null;profile=null;departmentMembership=null;
   $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
   const safeMessages=["Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.","Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.","Connessione temporaneamente non disponibile. Riprova tra poco.","Email o password non corrette. Verifica i dati e riprova.","Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.","Nome utente o password non corretti. Verifica i dati e riprova.","Connessione instabile: riprova senza modificare la password.","Sessione non valida. Accedi di nuovo.","Accesso non completato: profilo autenticato non disponibile. Riprova.","Account sospeso o disattivato.","Account non abilitato per il Corpo selezionato. Contatta l’istruttore.","Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.","Account non configurato correttamente. Contatta l’istruttore.","Accesso temporaneamente non disponibile. Riprova."];
   msg.textContent=safeMessages.includes(message)?message:"Accesso non riuscito. Verifica le credenziali e la connessione, quindi riprova.";
