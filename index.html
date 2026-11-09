@@ -1189,6 +1189,30 @@ footer{padding:14px 8px 22px;font-size:10px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
 <style id="central-table-isolated-scroll">html,body{max-width:100%;overflow-x:hidden}#centralUsers,#centralUserList{display:block;width:100%;max-width:100%;min-width:0;overflow-x:hidden}.central-table-scroll{display:block;position:relative;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-width:thin}.central-table-scroll .central-table{width:max-content;min-width:760px;max-width:none;table-layout:auto}.central-table-scroll th,.central-table-scroll td{white-space:normal;overflow-wrap:anywhere}#centralCreateUser{width:100%;max-width:100%;min-width:0}#centralCreateUser label{min-width:min(100%,190px);flex:1 1 190px}#centralCreateUser input,#centralCreateUser select{width:100%;max-width:100%;box-sizing:border-box}</style>
+
+<style id="corps-identity-separation-v2">
+/* Identità separate per gli ambienti dimostrativi: non sono stemmi ufficiali. */
+:root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff6571;--line:#74202c;--surface:#160d10;--surface2:#211116;--bg:#070506}
+:root[data-service="finanza"]{--gold:#c8a64b;--gold2:#f0d98d;--line:#486b4d;--surface:#0c1a11;--surface2:#14271a;--bg:#050d08}
+:root[data-service="carabinieri"] body{background:radial-gradient(ellipse at 50% -12%,#40101a 0%,#10090c 43%,#050505 100%)}
+:root[data-service="finanza"] body{background:radial-gradient(ellipse at 50% -12%,#1b4729 0%,#0b170e 43%,#050805 100%)}
+:root[data-service="carabinieri"] #credentialPanel,:root[data-service="carabinieri"] .loginbox{border-color:#a52a3a;background:linear-gradient(145deg,#241016,#0b090b 72%,#260d14)}
+:root[data-service="finanza"] #credentialPanel,:root[data-service="finanza"] .loginbox{border-color:#b99a4c;background:linear-gradient(145deg,#172c1d,#09120c 72%,#1c2a1c)}
+:root[data-service="carabinieri"] #loginHeading,:root[data-service="carabinieri"] #selectedServiceBadge{color:#ff7580}
+:root[data-service="finanza"] #loginHeading,:root[data-service="finanza"] #selectedServiceBadge{color:#f0d98d}
+:root[data-service="carabinieri"] #loginBtn{background:linear-gradient(135deg,#d71930,#781321);border-color:#ed5360;color:white}
+:root[data-service="finanza"] #loginBtn{background:linear-gradient(135deg,#d4b45d,#8e7132);border-color:#ecd48c;color:#11180f}
+:root[data-service="carabinieri"] .service-choice-card.carabinieri-choice{border:1px solid #a52a3a;background:linear-gradient(145deg,#35121b,#10090d)}
+:root[data-service="finanza"] .service-choice-card.finanza-choice{border:1px solid #8b9c68;background:linear-gradient(145deg,#183421,#0b150e)}
+:root[data-service="carabinieri"] .service-choice-card.carabinieri-choice h3{color:#ff7580}
+:root[data-service="finanza"] .service-choice-card.finanza-choice h3{color:#f0d98d}
+:root[data-service="carabinieri"] .service-choice-card.carabinieri-choice .service-choice-emblem{background:#501622;border-color:#d94a59;color:#fff}
+:root[data-service="finanza"] .service-choice-card.finanza-choice .service-choice-emblem{background:#1e452a;border-color:#c7a951;color:#f3df9c}
+:root[data-service="carabinieri"] .card,.service-card{border-color:#74202c}
+:root[data-service="finanza"] .card,:root[data-service="finanza"] .service-card{border-color:#486b4d}
+:root[data-service="finanza"] .nav button.active,:root[data-service="finanza"] .tab.active{border-color:#c8a64b}
+:root[data-service="carabinieri"] .nav button.active,:root[data-service="carabinieri"] .tab.active{border-color:#d71930}
+</style>
 </head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
 <header><div class="head"><div class="brand"><div class="crest" role="img" aria-label="Emblema grafico dell’area personale"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/><path d="M32 32v-5h5v5" fill="none" stroke="#171b20" stroke-width="3"/></svg></div><div><h1 id="brandTitle">DATABASE FORZE DELL’ORDINE</h1><p>AREA PERSONALE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <main class="wrap">
@@ -1495,9 +1519,12 @@ async function loadProfile(u){
  const membership=await db.from("profile_memberships").select("role,initial_rank,matricola,active").eq("user_id",u.id).eq("service_branch",selectedBranch).eq("active",true).maybeSingle();
  if(membership.error||!membership.data||!membership.data.active)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
  nextProfile.role=membership.data.role;nextProfile.initial_rank=membership.data.initial_rank;nextProfile.matricola=membership.data.matricola||"";nextProfile.service_branch=selectedBranch;
- applyServiceBranding(selectedBranch);
- profile=nextProfile;user=u;departmentMembership=null;renderDepartmentIdentity();
- $("newBranch").value=selectedBranch;$("newBranch").disabled=profile.role!=="admin";
+ // Conferma il contesto dell'ente e registra subito l'identità autenticata:
+ // gli elementi grafici non devono poter annullare un login valido.
+ profile=nextProfile;user=u;departmentMembership=null;
+ try{applyServiceBranding(selectedBranch);}catch(brandingError){console.warn("Branding ente non disponibile:",brandingError);}
+ try{renderDepartmentIdentity();}catch(identityError){console.warn("Identità reparto non disponibile:",identityError);}
+ const branchSelect=$("newBranch");if(branchSelect){branchSelect.value=selectedBranch;branchSelect.disabled=profile.role!=="admin";}
  progress={rank:profile.initial_rank||0,exp:0,quizCount:0,correct:0,streak:0,history:[]};
  const g=await db.from("progress").select("payload").eq("user_id",u.id).eq("service_branch",selectedBranch).maybeSingle();
  const progressSynced=!g.error;
@@ -1559,8 +1586,19 @@ async function login(e){
  }catch(err){
   console.warn("Login:",err);
   const message=String(err?.message||"");
-  // Se la verifica del profilo fallisce, elimina la sessione parziale:
-  // evita che un accesso precedente interferisca con l'altro Corpo.
+  // Se l'identità e l'abilitazione dell'ente sono già state verificate,
+  // un errore successivo di interfaccia non deve espellere l'utente.
+  if(user?.id&&profile?.id===user.id&&profile.service_branch===selectedBranch){
+   $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
+   const banner=$("dashboardLoadError");
+   if(banner)banner.textContent="Accesso verificato. Alcuni elementi della schermata iniziale non sono disponibili: usa Aggiorna.";
+   $("password").value="";
+   msg.textContent="Accesso effettuato. Caricamento di alcuni contenuti da completare.";
+   msg.className="small";
+   try{showTab("home");}catch(navError){console.warn("Navigazione iniziale:",navError);}
+   return;
+  }
+  // Prima del completamento della verifica, elimina la sessione parziale.
   try{await db.auth.signOut({scope:"local"});}catch(signOutError){console.warn("Pulizia sessione dopo errore:",signOutError);}
   user=null;profile=null;departmentMembership=null;
   $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
