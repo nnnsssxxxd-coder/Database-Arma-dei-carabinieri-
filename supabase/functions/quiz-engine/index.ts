@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const ALLOWED_ORIGINS=new Set(["https://nnnsssxxxd-coder.github.io","https://localhost","capacitor://localhost","ionic://localhost","http://localhost","http://localhost:8100","https://localhost:8100"]);
+const ALLOWED_ORIGINS=new Set(["https://localhost","capacitor://localhost","ionic://localhost","http://localhost","http://localhost:8100","https://localhost:8100"]);
 function corsHeadersFor(req:Request){const origin=req.headers.get("Origin")??"";return {...(ALLOWED_ORIGINS.has(origin)?{"Access-Control-Allow-Origin":origin}:{}),"Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Max-Age":"86400"};}
 function reply(req:Request,data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...corsHeadersFor(req),"Content-Type":"application/json","Cache-Control":"no-store"}});}
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
