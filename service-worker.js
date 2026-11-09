@@ -1,4 +1,4 @@
-const CACHE_NAME = "carabinieri-pwa-v8";
+const CACHE_NAME = "database-forze-ordine-v10";
 const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg"];
 
 self.addEventListener("install", event => {
