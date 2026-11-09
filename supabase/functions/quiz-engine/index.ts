@@ -5,18 +5,18 @@ function reply(req:Request,data:unknown,status=200){return new Response(JSON.str
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
-async function questionPool(category:string){
- let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true);
+async function questionPool(category:string,branch:"carabinieri"|"finanza"){
+ let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch);
  if(category!=="Tutte le materie")request=request.eq("category",category);
  return await request.order("sort_order");
 }
-async function cooldownFor(userId:string,category:string){
- const {data:pool,error:poolError}=await questionPool(category);
+async function cooldownFor(userId:string,category:string,branch:"carabinieri"|"finanza"){
+ const {data:pool,error:poolError}=await questionPool(category,branch);
  if(poolError||!pool)return {error:true,available:0,cooldown_until:null};
  if(pool.length<4)return {error:false,available:pool.length,too_few:true,cooldown_until:null};
  const since=new Date(Date.now()-WINDOW_MS).toISOString();
  const {data:recent,error}=await db.from("quiz_attempts").select("question_ids,completed_at")
-  .eq("user_id",userId).not("completed_at","is",null).gte("completed_at",since).order("completed_at",{ascending:true});
+  .eq("user_id",userId).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since).order("completed_at",{ascending:true});
  if(error)return {error:true,available:0,cooldown_until:null};
  const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
  const available=pool.filter(q=>!used.has(q.id)).length;
@@ -38,22 +38,32 @@ Deno.serve(async(req)=>{
   const {data:{user}}=await caller.auth.getUser();if(!user)return reply(req,{error:"Sessione non valida"},401);
   const {data:profile}=await db.from("profiles").select("active,deleted").eq("id",user.id).maybeSingle();
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account non attivo"},403);
+  const requestedBranch=String((await req.clone().json().catch(()=>({}))).service_branch??"");
+  const branch=requestedBranch==="finanza"||requestedBranch==="carabinieri"?requestedBranch:null;
+  if(!branch)return reply(req,{error:"Corpo selezionato non valido."},400);
+  const {data:membership}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+  if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
   const body=await req.json();
-  const allowed=["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
+  const allowed=branch==="finanza"
+   ? ["Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"]
+   : ["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
   const category=String(body.category??"Tutte le materie");
-  if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida"},400);
+  if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida per il Corpo selezionato."},400);
+  const maxRank=branch==="finanza"?22:17;
   if(body.action==="rank_exam_start"){
-   const {data:row}=await db.from("progress").select("payload").eq("user_id",user.id).maybeSingle();
-   const {data:prof}=await db.from("profiles").select("initial_rank").eq("id",user.id).single();
+   const {data:row}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+   const {data:prof}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).single();
    const payload=row?.payload||{},rank=Math.max(Number(payload.rank)||0,Number(prof?.initial_rank)||0),exp=Math.max(0,Number(payload.exp)||0);
    const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
-   if(rank>=17)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
+   if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
-   const bands=rank<5?["Arma e ordinamento"]:rank<11?["Arma e ordinamento","Costituzione e istituzioni"]:allowed;
-   const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).in("category",bands);
+   const bands=branch==="finanza"
+    ? (rank<5?["Ordinamento e compiti"]:rank<14?["Ordinamento e compiti","Diritto tributario"]:allowed)
+    : (rank<5?["Arma e ordinamento"]:rank<11?["Arma e ordinamento","Costituzione e istituzioni"]:allowed);
+   const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch).in("category",bands);
    if(error||!pool||pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},500);
    const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,5);
-   const {data:attempt,error:insertError}=await db.from("rank_exam_attempts").insert({user_id:user.id,from_rank:rank,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
+   const {data:attempt,error:insertError}=await db.from("rank_exam_attempts").insert({user_id:user.id,service_branch:branch,from_rank:rank,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
    if(insertError)return reply(req,{error:"Impossibile avviare l'esame."},500);
    return reply(req,{attempt_id:attempt.id,rank,questions:selected,expires_at:new Date(new Date(attempt.started_at).getTime()+20*60*1000).toISOString(),required:need});
   }
@@ -65,15 +75,15 @@ Deno.serve(async(req)=>{
    return reply(req,data);
   }
   if(body.action==="status"){
-   const status=await cooldownFor(user.id,category);
+   const status=await cooldownFor(user.id,category,branch);
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
    return reply(req,status);
   }
   if(body.action==="start"){
    await db.from("quiz_attempts").update({answers:[],score:0,exp_awarded:0,completed_at:new Date().toISOString()})
-    .eq("user_id",user.id).is("completed_at",null).lt("started_at",new Date(Date.now()-SESSION_MS).toISOString());
+    .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("started_at",new Date(Date.now()-SESSION_MS).toISOString());
    const {data:open}=await db.from("quiz_attempts").select("id,question_ids,started_at,answers")
-    .eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+    .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
    if(open){
     const {data:rows,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").in("id",open.question_ids);
     if(error||!rows)return reply(req,{error:"Impossibile riprendere il quiz"},500);
@@ -83,29 +93,29 @@ Deno.serve(async(req)=>{
     if(category!=="Tutte le materie"&&questions.some(q=>q.category!==category))return reply(req,{error:"Hai già un quiz in corso. Completa quello aperto prima di iniziarne un altro."},409);
     return reply(req,{attempt_id:open.id,questions,answers:Array.isArray(open.answers)?open.answers:[],expires_at:new Date(new Date(open.started_at).getTime()+SESSION_MS).toISOString(),resumed:true});
    }
-   const {data:pool,error:poolError}=await questionPool(category);
+   const {data:pool,error:poolError}=await questionPool(category,branch);
    if(poolError||!pool)return reply(req,{error:"Errore nel caricamento delle domande"},500);
    if(pool.length<4)return reply(req,{error:"Non ci sono abbastanza domande per questa materia"},422);
-   const status=await cooldownFor(user.id,category);
+   const status=await cooldownFor(user.id,category,branch);
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
    if(status.available<4)return reply(req,{error:"Le domande recenti sono in ripristino",cooldown_until:status.cooldown_until,available:status.available});
    const since=new Date(Date.now()-WINDOW_MS).toISOString();
-   const {data:recent}=await db.from("quiz_attempts").select("question_ids").eq("user_id",user.id).not("completed_at","is",null).gte("completed_at",since);
+   const {data:recent}=await db.from("quiz_attempts").select("question_ids").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since);
    const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
    const eligible=pool.filter(q=>!used.has(q.id));
    const shuffled=[...eligible];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,4);
-   const {data:attempt,error:attemptError}=await db.from("quiz_attempts").insert({user_id:user.id,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
+   const {data:attempt,error:attemptError}=await db.from("quiz_attempts").insert({user_id:user.id,service_branch:branch,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
    if(attemptError)return reply(req,{error:"Impossibile avviare il quiz"},500);
    return reply(req,{attempt_id:attempt.id,questions:selected,expires_at:new Date(new Date(attempt.started_at).getTime()+SESSION_MS).toISOString(),resumed:false});
   }
   if(body.action==="save"){
    const attemptId=String(body.attempt_id??""),answers=body.answers;
    if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length<1||answers.length>4||answers.some((a:any)=>!Number.isInteger(a)||a<0||a>3))return reply(req,{error:"Checkpoint non valido"},400);
-   const {data:attempt,error:readError}=await db.from("quiz_attempts").select("id,started_at,completed_at").eq("id",attemptId).eq("user_id",user.id).maybeSingle();
+   const {data:attempt,error:readError}=await db.from("quiz_attempts").select("id,started_at,completed_at").eq("id",attemptId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
    if(readError||!attempt)return reply(req,{error:"Sessione non trovata"},404);
    if(attempt.completed_at)return reply(req,{error:"Quiz già consegnato"},409);
    if(new Date(attempt.started_at).getTime()<Date.now()-SESSION_MS)return reply(req,{error:"Sessione scaduta"},410);
-   const {error:saveError}=await db.from("quiz_attempts").update({answers}).eq("id",attemptId).eq("user_id",user.id).is("completed_at",null);
+   const {error:saveError}=await db.from("quiz_attempts").update({answers}).eq("id",attemptId).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null);
    if(saveError)return reply(req,{error:"Checkpoint non salvato"},500);
    return reply(req,{saved:true,count:answers.length});
   }
