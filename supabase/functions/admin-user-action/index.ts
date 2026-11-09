@@ -46,7 +46,7 @@ Deno.serve(async(req)=>{
    const password=String(body.password??"");
    if(password.length<12||password.length>72)return reply(req,{error:"La password deve contenere da 12 a 72 caratteri"},400);
    const {error}=await db.auth.admin.updateUserById(userId,{password});if(error)throw error;
-   await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event:"password_reset",details:{username:target.username,service_branch:branch}});
+   await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event:"password_reset",service_branch:branch,details:{username:target.username,service_branch:branch}});
    return reply(req,{ok:true});
   }
   if(!["suspend","reactivate","remove"].includes(action))return reply(req,{error:"Azione non consentita"},400);
@@ -56,7 +56,7 @@ Deno.serve(async(req)=>{
    const {error}=await db.from("profile_memberships").update({active:action==="reactivate"}).eq("user_id",userId).eq("service_branch",branch);if(error)throw error;
   }
   const event=action==="suspend"?"account_suspended":action==="reactivate"?"account_reactivated":"account_removed";
-  const {error:auditError}=await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event,details:{username:target.username,service_branch:branch}});
+  const {error:auditError}=await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event,service_branch:branch,details:{username:target.username,service_branch:branch}});
   if(auditError)console.error("audit user action",auditError.message);
   return reply(req,{ok:true});
  }catch(e){console.error("admin-user-action",e);return reply(req,{error:"Operazione non riuscita"},500);}
