@@ -1741,7 +1741,7 @@ if ("serviceWorker" in navigator) {
  });
  $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
  $c("centralUserList").addEventListener("click",async e=>{
-  const b=e.target.closest("[data-ca]");if(!b||authority!=="ministry")return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;b.disabled=true;
+  const b=e.target.closest("[data-ca]");if(!b||!authority)return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;if(authority!=="ministry"&&(action==="account"||action==="transfer"))return;b.disabled=true;
   try{
    if(action==="access"){const enabled=b.dataset.enabled==="true";await invoke("set_access",{user_id,service_branch:branch,enabled});}
    if(action==="account"){const enable=b.dataset.enabled==="true";if(!confirm(enable?"Riattivare l'account?":"Sospendere l'account su entrambi i Corpi?"))return;await invoke(enable?"reactivate":"suspend",{user_id});}
