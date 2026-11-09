@@ -1,14 +1,14 @@
 {
-  "name": "Database Arma dei Carabinieri",
-  "short_name": "Carabinieri",
-  "description": "Portale personale indipendente di simulazione: gradi, quiz, progressione e carriera reparto.",
+  "name": "Database Forze dell'Ordine",
+  "short_name": "Database FdO",
+  "description": "Simulatore indipendente con ambienti separati per Carabinieri e Guardia di Finanza.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080a0d",
-  "theme_color": "#b91f31",
+  "theme_color": "#8f1425",
   "icons": [
     {
       "src": "app-icon.svg",
