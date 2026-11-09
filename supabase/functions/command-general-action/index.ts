@@ -30,6 +30,8 @@ Deno.serve(async(req:Request)=>{
   if(action==="create_user"){
    const username=String(b.username??"").trim().toLowerCase(),display=String(b.display_name??"").trim(),password=String(b.password??""),branch=String(b.service_branch??""),rank=Number(b.initial_rank);
    if(!/^[a-z0-9_-]{3,24}$/.test(username)||display.length<1||display.length>60||password.length<12||password.length>72||!validBranch(branch)||!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Dati non validi: controlla username, nome, password, Corpo e grado."},400);
+   const {data:existsMin,error:em}=await db.from("ministry_admins").select("user_id").eq("username",username).maybeSingle();if(em)throw em;if(existsMin)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
+   const {data:existsCmd,error:ec}=await db.from("command_general_admins").select("user_id").eq("username",username).maybeSingle();if(ec)throw ec;if(existsCmd)return out(req,{error:"Username già utilizzato da un amministratore centrale."},409);
    const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return out(req,{error:"Username già utilizzato."},409);
    const email=username+"@login.simulatore.invalid";
    const {data:created,error:ce}=await db.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username,display_name:display}});
