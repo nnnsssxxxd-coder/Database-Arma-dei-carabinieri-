@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = new Set([
-  "https://nnnsssxxxd-coder.github.io",
+  
   "https://localhost",
   "capacitor://localhost",
   "http://localhost",
@@ -44,7 +44,7 @@ Deno.serve(async(req)=>{
   const service_branch=String(body.service_branch??"carabinieri");
   if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Corpo di appartenenza non valido."},400);
   const {data:creatorMembership}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();
-  if(!creatorMembership||!["admin","istruttore"].includes(creatorMembership.role))return reply(req,{error:"Non sei autorizzato a creare account in questo Corpo."},403);
+  if(!creatorMembership||creatorMembership.role!=="istruttore")return reply(req,{error:"La creazione degli account è riservata agli istruttori del Corpo selezionato."},403);
   if(!/^[a-z0-9_-]{3,24}$/.test(username))return reply(req,{error:"Username non valido: usa 3-24 caratteri, lettere minuscole, numeri, _ o -."},400);
   if(display_name.length<1||display_name.length>60)return reply(req,{error:"Il nome deve contenere da 1 a 60 caratteri."},400);
   if(password.length<12||password.length>72)return reply(req,{error:"La password deve contenere da 12 a 72 caratteri."},400);
