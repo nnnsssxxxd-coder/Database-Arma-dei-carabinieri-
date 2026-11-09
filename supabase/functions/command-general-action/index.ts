@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-const origins=new Set(["https://nnnsssxxxd-coder.github.io","https://localhost","capacitor://localhost","http://localhost","http://localhost:8100","https://localhost:8100"]);
+const origins=new Set(["https://localhost","capacitor://localhost","http://localhost","http://localhost:8100","https://localhost:8100"]);
 function hs(req:Request){const o=req.headers.get("Origin")??"";return {"Access-Control-Allow-Origin":origins.has(o)?o:"null","Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function out(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:hs(req)});}
 const validBranch=(b:string)=>b==="carabinieri"||b==="finanza";
