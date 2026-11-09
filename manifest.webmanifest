@@ -1,7 +1,7 @@
 {
   "name": "Database Forze dell'Ordine",
-  "short_name": "Database FdO",
-  "description": "Simulatore indipendente con ambienti separati per Carabinieri e Guardia di Finanza.",
+  "short_name": "Database Forze",
+  "description": "Database Forze dell’Ordine con ambienti separati per i Corpi.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
