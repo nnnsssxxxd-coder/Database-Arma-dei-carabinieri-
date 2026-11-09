@@ -1080,7 +1080,7 @@ async function functionError(error,fallback){
  try{const response=error?.context;if(response&&typeof response.clone==="function"){const payload=await response.clone().json();if(payload?.error)return String(payload.error);}}catch(_){}
  return error?.message||fallback;
 }
-async function logEvent(event,details){try{await db.functions.invoke("audit-event",{body:{event,...(details||{})}});}catch(e){console.warn("Audit non disponibile",e);}}
+async function logEvent(event,details){try{await db.functions.invoke("audit-event",{body:{event,service_branch:selectedBranch,...(details||{})}});}catch(e){console.warn("Audit non disponibile",e);}}
 async function loadProfile(u){
  const p=await db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").eq("id",u.id).single();
  if(p.error)throw new Error("Profilo non leggibile: "+p.error.message);
