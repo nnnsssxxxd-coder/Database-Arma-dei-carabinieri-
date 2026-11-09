@@ -1,0 +1,5 @@
+[functions.site]
+verify_jwt = false
+
+[functions.username-login]
+verify_jwt = false
