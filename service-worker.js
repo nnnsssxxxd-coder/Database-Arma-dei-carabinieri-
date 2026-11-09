@@ -1,4 +1,4 @@
-const CACHE_NAME = "carabinieri-pwa-v1";
+const CACHE_NAME = "carabinieri-pwa-v2";
 const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg"];
 
 self.addEventListener("install", event => {
