@@ -1806,8 +1806,10 @@ if ("serviceWorker" in navigator) {
    if(centralSession?.identity)centralSession.identity.must_change_password=false;
    if(centralSession?.ministry)centralSession.ministry.must_change_password=false;
    await window.centralRefresh();await refreshAudit();
+   if(authority==="ministry"){ $c("centralCommandAdmins").classList.remove("hidden"); await window.centralRefreshCommandAdmins(); } else { $c("centralCommandAdmins").classList.add("hidden"); }
    $c("centralWelcome").textContent=centralSession?.identity?.display_name||centralSession?.ministry?.display_name||"Area riservata";
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
+   if(authority==="ministry"){ $c("centralCommandAdmins").classList.remove("hidden"); await window.centralRefreshCommandAdmins(); } else { $c("centralCommandAdmins").classList.add("hidden"); }
     $c("centralCreateUser").style.display="flex";
    $c("centralCreateCommandAdmin").style.display=authority==="ministry"?"flex":"none";
     $c("centralCreateUser").style.display="flex";
