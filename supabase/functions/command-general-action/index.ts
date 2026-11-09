@@ -10,6 +10,7 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  const {data:actor}=await db.from("command_general_admins").select("username,active").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso Comando Generale non autorizzato."},403);
  const b=await req.json(),action=String(b.action??"");
 
+ const audit=async(event:string,target:string|null=null,details:Record<string,unknown>={})=>{const {error}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event,target_user_id:target,details});if(error)throw error;};
  const validBranch=(v:string)=>v==="carabinieri"||v==="finanza",maxRank=(v:string)=>v==="finanza"?24:23;
  if(action==="change_grade"||action==="set_access"){
   const target=String(b.user_id??""),branch=String(b.service_branch??"");
@@ -33,7 +34,6 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
   }
   await audit(enabled?"body_access_enabled":"body_access_disabled",target,{username:profile.username,service_branch:branch});return out(req,{ok:true});
  }
- const audit=async(event:string,target:string|null=null,details:Record<string,unknown>={})=>{const {error}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event,target_user_id:target,details});if(error)throw error;};
  if(action==="list_users"){
   const {data:profiles,error}=await db.from("profiles").select("id,username,display_name,active,deleted,role").order("username").limit(500);
   if(error)throw error;
