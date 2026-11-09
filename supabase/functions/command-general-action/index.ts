@@ -12,7 +12,7 @@ Deno.serve(async(req:Request)=>{
  try{
   const auth=req.headers.get("Authorization")??"",caller=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return out(req,{error:"Sessione non valida."},401);
-  const {data:actor}=await db.from("command_general_admins").select("username,active").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso Ministero non autorizzato."},403);
+  const {data:actor}=await db.from("command_general_admins").select("username,active").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
   const b=await req.json(),action=String(b.action??"");
   const audit=async(event:string,target:string|null,details:Record<string,unknown>={})=>{const {error}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event,target_user_id:target,details});if(error)throw error;};
   if(action==="list_users"){
