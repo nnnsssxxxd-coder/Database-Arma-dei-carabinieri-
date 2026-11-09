@@ -1,4 +1,4 @@
-const CACHE_NAME = "database-forze-ordine-v13";
+const CACHE_NAME = "database-forze-ordine-v14";
 const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-hero.svg", "./supabase.js"];
 
 self.addEventListener("install", event => {
