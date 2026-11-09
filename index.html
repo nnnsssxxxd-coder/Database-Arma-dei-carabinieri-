@@ -873,6 +873,17 @@ body{touch-action:pan-y pinch-zoom}
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
 :root[data-service="finanza"]{--gold:#d5b45b;--gold2:#f1d88a;--line:#526348;--surface:#111a12;--surface2:#1b2a1b;--bg:#071008;color-scheme:dark}
+:root[data-service="finanza"] .crest{background:linear-gradient(145deg,#173b22,#0c2013);border:1px solid #d5b45b;color:#f2d77b}
+:root[data-service="finanza"] .crest svg{width:54px;height:54px}
+:root[data-service="finanza"] .service-card{border-color:#b49a4d;background:linear-gradient(135deg,#142b1b,#0a160e)}
+:root[data-service="finanza"] .service-card-mark{color:#f0d77c}
+:root[data-service="finanza"] .service-card-emblem{color:#e8cf73}
+:root[data-service="finanza"] .service-card-class{color:#d8c47e}
+:root[data-service="finanza"] .service-choice-emblem{border-radius:50%;background:linear-gradient(145deg,#1c4227,#0c1e12);border:2px solid #d5b45b;color:#f2d77b}
+:root[data-service="finanza"] .service-choice-intro .badge{border-color:#d5b45b;color:#f1d88a}
+:root[data-service="finanza"] #loginHeading{color:#f1d88a}
+:root[data-service="carabinieri"] .service-choice-emblem{border-radius:14px;background:linear-gradient(145deg,#301018,#16090d);border:1px solid #d71930;color:#fff}
+
 :root[data-service="finanza"] body{background:radial-gradient(ellipse at 50% -20%,#24432a 0%,#071008 62%)}
 :root[data-service="finanza"] header{background:#0c1a10ee;border-bottom-color:#d5b45b}
 :root[data-service="finanza"] .panel{background:linear-gradient(150deg,#17251a,#0d170f);border-color:#526348}
@@ -988,6 +999,12 @@ function applyServiceBranding(branch){
  $("loginHeading").textContent=finanza?"Accesso Guardia di Finanza":"Accesso Carabinieri";
  $("loginDescription").textContent=finanza?"Accedi con le credenziali assegnate per l’ambiente Guardia di Finanza.":"Accedi con le credenziali assegnate per l’ambiente Carabinieri.";
  const cardBrand=document.querySelector(".service-card-mark span:nth-child(2)");if(cardBrand)cardBrand.textContent=name;
+ const crest=$(".crest");
+ if(crest){crest.innerHTML=finanza?'<svg viewBox="0 0 64 64" role="img" aria-label="Emblema grafico Guardia di Finanza"><path d="M32 4 54 12v17c0 14-9 24-22 31C19 53 10 43 10 29V12z" fill="#173b22" stroke="#d5b45b" stroke-width="3"/><path d="M20 39 27 21l5 10 5-10 7 18M23 43h18" fill="none" stroke="#f1d88a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/></svg>';}
+ const cardClass=document.querySelector(".service-card-class");if(cardClass)cardClass.textContent=finanza?"TESSERA DIGITALE · SIMULAZIONE GdF":"TESSERA DIGITALE · SIMULAZIONE ARMA";
+ const identityEyebrow=document.querySelector("#appView .home-landing .eyebrow");if(identityEyebrow)identityEyebrow.textContent=name+" · AREA PERSONALE";
+ const unitsTitle=$("units")?.querySelector("h2");if(unitsTitle&&finanza)unitsTitle.textContent="Reparti e articolazione territoriale";
+
  const homeEyebrow=document.querySelector("#home .eyebrow");if(homeEyebrow)homeEyebrow.textContent=name+" · AREA PERSONALE";
  const quizTitle=$("quiz")?.querySelector("h2");if(quizTitle)quizTitle.textContent=finanza?"Quiz di preparazione · Guardia di Finanza":"Quiz di preparazione";
  const quizCategory=$("quizCategory");
@@ -1010,6 +1027,34 @@ function applyServiceBranding(branch){
 }
 const threshold=i=>Math.round((250+i*60+i*i*4)/10)*10;
 let selectedBranch=null,user=null,profile=null,progress={rank:0,exp:0,totalExp:0,quizCount:0,correct:0,streak:0,history:[]},quiz=null,answerIndex=null,cooldownUntil=null,cooldownTimer=null,sessionTimer=null;
+function enterService(branch){
+ if(!["carabinieri","finanza"].includes(branch))return;
+ selectedBranch=branch;
+ try{localStorage.setItem("selectedServiceBranch",branch);}catch(_){}
+ try{applyServiceBranding(branch);}catch(error){console.error("Branding Corpo:",error);}
+ $("serviceChoice")?.classList.add("hidden");
+ $("credentialPanel")?.classList.remove("hidden");
+ const msg=$("loginMsg");if(msg)msg.textContent="";
+ const heading=$("loginHeading");
+ if(heading)heading.textContent=branch==="finanza"?"Accesso · Guardia di Finanza":"Accesso · Arma dei Carabinieri";
+ $("username")?.focus();
+}
+function returnToServiceChoice(){
+ selectedBranch=null;
+ try{localStorage.removeItem("selectedServiceBranch");}catch(_){}
+ if($("password"))$("password").value="";
+ if($("username"))$("username").value="";
+ $("credentialPanel")?.classList.add("hidden");
+ $("serviceChoice")?.classList.remove("hidden");
+ $("brandTitle").textContent="DATABASE FORZE DELL’ORDINE";
+ $("loginMsg").textContent="";
+}
+document.addEventListener("click",event=>{
+ const enter=event.target.closest("[data-enter-service]");
+ if(enter){event.preventDefault();enterService(enter.dataset.enterService);return;}
+ if(event.target.closest("#changeService")){event.preventDefault();returnToServiceChoice();}
+});
+
 let departmentCatalog=[],departmentMembership=null,departmentQuiz=null,departmentAnswerIndex=null,departmentTimer=null,departmentCooldownTimer=null,departmentCooldownUntil=null,commandBoard=null,commandExamAttempt=null;
 function formatRemaining(ms){const sec=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),r=sec%60;return h>0?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(r).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");}
 
@@ -1291,8 +1336,7 @@ document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",(
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu();});
 document.addEventListener("click",e=>{if(!$("tabs").contains(e.target)&&!$("menuToggle").contains(e.target))closeMenu();});
 $("logoutBtn").addEventListener("click",logout);$("menuToggle").addEventListener("click",()=>{const open=!$("tabs").classList.contains("open");$("tabs").classList.toggle("open",open);$("menuToggle").setAttribute("aria-expanded",String(open));});$("startRankExam").addEventListener("click",startRankExam);$("rankExamAnswers").addEventListener("click",e=>{const b=e.target.closest("[data-exam-option]");if(b)chooseRankExamAnswer(Number(b.dataset.examOption));});$("rankExamNext").addEventListener("click",()=>{if(!rankExam)return;if(rankExamAnswer===null)return;if(rankExam.index<4){rankExam.index++;renderRankExamQuestion();}else submitRankExam();});$("startQuiz").addEventListener("click",startQuiz);$("repairSite").addEventListener("click",()=>{const b=$("repairSite");b.disabled=true;b.textContent="Riparazione in corso…";setTimeout(()=>window.location.reload(),350);});$("musicYes").addEventListener("click",startSiteMusic);$("musicNo").addEventListener("click",stopSiteMusic);$("assignCqbExercise").addEventListener("click",assignCqbExercise);$("startCommandExam").addEventListener("click",startCommandExam);$("submitCommandExam").addEventListener("click",submitCommandExam);$("memberExerciseList").addEventListener("click",e=>{const b=e.target.closest("[data-start-exercise]");if(b)startAssignedExercise(b.dataset.startExercise);});$("quizCategory").addEventListener("change",refreshQuizCooldown);$("answerList").addEventListener("click",e=>{const b=e.target.closest("[data-option]");if(b)chooseAnswer(Number(b.dataset.option));});$("answerList").addEventListener("dblclick",e=>{const b=e.target.closest("[data-option]");if(b){chooseAnswer(Number(b.dataset.option));nextQuestion();}});$("confirmAnswer").addEventListener("click",nextQuestion);$("createUser").addEventListener("click",createUser);$("refreshUsers").addEventListener("click",loadUsers);$("userList").addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(b)userAction(b.dataset.user,b.dataset.action);});$("newBranch").addEventListener("change",()=>{const branch=$("newBranch").value;const ranks=branch==="finanza"?FINANZA_RANKS:CARABINIERI_RANKS;$("newRank").replaceChildren();ranks.forEach((r,i)=>$("newRank").add(new Option(r,i)));});CARABINIERI_RANKS.forEach((r,i)=>$("newRank").add(new Option(r,i)));
-document.querySelectorAll("[data-enter-service]").forEach(btn=>btn.addEventListener("click",()=>{selectedBranch=btn.dataset.enterService;try{localStorage.setItem("selectedServiceBranch",selectedBranch);}catch(_){}applyServiceBranding(selectedBranch);$("serviceChoice").classList.add("hidden");$("credentialPanel").classList.remove("hidden");$("loginMsg").textContent="";$("username").focus();}));
-$("changeService").addEventListener("click",()=>{selectedBranch=null;$("password").value="";$("username").value="";$("credentialPanel").classList.add("hidden");$("serviceChoice").classList.remove("hidden");$("brandTitle").textContent="DATABASE FORZE DELL’ORDINE";$("loginMsg").textContent="";});
+// I pulsanti di selezione Corpo sono gestiti da un listener delegato registrato all’avvio.
 $("newBranch").value="carabinieri";
 $("loginForm").addEventListener("submit",login);
 initMusicAutostart();
