@@ -48,7 +48,7 @@ Deno.serve(async(req)=>{
   if(!/^[a-z0-9_-]{3,24}$/.test(username))return reply(req,{error:"Username non valido: usa 3-24 caratteri, lettere minuscole, numeri, _ o -."},400);
   if(display_name.length<1||display_name.length>60)return reply(req,{error:"Il nome deve contenere da 1 a 60 caratteri."},400);
   if(password.length<12||password.length>72)return reply(req,{error:"La password deve contenere da 12 a 72 caratteri."},400);
-  const maxRank=service_branch==="finanza"?22:17;
+  const maxRank=service_branch==="finanza"?24:23;
   if(!Number.isInteger(initial_rank)||initial_rank<0||initial_rank>maxRank)return reply(req,{error:"Grado iniziale non valido."},400);
   const email=username+"@login.simulatore.invalid";
   const {data:created,error:createError}=await db.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username,display_name}});
