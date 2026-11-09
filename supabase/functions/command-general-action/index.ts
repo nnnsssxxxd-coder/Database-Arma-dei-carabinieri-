@@ -91,7 +91,8 @@ Deno.serve(async(req:Request)=>{
    }
   }
   if(action==="suspend"||action==="reactivate"){
-   const {error}=await db.from("profiles").update({active:action==="reactivate",updated_at:new Date().toISOString()}).eq("id",target);if(error)throw error;
+   const patch=action==="reactivate"?{active:true,deleted:false,updated_at:new Date().toISOString()}:{active:false,updated_at:new Date().toISOString()};
+   const {error}=await db.from("profiles").update(patch).eq("id",target);if(error)throw error;
    await audit(action==="suspend"?"account_suspended":"account_reactivated",target,{username:profile.username});return out(req,{ok:true});
   }
   return out(req,{error:"Azione non riconosciuta."},400);
