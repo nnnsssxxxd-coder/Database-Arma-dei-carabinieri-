@@ -42,7 +42,7 @@ jobs:
           java-version: '21'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
 
@@ -109,7 +109,7 @@ jobs:
           "$AAPT" dump badging "$APK" | grep -F "package: name='it.databaseforzeordine.app'"
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
-          sha256sum build-output/Simulatore-Carabinieri-debug.apk | tee build-output/SHA256SUMS.txt
+          sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
           {
             echo "Commit: ${GITHUB_SHA}"
             echo "Build: ${GITHUB_RUN_NUMBER}"
