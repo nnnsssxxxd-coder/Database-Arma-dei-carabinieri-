@@ -1229,7 +1229,7 @@ footer{padding:14px 8px 22px;font-size:10px}
  <p id="centralLoginMsg" class="small" role="status" aria-live="polite"></p>
  <form id="centralPasswordForm" class="hidden">
   <h3>Imposta una nuova password</h3><p class="muted small">Per proteggere l’account, cambia la password temporanea prima di entrare nell’area riservata. Usa almeno 12 caratteri.</p>
-  <label>Nuova password<input id="centralNewPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
+  <label>Nuova password<input id="centralChangePassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
   <label>Conferma nuova password<input id="centralConfirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></label>
   <button class="primary" id="centralPasswordSave" type="submit">Salva nuova password</button>
   <p id="centralPasswordMsg" class="small" role="status" aria-live="polite"></p>
@@ -1243,7 +1243,7 @@ footer{padding:14px 8px 22px;font-size:10px}
 <label>Username<input id="centralNewUsername" required minlength="3" maxlength="24" pattern="[a-z0-9_-]+" autocomplete="off"></label>
 <label>Nome visualizzato<input id="centralNewName" required maxlength="60"></label>
 <label>Corpo<select id="centralNewBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label>
-<label>Grado iniziale<input id="centralNewRank" type="number" min="0" max="23" value="0" required></label>
+<label>Grado iniziale<select id="centralNewRank" required></select></label>
 <label>Password iniziale<input id="centralNewPassword" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
 <button class="primary" type="submit" id="centralCreateSubmit">Crea account</button><p id="centralCreateMsg" class="small" role="status" aria-live="polite"></p></form>
 
@@ -1749,7 +1749,7 @@ if ("serviceWorker" in navigator) {
    const rows=(data.users||[]).filter(u=>(u.username+" "+u.display_name).toLowerCase().includes(q));
    $c("centralUserList").innerHTML=rows.length?'<div class="central-table-scroll" role="region" aria-label="Elenco account, scorri orizzontalmente" tabindex="0"><table class="central-table"><thead><tr><th>Utente</th><th>Stato</th><th>Appartenenze e grado</th><th>Gestione</th></tr></thead><tbody>'+rows.map(u=>{
     const memberships=u.profile_memberships||[];
-    const branches=["carabinieri","finanza"].map(b=>{const m=memberships.find(x=>x.service_branch===b);return '<div class="tiny">'+(b==="finanza"?"GdF":"Carabinieri")+': '+(m?(m.active?"Attivo":"Sospeso"):"Non abilitato")+(m?' · grado '+m.initial_rank:'')+(authority!==null?' <button type="button" data-ca="access" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-enabled="'+(!m||!m.active)+'">'+(m&&m.active?"Disabilita":"Abilita")+'</button>':'')+(m&&authority!==null?' <button type="button" data-ca="grade" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-rank="'+m.initial_rank+'">Grado</button>':'')+'</div>';}).join("");
+    const branches=["carabinieri","finanza"].map(b=>{const m=memberships.find(x=>x.service_branch===b);return '<div class="tiny">'+(b==="finanza"?"GdF":"Carabinieri")+': '+(m?(m.active?"Attivo":"Sospeso"):"Non abilitato")+(m?' · '+safe((b==='finanza'?FINANZA_RANKS:CARABINIERI_RANKS)[Number(m.initial_rank)]||'Grado non configurato'):'')+(authority!==null?' <button type="button" data-ca="access" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-enabled="'+(!m||!m.active)+'">'+(m&&m.active?"Disabilita":"Abilita")+'</button>':'')+(m&&authority!==null?' <button type="button" data-ca="grade" data-user="'+safe(u.id)+'" data-branch="'+b+'" data-rank="'+m.initial_rank+'">Grado</button>':'')+'</div>';}).join("");
     return '<tr><td><strong>'+safe(u.display_name||u.username)+'</strong><br><span class="muted">'+safe(u.username)+'</span><br><span class="tiny muted">'+safe(u.matricola||"Matricola non assegnata")+'</span></td><td>'+(u.active&&!u.deleted?"Attivo":"Sospeso")+(authority!==null?' <button type="button" data-ca="account" data-user="'+safe(u.id)+'" data-enabled="'+(!u.active||u.deleted)+'">'+(u.active&&!u.deleted?"Sospendi":"Riattiva")+'</button>':'')+'</td><td>'+branches+'</td><td>'+(authority!==null&&memberships.length?'<button type="button" data-ca="transfer" data-user="'+safe(u.id)+'">Trasferisci</button>':"—")+'</td></tr>';
    }).join("")+'</tbody></table></div>':'Nessun account trovato.';
   }catch(e){$c("centralUserList").textContent=e.message||"Impossibile caricare gli account.";}
@@ -1790,19 +1790,19 @@ if ("serviceWorker" in navigator) {
   try{const d=await invoke("create_command_admin",{username:$c("centralCommandUsername").value.trim().toLowerCase(),display_name:$c("centralCommandName").value.trim(),password:$c("centralCommandPassword").value});$c("centralCommandCreateMsg").textContent="Creato: "+d.username+" · cambio password obbligatorio al primo accesso.";$c("centralCreateCommandAdmin").reset();await refreshAudit();await window.centralRefreshCommandAdmins();}
   catch(err){$c("centralCommandCreateMsg").textContent=err.message||"Creazione non riuscita.";}finally{btn.disabled=false;}
  });
- $c("centralNewBranch").addEventListener("change",()=>{$c("centralNewRank").max=$c("centralNewBranch").value==="finanza"?"24":"23";});
+ const syncCentralRanks=()=>{const branch=$c("centralNewBranch").value,ranks=branch==="finanza"?FINANZA_RANKS:CARABINIERI_RANKS,select=$c("centralNewRank"),previous=Number(select.value);select.innerHTML=ranks.map((name,index)=>'<option value="'+index+'">'+(index+1)+'. '+safe(name)+'</option>').join("");select.value=String(Number.isInteger(previous)&&previous>=0&&previous<ranks.length?previous:0);};$c("centralNewBranch").addEventListener("change",syncCentralRanks);syncCentralRanks();
  $c("centralUserList").addEventListener("click",async e=>{
   const b=e.target.closest("[data-ca]");if(!b||!authority)return;const action=b.dataset.ca,user_id=b.dataset.user,branch=b.dataset.branch;b.disabled=true;
   try{
    if(action==="access"){const enabled=b.dataset.enabled==="true";await invoke("set_access",{user_id,service_branch:branch,enabled});}
    if(action==="account"){const enable=b.dataset.enabled==="true";if(!confirm(enable?"Riattivare l'account?":"Sospendere l'account su entrambi i Corpi?"))return;await invoke(enable?"reactivate":"suspend",{user_id});}
-   if(action==="grade"){const rank=Number(prompt("Nuovo indice grado (0-"+(branch==="finanza"?24:23)+")",b.dataset.rank));if(!Number.isInteger(rank)||rank<0||rank>(branch==="finanza"?24:23))return;await invoke("change_grade",{user_id,service_branch:branch,initial_rank:rank});}
+   if(action==="grade"){const ranks=branch==="finanza"?FINANZA_RANKS:CARABINIERI_RANKS;const rank=Number(prompt("Nuovo grado (indice 0-"+(ranks.length-1)+"):\n"+ranks.map((name,i)=>i+". "+name).join("\n"),b.dataset.rank));if(!Number.isInteger(rank)||rank<0||rank>(branch==="finanza"?24:23))return;await invoke("change_grade",{user_id,service_branch:branch,initial_rank:rank});}
    if(action==="transfer"){const from=prompt("Corpo attuale: scrivi carabinieri oppure finanza");if(!["carabinieri","finanza"].includes(from))return;const to=from==="carabinieri"?"finanza":"carabinieri",rank=Number(prompt("Indice grado nel nuovo Corpo (0-"+(to==="finanza"?24:23)+")","0"));if(!Number.isInteger(rank)||rank<0||rank>(to==="finanza"?24:23))return;await invoke("transfer",{user_id,from_branch:from,service_branch:to,initial_rank:rank});}
    await window.centralRefresh();await refreshAudit();
   }catch(err){alert(err.message||"Operazione non riuscita.");}finally{b.disabled=false;}
  });
  $c("centralPasswordForm").addEventListener("submit",async e=>{
-  e.preventDefault();const password=$c("centralNewPassword").value,confirm=$c("centralConfirmPassword").value,btn=$c("centralPasswordSave");
+  e.preventDefault();const password=$c("centralChangePassword").value,confirm=$c("centralConfirmPassword").value,btn=$c("centralPasswordSave");
   if(password.length<12||password.length>72){$c("centralPasswordMsg").textContent="La password deve contenere da 12 a 72 caratteri.";return;}
   if(password!==confirm){$c("centralPasswordMsg").textContent="Le due password non coincidono.";return;}
   btn.disabled=true;$c("centralPasswordMsg").textContent="Aggiornamento password...";
@@ -1854,4 +1854,4 @@ if ("serviceWorker" in navigator) {
  $c("centralSearch").addEventListener("input",()=>window.centralRefresh());
 })();
 </script>
-</body></html>
+</body></html><style id="central-table-isolated-scroll">html,body{max-width:100%;overflow-x:hidden}#centralUsers,#centralUserList{display:block;width:100%;max-width:100%;min-width:0;overflow-x:hidden}.central-table-scroll{display:block;position:relative;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-width:thin}.central-table-scroll .central-table{width:max-content;min-width:760px;max-width:none;table-layout:auto}.central-table-scroll th,.central-table-scroll td{white-space:normal;overflow-wrap:anywhere}#centralCreateUser{width:100%;max-width:100%;min-width:0}#centralCreateUser label{min-width:min(100%,190px);flex:1 1 190px}#centralCreateUser input,#centralCreateUser select{width:100%;max-width:100%;box-sizing:border-box}</style>
