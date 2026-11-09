@@ -13,10 +13,10 @@ jobs:
   static-quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
