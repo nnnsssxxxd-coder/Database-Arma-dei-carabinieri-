@@ -58,6 +58,25 @@ Deno.serve(async(req:Request)=>{
    }catch(e){await db.from("command_general_admins").delete().eq("user_id",created.user.id);await db.auth.admin.deleteUser(created.user.id);throw e;}
    return out(req,{ok:true,username,display_name:display,must_change_password:true});
   }
+  if(action==="list_command_admins"){
+   const {data,error}=await db.from("command_general_admins").select("user_id,username,display_name,active,must_change_password,created_at").order("created_at",{ascending:false});
+   if(error)throw error;return out(req,{ok:true,admins:data??[]});
+  }
+  if(action==="set_command_admin_access"){
+   const target=String(b.user_id??"");if(!/^[0-9a-f-]{36}$/i.test(target))return out(req,{error:"Amministratore non valido."},400);
+   const enabled=b.enabled===true;
+   const {data:admin,error:ae}=await db.from("command_general_admins").select("user_id,username").eq("user_id",target).maybeSingle();if(ae)throw ae;if(!admin)return out(req,{error:"Amministratore Comando Generale non trovato."},404);
+   const {error}=await db.from("command_general_admins").update({active:enabled}).eq("user_id",target);if(error)throw error;
+   await audit(enabled?"command_admin_reactivated":"command_admin_suspended",target,{username:admin.username});return out(req,{ok:true});
+  }
+  if(action==="reset_command_admin_password"){
+   const target=String(b.user_id??""),password=String(b.password??"");
+   if(!/^[0-9a-f-]{36}$/i.test(target)||password.length<12||password.length>72)return out(req,{error:"Dati non validi: password da 12 a 72 caratteri."},400);
+   const {data:admin,error:ae}=await db.from("command_general_admins").select("username").eq("user_id",target).maybeSingle();if(ae)throw ae;if(!admin)return out(req,{error:"Amministratore Comando Generale non trovato."},404);
+   const {error}=await db.auth.admin.updateUserById(target,{password});if(error)throw error;
+   const {error:up}=await db.from("command_general_admins").update({must_change_password:true}).eq("user_id",target);if(up)throw up;
+   await audit("command_admin_password_reset",target,{username:admin.username});return out(req,{ok:true});
+  }
   if(action==="change_password"){
    const password=String(b.password??"");if(password.length<12||password.length>72)return out(req,{error:"La nuova password deve contenere 12-72 caratteri."},400);
    const {error}=await db.auth.admin.updateUserById(user.id,{password});if(error)throw error;
