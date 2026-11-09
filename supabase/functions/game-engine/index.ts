@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
     if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
     const {data:membership}=await admin.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
     if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
-    profile.service_branch=branch;profile.initial_rank=membership.initial_rank;profile.role=membership.role;profile.matricola=membership.matricola||profile.matricola;
+    profile.service_branch=branch;profile.initial_rank=membership.initial_rank;profile.role=membership.role;profile.matricola=membership.matricola||"";
 
     if (body.action === "status") {
       const [progress, membership, completed] = await Promise.all([
