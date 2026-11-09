@@ -1,0 +1,17 @@
+{
+  "name": "database-forze-ordine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Database Forze dell’Ordine - app Android",
+  "scripts": {
+    "android:sync": "cap sync android",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.3"
+  }
+}
