@@ -61,11 +61,12 @@ Deno.serve(async(req:Request)=>{
     const matricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
     const {data:updated,error:ue}=await db.from("profiles").update({display_name:display,service_branch:branch,initial_rank:rank,matricola}).eq("id",uid).select("id").maybeSingle();if(ue)throw ue;if(!updated)throw new Error("Profilo non aggiornato: account annullato.");
     const {error:me}=await db.from("profile_memberships").insert({user_id:uid,service_branch:branch,role:"user",initial_rank:rank,matricola,active:true});if(me)throw me;
+   const {error:pg}=await db.from("progress").upsert({user_id:uid,service_branch:branch,payload:{rank:rank,exp:0,totalExp:0,streak:0,correct:0,history:[],quizCount:0},updated_at:new Date().toISOString()},{onConflict:"user_id,service_branch"});if(pg)throw pg;
     await audit("account_created",uid,{username,display_name:display,service_branch:branch,initial_rank:rank,matricola,provisioning:"auth+profile+membership+matricola"});
     return out(req,{ok:true,username,display_name:display,service_branch:branch,initial_rank:rank,matricola,user_id:uid},201);
    }catch(err){
     console.error("account provisioning rollback",err);
-    await db.from("profile_memberships").delete().eq("user_id",uid);await db.from("matricole").delete().eq("user_id",uid);await db.auth.admin.deleteUser(uid);
+    await db.from("progress").delete().eq("user_id",uid);await db.from("profile_memberships").delete().eq("user_id",uid);await db.from("matricole").delete().eq("user_id",uid);await db.auth.admin.deleteUser(uid);
     const msg=err instanceof Error?err.message:"Errore database durante la creazione.";
     if((err as any)?.code==="23505")return out(req,{ok:false,error:"Username o matricola già presenti: nessun account è stato creato.",field:"username"},409);
     return out(req,{ok:false,error:msg},500);
