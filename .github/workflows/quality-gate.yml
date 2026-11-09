@@ -66,6 +66,20 @@ jobs:
           if(!html.includes('overscroll-behavior-x:contain'))throw new Error('Account table horizontal scroll must be contained');
           console.log('PASS unique admin form controls, rank selector and contained table scroll');
           NODE
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const instructor=fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8');
+          const ministry=fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8');
+          for(const id of ['newName','centralNewName','centralCommandName']){
+            const re=new RegExp('<input[^>]*id=["\\\\']'+id+'["\\\\'][^>]*minlength=["\\\\']2["\\\\']');
+            if(!re.test(html))throw new Error('Name field must enforce two characters: '+id);
+          }
+          if(!instructor.includes('display_name.length<2'))throw new Error('Instructor account name validation is inconsistent');
+          if(!instructor.includes('["istruttore","admin"].includes(creatorMembership.role)'))throw new Error('Authorized administrator role missing from provisioning guard');
+          if(!ministry.includes('display.length<2'))throw new Error('Command administrator name validation is inconsistent');
+          console.log('PASS consistent account-name validation and role authorization');
+          NODE
           for file in supabase/functions/command-general-action/index.ts supabase/functions/ministry-admin-action/index.ts supabase/functions/admin-create-user/index.ts; do
             test -s "$file"
             grep -q "account provisioning rollback" "$file"
