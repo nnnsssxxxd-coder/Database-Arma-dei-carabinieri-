@@ -37,7 +37,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.endsWith("/manifest.webmanifest") || (url.pathname.endsWith("/app-icon.svg") || url.pathname.endsWith("/app-hero.svg"))) {
+  if (url.pathname.endsWith("/manifest.webmanifest") || (url.pathname.endsWith("/app-icon.svg") || url.pathname.endsWith("/app-icon-512.png") || url.pathname.endsWith("/app-hero.svg"))) {
     event.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(response => {
         if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
