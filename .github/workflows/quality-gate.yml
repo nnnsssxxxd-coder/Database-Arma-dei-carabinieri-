@@ -51,3 +51,24 @@ jobs:
           ];
           for(const [name,re] of checks){if(!re.test(html))throw new Error('Failed: '+name);console.log('PASS '+name);}
           NODE
+      - name: Validate account provisioning and mobile table layout
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
+          for(const id of ['centralNewPassword','centralChangePassword','centralNewRank','centralCreateUser','centralCreateCommandAdmin']){
+            const count=ids.filter(x=>x===id).length;
+            if(count!==1)throw new Error('Expected exactly one #'+id+', found '+count);
+          }
+          if(!/<select\b[^>]*id=["']centralNewRank["']/.test(html))throw new Error('Initial rank must be selected from the official rank list');
+          if(!html.includes('central-table-isolated-scroll'))throw new Error('Isolated account table scroll styles missing');
+          if(!html.includes('overscroll-behavior-x:contain'))throw new Error('Account table horizontal scroll must be contained');
+          console.log('PASS unique admin form controls, rank selector and contained table scroll');
+          NODE
+          for file in supabase/functions/command-general-action/index.ts supabase/functions/ministry-admin-action/index.ts supabase/functions/admin-create-user/index.ts; do
+            test -s "$file"
+            grep -q "account provisioning rollback" "$file"
+            grep -q "field:" "$file"
+          done
+          echo "PASS server-side account provisioning, validation and rollback guards"
