@@ -12,7 +12,17 @@ Deno.serve(async(req:Request)=>{
  try{
   const auth=req.headers.get("Authorization")??"",caller=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return out(req,{error:"Sessione non valida."},401);
-  const {data:actor}=await db.from("command_general_admins").select("username,active").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
+  const {data:actor}=await db.from("command_general_admins").select("username,active,created_by").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
+  if(actor.created_by===null){
+   const {data:currentRanks,error:re}=await db.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",user.id).eq("active",true);
+   if(re)throw re;
+   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===24));
+   if(!stillEligible){
+    const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;
+    const {error:log}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event:"automatic_command_access_revoked",target_user_id:user.id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
+    return out(req,{error:"Accesso automatico revocato: il grado massimo non risulta più attivo."},403);
+   }
+  }
   const b=await req.json(),action=String(b.action??"");
   const audit=async(event:string,target:string|null,details:Record<string,unknown>={})=>{const {error}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event,target_user_id:target,details});if(error)throw error;};
   if(action==="list_users"){
