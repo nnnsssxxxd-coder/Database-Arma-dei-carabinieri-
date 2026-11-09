@@ -16,7 +16,9 @@ Deno.serve(async(req:Request)=>{
   if(actor.created_by===null){
    const {data:currentRanks,error:re}=await db.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",user.id).eq("active",true);
    if(re)throw re;
-   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===24));
+   const {data:progressRows,error:ge}=await db.from("progress").select("service_branch,payload").eq("user_id",user.id);if(ge)throw ge;
+   const rankFor=(m)=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
+   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
    if(!stillEligible){
     const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;
     const {error:log}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event:"automatic_command_access_revoked",target_user_id:user.id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
@@ -83,8 +85,12 @@ Deno.serve(async(req:Request)=>{
    const branch=String(b.service_branch??"");if(!validBranch(branch))return out(req,{error:"Corpo non valido."},400);
    if(action==="change_grade"){
     const rank=Number(b.initial_rank);if(!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Grado non valido."},400);
-    const {data:membership,error:me}=await db.from("profile_memberships").select("user_id").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(me)throw me;if(!membership)return out(req,{error:"L'utente non risulta associato al Corpo."},409);
-    const {error}=await db.from("profile_memberships").update({initial_rank:rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);if(error)throw error;
+    const {data:membership,error:me}=await db.from("profile_memberships").select("user_id,initial_rank").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(me)throw me;if(!membership)return out(req,{error:"L'utente non risulta associato al Corpo."},409);
+    const {data:progressRow,error:pr}=await db.from("progress").select("payload").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(pr)throw pr;
+    const nextPayload={...(progressRow?.payload??{}),rank,exp:0};
+    const {error:gradeError}=await db.from("profile_memberships").update({initial_rank:rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);if(gradeError)throw gradeError;
+    const {error:progressError}=await db.from("progress").upsert({user_id:target,service_branch:branch,payload:nextPayload,updated_at:new Date().toISOString()},{onConflict:"user_id,service_branch"});
+    if(progressError){await db.from("profile_memberships").update({initial_rank:membership.initial_rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);throw progressError;}
     await audit("grade_changed",target,{username:profile.username,service_branch:branch,initial_rank:rank});return out(req,{ok:true});
    }
    if(action==="set_access"){
