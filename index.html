@@ -964,6 +964,49 @@ body:not(:has(#credentialPanel:not(.hidden))) .project-disclaimer{border-color:#
 .service-choice-card.carabinieri-choice h3{color:#ff7784}
 @media(max-width:650px){#credentialPanel{margin:12px 0;padding:18px;border-radius:14px}#credentialPanel #loginForm{padding:15px}}
 </style>
+<style id="visual-quality-pass">
+:root{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{overflow-x:hidden}
+img,svg,video,canvas{max-width:100%}
+button,input,select,textarea{font-size:16px}
+button{touch-action:manipulation;overflow-wrap:normal}
+p,h1,h2,h3,h4,label,strong,small{overflow-wrap:break-word}
+.workspace-content>section.panel{min-width:0}
+.loginbox{width:min(100% - 24px,900px);margin:clamp(18px,5vh,54px) auto}
+.login-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.92fr);gap:16px 28px;align-items:start}
+.login-card-top,.login-card-heading,.login-card>p,.login-footnote{grid-column:1}
+.login-card .login-form{grid-column:2;grid-row:1 / span 5;min-width:0;margin:0}
+.login-card .login-message{min-height:1.35em}
+.login-card .login-footnote{display:flex;gap:9px;align-items:flex-start;margin-top:6px;color:#aeb8c2;font-size:.78rem;line-height:1.55}
+.login-card input{min-width:0;min-height:48px}
+.login-card button{min-height:46px}
+.service-choice-grid{align-items:stretch}
+.service-choice-card{min-width:0;display:flex;flex-direction:column}
+.service-choice-card p{flex:1;line-height:1.6}
+.service-choice-card button{width:100%;white-space:normal}
+.rankrow,.userrow,.logrow{min-width:0;flex-wrap:wrap}
+.rankrow>*,.userrow>*,.logrow>*{min-width:0}
+@media(max-width:680px){
+ .loginbox{width:calc(100% - 20px);margin:18px auto}
+ .login-card{display:flex;flex-direction:column;gap:14px;padding:18px}
+ .login-card-top,.login-card-heading,.login-card>p,.login-card .login-form,.login-card .login-footnote{width:100%;margin-left:0;margin-right:0}
+ .login-card .login-form{padding:15px}
+ .service-choice-grid{grid-template-columns:1fr}
+ .service-choice-card{padding:18px}
+ .workspace-content{min-width:0}
+}
+@media(max-width:380px){
+ .head{padding-inline:10px}
+ .brand h1{letter-spacing:.08em}
+ .wrap{padding-inline:8px}
+ .workspace-content>section.panel{padding:13px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .stat .value{font-size:1.22rem}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
 </head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
 <header><div class="head"><div class="brand"><div class="crest" role="img" aria-label="Emblema grafico dell’area personale"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/><path d="M32 32v-5h5v5" fill="none" stroke="#171b20" stroke-width="3"/></svg></div><div><h1 id="brandTitle">DATABASE FORZE DELL’ORDINE</h1><p>AREA PERSONALE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <div class="project-disclaimer compact-disclaimer" role="note"><strong>NOTA</strong><span>Progetto indipendente, non affiliato ad amministrazioni o Corpi dello Stato. Non conferisce qualifiche o incarichi.</span></div><main class="wrap">
@@ -1157,8 +1200,8 @@ function startSessionTimer(expiresAt){if(sessionTimer)clearInterval(sessionTimer
 
 let rankExam=null,rankExamAnswer=null,rankExamTimer=null;
 function stopRankExamTimer(){if(rankExamTimer){clearInterval(rankExamTimer);rankExamTimer=null;}}
-function rankExamTick(){if(!rankExam)return;const left=new Date(rankExam.expiresAt).getTime()-Date.now();$("rankExamTimer").textContent=formatRemaining(left);if(left<=0){stopRankExamTimer();$("rankExamHint").textContent="Tempo scaduto. Avvia un nuovo tentativo.";$("rankExamNext").disabled=true;}}
-async function startRankExam(){const btn=$("startRankExam");btn.disabled=true;$("rankExamError").textContent="";$("rankExamResult").classList.add("hidden");try{const {data,error}=await db.functions.invoke("quiz-engine",{body:{service_branch:selectedBranch,action:"rank_exam_start"}});if(error||!data?.questions){$("rankExamError").textContent=data?.error||"Impossibile avviare l’esame.";return;}rankExam={id:data.attempt_id,rank:data.rank,questions:data.questions,answers:Array(5).fill(null),index:0,expiresAt:data.expires_at};$("rankExamSetup").classList.add("hidden");$("rankExamPlay").classList.remove("hidden");rankExamTimer=setInterval(rankExamTick,1000);rankExamTick();renderRankExamQuestion();}catch(e){$("rankExamError").textContent=e?.message||"Connessione non disponibile.";}finally{btn.disabled=false;}}
+function rankExamTick(){if(!rankExam)return;const left=new Date(rankExam.expiresAt).getTime()-Date.now(),timer=$("rankExamTimer"),hint=$("rankExamHint"),next=$("rankExamNext");if(timer)timer.textContent=formatRemaining(left);if(left<=0){stopRankExamTimer();rankExam.expired=true;if(hint)hint.textContent="Tempo scaduto. Il tentativo è terminato: avvia un nuovo esame.";if(next){next.disabled=true;next.textContent="Tempo scaduto";}}}
+async function startRankExam(){const btn=$("startRankExam");stopRankExamTimer();rankExam=null;rankExamAnswer=null;btn.disabled=true;$("rankExamError").textContent="";$("rankExamResult").classList.add("hidden");try{const {data,error}=await db.functions.invoke("quiz-engine",{body:{service_branch:selectedBranch,action:"rank_exam_start"}});if(error||!data?.questions){$("rankExamError").textContent=data?.error||"Impossibile avviare l’esame.";return;}rankExam={id:data.attempt_id,rank:data.rank,questions:data.questions,answers:Array(5).fill(null),index:0,expiresAt:data.expires_at};$("rankExamSetup").classList.add("hidden");$("rankExamPlay").classList.remove("hidden");rankExamTimer=setInterval(rankExamTick,1000);rankExamTick();renderRankExamQuestion();}catch(e){$("rankExamError").textContent=e?.message||"Connessione non disponibile.";}finally{btn.disabled=false;}}
 function renderRankExamQuestion(){if(!rankExam)return;const q=rankExam.questions[rankExam.index];rankExamAnswer=rankExam.answers[rankExam.index];$("rankExamCounter").textContent="DOMANDA "+(rankExam.index+1)+" / 5";$("rankExamProgress").style.width=(rankExam.index/5*100)+"%";$("rankExamQuestion").textContent=q.prompt;$("rankExamAnswers").innerHTML=q.options.map((o,i)=>'<button type="button" data-exam-option="'+i+'" class="'+(rankExamAnswer===i?"selected":"")+'">'+String.fromCharCode(65+i)+". "+esc(o)+'</button>').join("");$("rankExamHint").textContent=rankExamAnswer===null?"Seleziona una risposta.":"Risposta selezionata: "+String.fromCharCode(65+rankExamAnswer);$("rankExamNext").textContent=rankExam.index===4?"Consegna esame":"Conferma";$("rankExamNext").disabled=rankExamAnswer===null;}
 function chooseRankExamAnswer(i){if(!rankExam||Date.now()>=new Date(rankExam.expiresAt).getTime())return;rankExamAnswer=i;rankExam.answers[rankExam.index]=i;document.querySelectorAll("[data-exam-option]").forEach(b=>b.classList.toggle("selected",Number(b.dataset.examOption)===i));$("rankExamNext").disabled=false;$("rankExamHint").textContent="Risposta selezionata: "+String.fromCharCode(65+i);}
 async function submitRankExam(){if(!rankExam||rankExam.answers.some(x=>x===null))return;const btn=$("rankExamNext");btn.disabled=true;btn.textContent="Correzione…";try{const {data,error}=await db.functions.invoke("quiz-engine",{body:{service_branch:selectedBranch,action:"rank_exam_submit",attempt_id:rankExam.id,answers:rankExam.answers}});if(error||!data){$("rankExamHint").textContent=data?.error||"Invio non riuscito. Riprova.";btn.disabled=false;btn.textContent="Riprova invio";return;}stopRankExamTimer();progress=data.progress||progress;render();$("rankExamPlay").classList.add("hidden");$("rankExamResult").classList.remove("hidden");$("rankExamResult").innerHTML='<div class="rank-exam-result '+(data.passed?"passed":"failed")+'"><strong>'+(data.passed?"ESAME SUPERATO":"ESAME NON SUPERATO")+'</strong><span class="rank-exam-score">'+data.score+'/5</span><p>'+(data.passed?"Complimenti. Hai sbloccato il grado "+esc(RANKS[data.new_rank]||"successivo")+".":"Servono almeno 4 risposte corrette. Puoi riprovare quando vuoi.")+'</p><button type="button" id="rankExamAgain">'+(data.passed?"Prossimo esame":"Riprova esame")+'</button></div>';rankExam=null;$("rankExamAgain").addEventListener("click",()=>{ $("rankExamResult").classList.add("hidden");$("rankExamSetup").classList.remove("hidden");$("rankExamInfo").textContent="La prova prevede 5 domande a risposta multipla; soglia di superamento: 4/5.";});}catch(e){$("rankExamHint").textContent=e?.message||"Errore di connessione.";btn.disabled=false;btn.textContent="Riprova invio";}}
