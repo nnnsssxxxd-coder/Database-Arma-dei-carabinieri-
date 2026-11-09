@@ -1,0 +1,52 @@
+name: App quality gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate manifest and application shell
+        run: |
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
+      - name: Parse inline JavaScript
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          let n=0;
+          for (const [,attrs,body] of scripts) {
+            if (/\bsrc\s*=/.test(attrs) || !body.trim()) continue;
+            const file='/tmp/app-inline-'+(++n)+'.js';
+            fs.writeFileSync(file,body);
+            require('child_process').execFileSync(process.execPath,['--check',file],{stdio:'inherit'});
+          }
+          if(!n) throw new Error('No inline application scripts were checked');
+          console.log('Checked '+n+' inline script(s)');
+          NODE
+      - name: Check branch isolation guards
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const checks=[
+            ['branch selector persistence',/selectedServiceBranch|selectedBranch/],
+            ['branch-aware quiz calls',/quiz-engine[\s\S]{0,1200}service_branch/],
+            ['branch-aware department calls',/department-engine[\s\S]{0,1200}service_branch/],
+            ['branch-aware mission calls',/game-engine[\s\S]{0,1200}service_branch/],
+            ['branch-scoped audit events',/audit-event[\s\S]{0,500}service_branch/]
+          ];
+          for(const [name,re] of checks){if(!re.test(html))throw new Error('Failed: '+name);console.log('PASS '+name);}
+          NODE
