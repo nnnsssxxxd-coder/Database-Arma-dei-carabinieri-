@@ -1752,6 +1752,7 @@ if ("serviceWorker" in navigator) {
    $c("centralAuthority").textContent=authority==="ministry"?"MINISTERO · AUTORITÀ SUPERIORE":"COMANDO GENERALE";
    $c("centralSubhead").textContent=authority==="ministry"?"Autorità superiore su entrambi i Corpi e sul Comando Generale.":"Coordinamento dei Corpi, nel rispetto della sovraordinazione del Ministero.";
    if(data.identity?.must_change_password||data.ministry?.must_change_password){
+    $c("centralWorkspace").classList.add("hidden");$c("centralLoginPanel").classList.remove("hidden");
     $c("centralLoginForm").classList.add("hidden");$c("centralPasswordForm").classList.remove("hidden");
     $c("centralLoginMsg").textContent="Accesso verificato. Prima di continuare devi impostare una password personale.";
     $c("centralNewPassword").focus();return;
