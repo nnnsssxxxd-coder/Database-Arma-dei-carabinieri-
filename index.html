@@ -952,7 +952,7 @@ body{touch-action:pan-y pinch-zoom}
 <section id="settings" class="panel hidden"><div class="eyebrow">PREFERENZE PERSONALI</div><h2>Impostazioni</h2><p class="small muted">Gestisci la musica e il funzionamento dell’area personale su questo dispositivo.</p><article class="settings-card"><h3>Riparazione</h3><p class="small muted">Ricarica il programma per recuperare eventuali problemi temporanei. I dati salvati sul server non vengono cancellati.</p><button id="repairSite" type="button">Ripara e aggiorna</button></article><article class="settings-card"><h3>Musica</h3><div class="settings-music-actions"><button id="musicNo" type="button" aria-pressed="false">No</button><button id="musicYes" type="button" class="primary" aria-pressed="true">Sì</button></div><div id="musicPlayerWrap" class="music-player-wrap" aria-hidden="true"><audio id="musicPlayer" src="https://drive.google.com/uc?export=download&amp;id=1nZVL-9vtMmGK2W5Y6LYdhZDE_py5N44o" preload="auto" loop></audio></div></article></section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>Corpo<select id="newBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <a href="https://www.carabinieri.it/" target="_blank" rel="noopener noreferrer">carabinieri.it</a></footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+<script src="./supabase.js"></script><script>
 const CARABINIERI_RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Q.S.","Vicebrigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Q.S.","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Maggiore","Luogotenente","Luogotenente C.S.","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
 const FINANZA_RANKS=["Allievo Finanziere","Finanziere","Finanziere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Qualifica Speciale","Vice Brigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Qualifica Speciale","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Aiutante","Luogotenente","Luogotenente Cariche Speciali","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
 let RANKS=CARABINIERI_RANKS;
@@ -1091,12 +1091,12 @@ async function functionError(error,fallback){
 async function logEvent(event,details){try{await db.functions.invoke("audit-event",{body:{event,service_branch:selectedBranch,...(details||{})}});}catch(e){console.warn("Audit non disponibile",e);}}
 async function loadProfile(u){
  const p=await db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").eq("id",u.id).single();
- if(p.error)throw new Error("Profilo non leggibile: "+p.error.message);
+ if(p.error)throw new Error("Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.");
  const nextProfile=p.data;
  if(!nextProfile||!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
  if(!["carabinieri","finanza"].includes(selectedBranch))throw new Error("Seleziona il Corpo prima dell'accesso.");
  const membership=await db.from("profile_memberships").select("role,initial_rank,matricola,active").eq("user_id",u.id).eq("service_branch",selectedBranch).eq("active",true).maybeSingle();
- if(membership.error||!membership.data||!membership.data.active)throw new Error("Questo account non è abilitato o è sospeso per il Corpo selezionato.");
+ if(membership.error||!membership.data||!membership.data.active)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
  nextProfile.role=membership.data.role;nextProfile.initial_rank=membership.data.initial_rank;nextProfile.matricola=membership.data.matricola||"";nextProfile.service_branch=selectedBranch;
  applyServiceBranding(selectedBranch);
  profile=nextProfile;user=u;departmentMembership=null;renderDepartmentIdentity();
@@ -1157,7 +1157,8 @@ async function login(e){
   const message=String(err?.message||"");
   if(/Account sospeso o disattivato|Sessione non valida|appartiene a un altro Corpo/i.test(message)){try{await db.auth.signOut({scope:"local"});}catch(_){}user=null;profile=null;}
   $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
-  msg.textContent=message||"Accesso non riuscito. Controlla la connessione e riprova.";
+  const safeMessages=["Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.","Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.","Connessione temporaneamente non disponibile. Riprova tra poco.","Email o password non corrette. Verifica i dati e riprova.","Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.","Nome utente o password non corretti. Verifica i dati e riprova.","Connessione instabile: riprova senza modificare la password.","Sessione non valida. Accedi di nuovo.","Accesso non completato: profilo autenticato non disponibile. Riprova.","Account sospeso o disattivato.","Account non abilitato per il Corpo selezionato. Contatta l’istruttore.","Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.","Account non configurato correttamente. Contatta l’istruttore.","Accesso temporaneamente non disponibile. Riprova."];
+  msg.textContent=safeMessages.includes(message)?message:"Accesso non riuscito. Verifica le credenziali e la connessione, quindi riprova.";
   msg.className="small error";
  }finally{btn.disabled=false;loginInProgress=false;}
 }
