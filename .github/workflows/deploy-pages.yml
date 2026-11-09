@@ -21,6 +21,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Bundle local Supabase client
+        run: |
+          npm install --no-audit --no-fund
+          cp node_modules/@supabase/supabase-js/dist/umd/supabase.js ./supabase.js
+          test -s ./supabase.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload site
