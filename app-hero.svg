@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+<title id="title">Database Forze dell'Ordine</title><desc id="desc">Tablet bianco su sfondo diviso in quattro settori rosso, giallo, blu e rosso e bianco.</desc>
+<defs>
+ <linearGradient id="tablet" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#cfd4da"/></linearGradient>
+ <linearGradient id="screen" x2="0" y2="1"><stop stop-color="#17212b"/><stop offset="1" stop-color="#070b10"/></linearGradient>
+ <linearGradient id="shine" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="22"/><feOffset dy="24"/><feComponentTransfer><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <clipPath id="screenClip"><rect x="277" y="171" width="646" height="496" rx="24"/></clipPath>
+</defs>
+<rect width="600" height="450" fill="#b51228"/><rect x="600" width="600" height="450" fill="#eab927"/>
+<rect y="450" width="600" height="450" fill="#0752a2"/><rect x="600" y="450" width="600" height="450" fill="#d7192d"/><path d="M600 450h600v450H600z" fill="#fff" opacity=".18"/>
+<path d="M0 445H1200M595 0V900" stroke="#fff" stroke-opacity=".82" stroke-width="7"/>
+<g filter="url(#shadow)" transform="rotate(-2 600 450)">
+ <rect x="225" y="112" width="750" height="620" rx="48" fill="#111820" opacity=".65"/>
+ <rect x="210" y="96" width="780" height="650" rx="52" fill="url(#tablet)" stroke="#fff" stroke-width="9"/>
+ <rect x="238" y="125" width="724" height="592" rx="34" fill="#18212a" stroke="#929ba4" stroke-width="3"/>
+ <circle cx="600" cy="111" r="7" fill="#59636d"/><circle cx="600" cy="111" r="3" fill="#111820"/>
+ <rect x="277" y="171" width="646" height="496" rx="24" fill="url(#screen)"/>
+ <g clip-path="url(#screenClip)">
+  <rect x="277" y="171" width="646" height="496" fill="url(#shine)"/>
+  <text x="600" y="237" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif" font-size="37" font-weight="900" letter-spacing="2">DATABASE</text>
+  <text x="600" y="281" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="800" letter-spacing="1">FORZE DELL'ORDINE</text>
+  <rect x="364" y="302" width="472" height="5" rx="2" fill="#fff"/><rect x="364" y="302" width="157" height="5" fill="#159447"/><rect x="679" y="302" width="157" height="5" fill="#d7192d"/>
+  <g font-family="Arial,sans-serif" font-weight="800" text-anchor="middle">
+   <rect x="310" y="337" width="278" height="132" rx="17" fill="#111a24" stroke="#c51f32" stroke-width="4"/><text x="449" y="393" font-size="30" fill="#fff">CC</text><text x="449" y="435" font-size="22" fill="#fff">CARABINIERI</text>
+   <rect x="612" y="337" width="278" height="132" rx="17" fill="#111a24" stroke="#e4b52f" stroke-width="4"/><text x="751" y="393" font-size="30" fill="#f4c542">GdF</text><text x="751" y="435" font-size="21" fill="#fff">GUARDIA DI FINANZA</text>
+   <rect x="310" y="490" width="278" height="132" rx="17" fill="#111a24" stroke="#2584d9" stroke-width="4"/><text x="449" y="546" font-size="29" fill="#8bc5ff">PS</text><text x="449" y="588" font-size="22" fill="#fff">POLIZIA DI STATO</text>
+   <rect x="612" y="490" width="278" height="132" rx="17" fill="#111a24" stroke="#d8dce1" stroke-width="4"/><text x="751" y="546" font-size="29" fill="#fff">EI</text><text x="751" y="588" font-size="22" fill="#fff">ALTRE FORZE</text>
+  </g>
+ </g>
+ <rect x="210" y="96" width="780" height="650" rx="52" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="5"/>
+</g>
+<path d="M60 820H1140" stroke="#fff" stroke-opacity=".7" stroke-width="4"/>
+<text x="600" y="865" fill="#fff" text-anchor="middle" font-family="Arial,sans-serif" font-size="27" font-weight="800" letter-spacing="4">CONOSCENZA · DISCIPLINA · SERVIZIO</text>
+</svg>
