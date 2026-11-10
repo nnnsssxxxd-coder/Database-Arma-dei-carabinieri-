@@ -1213,6 +1213,22 @@ footer{padding:14px 8px 22px;font-size:10px}
 :root[data-service="finanza"] .nav button.active,:root[data-service="finanza"] .tab.active{border-color:#c8a64b}
 :root[data-service="carabinieri"] .nav button.active,:root[data-service="carabinieri"] .tab.active{border-color:#d71930}
 </style>
+<style id="branch-separation-final">
+#serviceChoice .service-choice-card.carabinieri-choice{background:linear-gradient(145deg,#32121a 0%,#171014 72%,#260d14 100%);border:1px solid #a93648;box-shadow:inset 0 3px 0 #d71930,0 14px 34px #0008}
+#serviceChoice .service-choice-card.carabinieri-choice h3{color:#ff8793}
+#serviceChoice .service-choice-card.carabinieri-choice .service-choice-emblem{background:#35121a;border-color:#d71930;color:#ffb1b9}
+#serviceChoice .service-choice-card.carabinieri-choice button{background:linear-gradient(135deg,#d71930,#8d1425);border-color:#f15a69;color:#fff}
+#serviceChoice .service-choice-card.finanza-choice{background:linear-gradient(145deg,#142d1c 0%,#0d1710 72%,#1c2a18 100%);border:1px solid #718b62;box-shadow:inset 0 3px 0 #d5b45b,0 14px 34px #0008}
+#serviceChoice .service-choice-card.finanza-choice h3{color:#f0d78a}
+#serviceChoice .service-choice-card.finanza-choice .service-choice-emblem{background:#183723;border-color:#d5b45b;color:#f0d78a}
+#serviceChoice .service-choice-card.finanza-choice button{background:linear-gradient(135deg,#d5b45b,#92702f);border-color:#e9cf80;color:#10170f}
+:root[data-service="carabinieri"] header{border-bottom:3px solid #d71930}
+:root[data-service="carabinieri"] .workspace-content>section.panel{border-top:2px solid #9f1c2d}
+:root[data-service="finanza"] header{border-bottom:3px solid #d5b45b;background:linear-gradient(90deg,#0b160e,#101a12 55%,#0b120d)}
+:root[data-service="finanza"] .workspace-content>section.panel{border-top:2px solid #9b874b;background:linear-gradient(145deg,#142019,#0f1711)}
+:root[data-service="finanza"] .stat{border-top-color:#d5b45b;background:linear-gradient(145deg,#1b2b20,#111a13)}
+:root[data-service="carabinieri"] .stat{border-top-color:#d71930}
+</style>
 </head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
 <header><div class="head"><div class="brand"><div class="crest" role="img" aria-label="Emblema grafico dell’area personale"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/><path d="M32 32v-5h5v5" fill="none" stroke="#171b20" stroke-width="3"/></svg></div><div><h1 id="brandTitle">DATABASE FORZE DELL’ORDINE</h1><p>AREA PERSONALE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <main class="wrap">
@@ -1511,13 +1527,15 @@ async function functionError(error,fallback){
 }
 async function logEvent(event,details){try{await db.functions.invoke("audit-event",{body:{event,service_branch:selectedBranch,...(details||{})}});}catch(e){console.warn("Audit non disponibile",e);}}
 async function loadProfile(u){
- const p=await db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").eq("id",u.id).single();
- if(p.error)throw new Error("Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.");
+ const p=await db.from("profiles").select("id,username,display_name,role,active,deleted,matricola,initial_rank,service_branch").eq("id",u.id).maybeSingle();
+ if(p.error)throw new Error("Verifica profilo non riuscita (codice "+(p.error.code||"DB")+"). Riprova o contatta l’istruttore.");
  const nextProfile=p.data;
- if(!nextProfile||!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
+ if(!nextProfile)throw new Error("Profilo non trovato per l’identità autenticata. Contatta l’istruttore.");
+ if(!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
  if(!["carabinieri","finanza"].includes(selectedBranch))throw new Error("Seleziona il Corpo prima dell'accesso.");
  const membership=await db.from("profile_memberships").select("role,initial_rank,matricola,active").eq("user_id",u.id).eq("service_branch",selectedBranch).eq("active",true).maybeSingle();
- if(membership.error||!membership.data||!membership.data.active)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
+ if(membership.error)throw new Error("Verifica appartenenza al Corpo non riuscita (codice "+(membership.error.code||"DB")+"). Riprova o contatta l’istruttore.");
+ if(!membership.data||!membership.data.active)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
  nextProfile.role=membership.data.role;nextProfile.initial_rank=membership.data.initial_rank;nextProfile.matricola=membership.data.matricola||"";nextProfile.service_branch=selectedBranch;
  // Conferma il contesto dell'ente e registra subito l'identità autenticata:
  // gli elementi grafici non devono poter annullare un login valido.
@@ -1557,6 +1575,7 @@ async function login(e){
    user=null;profile=null;departmentMembership=null;
   }
   let authUser=null;
+  let loginStage="verifica credenziali";
   if(identifier.includes("@")){
    const result=await db.auth.signInWithPassword({email:identifier.toLowerCase(),password});
    if(result.error||!result.data?.user){
@@ -1574,11 +1593,15 @@ async function login(e){
     if(isTransientAuthError(result.error))throw new Error("Connessione temporaneamente non disponibile. Riprova tra poco.");
     throw new Error("Nome utente o password non corretti. Verifica i dati e riprova.");
    }
+   loginStage="apertura sessione sicura";
    const session=await db.auth.setSession(result.data.session);
    if(session.error||!session.data?.user)throw new Error(isTransientAuthError(session.error)?"Connessione instabile: riprova senza modificare la password.":"Sessione non valida. Accedi di nuovo.");
-   authUser=session.data.user;
+   const verified=await db.auth.getUser(result.data.session.access_token);
+   if(verified.error||!verified.data?.user||verified.data.user.id!==session.data.user.id)throw new Error("Sessione non verificata dal server. Accedi di nuovo.");
+   authUser=verified.data.user;
   }
   if(!authUser?.id)throw new Error("Accesso non completato: profilo autenticato non disponibile. Riprova.");
+  loginStage="verifica profilo e autorizzazioni del Corpo";
   await loadProfile(authUser);
   // Verifica esplicita: il profilo caricato deve appartenere al Corpo scelto.
   if(!profile || profile.service_branch!==selectedBranch)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
@@ -1603,7 +1626,7 @@ async function login(e){
   user=null;profile=null;departmentMembership=null;
   $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
   const safeMessages=["Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.","Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.","Connessione temporaneamente non disponibile. Riprova tra poco.","Email o password non corrette. Verifica i dati e riprova.","Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.","Nome utente o password non corretti. Verifica i dati e riprova.","Connessione instabile: riprova senza modificare la password.","Sessione non valida. Accedi di nuovo.","Accesso non completato: profilo autenticato non disponibile. Riprova.","Account sospeso o disattivato.","Account non abilitato per il Corpo selezionato. Contatta l’istruttore.","Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.","Account non configurato correttamente. Contatta l’istruttore.","Accesso temporaneamente non disponibile. Riprova."];
-  msg.textContent=safeMessages.includes(message)?message:"Accesso non riuscito. Verifica le credenziali e la connessione, quindi riprova.";
+  msg.textContent=safeMessages.includes(message)?message:"Accesso non completato durante: "+loginStage+". Aggiorna l’app e riprova; se persiste, comunica questa fase all’amministratore.";
   msg.className="small error";
  }finally{btn.disabled=false;loginInProgress=false;}
 }
