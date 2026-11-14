@@ -1966,10 +1966,10 @@ sessionRestorePromise=(async()=>{try{
     if(speed>safeSpeed){speed=Math.max(safeSpeed,speed-7*dt);if(avoidCooldown===0){collisionAvoids++;avoidCooldown=1.2;}}
    }
   }
-  const target=cars.find(c=>c.id===targetId&&c.pulled);
+  const target=cars.find(c=>c.id===targetId);
   if(target&&phase==="pull"){
    const gap=(PLAYER_Y-target.y)/SCALE;
-   if(gap>0&&gap<48)speed=Math.min(speed,Math.max(0,(gap-8)*2.1));
+   if(gap>0&&gap<100)speed=Math.min(speed,Math.max(0,(gap-10)*1.9));
   }
  }
  function drawCar(x,y,w,h,color,police=false,selected=false){
