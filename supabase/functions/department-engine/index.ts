@@ -4,7 +4,8 @@ const ALLOWED_ORIGINS = new Set([
   "https://localhost",
   "http://localhost",
   "capacitor://localhost",
-  "ionic://localhost"
+  "ionic://localhost",
+  "https://nnnsssxxxd-coder.github.io"
 ]);
 function corsHeadersFor(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
@@ -23,7 +24,11 @@ const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
-const DEPT_RANKS = ["Operatore", "Operatore scelto", "Capo squadra", "Vice comandante di squadra", "Comandante di squadra", "Ufficiale di compagnia", "Vice comandante di reparto", "Comandante di reparto"];
+const DEPT_RANKS_BY_BRANCH = {
+  carabinieri: ["Operatore", "Operatore scelto", "Capo squadra", "Vice comandante di squadra", "Comandante di squadra", "Ufficiale di compagnia", "Vice comandante di reparto", "Comandante di reparto"],
+  finanza: ["Operatore specialista", "Operatore qualificato", "Capo pattuglia", "Vice responsabile di nucleo", "Responsabile di nucleo", "Ufficiale responsabile", "Vice comandante di reparto", "Comandante di reparto"]
+};
+const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
@@ -38,7 +43,7 @@ async function getMembership(userId: string, branch: string) {
   const { data: command, error: commandError } = await db.from("department_commanders").select("commander_user_id").eq("department_id", data.department_id).eq("service_branch", branch).maybeSingle();
   if (commandError) throw commandError;
   const isCommander = command?.commander_user_id === userId;
-  return { ...data, is_commander: isCommander, rank_name: DEPT_RANKS[isCommander ? 7 : Math.min(6, Math.max(0, Number(data.rank) || 0))], department };
+  return { ...data, is_commander: isCommander, rank_name: departmentRanks(branch)[isCommander ? 7 : Math.min(6, Math.max(0, Number(data.rank) || 0))], department };
 }
 Deno.serve(async (req: Request) => {
   const corsHeaders = corsHeadersFor(req);
@@ -54,8 +59,7 @@ Deno.serve(async (req: Request) => {
     if (profileError || !profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
     const {data:membershipAccess}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
     if(!membershipAccess)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
-    if(branch!=="carabinieri")return reply(req,{error:"La carriera reparti della Guardia di Finanza deve essere configurata con catalogo e prove autonomi. I reparti Carabinieri non sono accessibili da questo ambiente."},403);
-    const action = String(body.action ?? "");
+     const action = String(body.action ?? "");
     if (action === "catalog") {
       const { data, error } = await db.from("department_catalog").select("id,name,description,source_url").eq("service_branch",branch).eq("active", true).order("name");
       if (error) return reply(req,{ error: "Catalogo reparti non disponibile" }, 500);
@@ -66,7 +70,8 @@ Deno.serve(async (req: Request) => {
       const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
-      if (personalRank < 5) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado di Brigadiere." }, 403);
+      const minimumRank = branch === "finanza" ? 6 : 5;
+      if (personalRank < minimumRank) return reply(req,{ error: branch === "finanza" ? "La Carriera Reparto si sblocca dal grado di Vice Brigadiere." : "La Carriera Reparto si sblocca dal grado di Vicebrigadiere." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
       if (departmentError || !department) return reply(req,{ error: "Reparto non valido" }, 400);
@@ -100,18 +105,18 @@ Deno.serve(async (req: Request) => {
     ];
     if (action === "command_exam_start") {
       if (!commandExamReady) return reply(req,{ error: "Il Test di comando si sblocca al grado Vice comandante di reparto e al 100% degli EXP (2100)." }, 403);
-      const {data:open,error:openError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+      const {data:open,error:openError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("service_branch",branch).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
       if(openError)return reply(req,{error:"Impossibile verificare una prova di comando già aperta."},500);
       let attempt=open;
       if(attempt&&new Date(attempt.started_at).getTime()<Date.now()-30*60*1000){
-        const {error:closeError}=await db.from("department_command_exam_attempts").update({completed_at:new Date().toISOString()}).eq("id",attempt.id).eq("user_id",user.id).is("completed_at",null);
+        const {error:closeError}=await db.from("department_command_exam_attempts").update({completed_at:new Date().toISOString()}).eq("id",attempt.id).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null);
         if(closeError)return reply(req,{error:"Impossibile chiudere la prova scaduta."},500);
         attempt=null;
       }
       if(!attempt){
-        const {data:created,error:createError}=await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id}).select("id,started_at").single();
+        const {data:created,error:createError}=await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id,service_branch:branch}).select("id,started_at").single();
         if(createError){
-          const {data:concurrent,error:concurrentError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+          const {data:concurrent,error:concurrentError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("service_branch",branch).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
           if(concurrentError||!concurrent)return reply(req,{error:"Impossibile avviare la prova di comando."},500);
           attempt=concurrent;
         }else attempt=created;
@@ -121,11 +126,11 @@ Deno.serve(async (req: Request) => {
     if (action === "command_exam_submit") {
       const id=String(body.attempt_id??""); const answers=body.answers;
       if(!/^[0-9a-f-]{36}$/i.test(id)||!Array.isArray(answers)||answers.length!==6||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3)) return reply(req,{error:"Risposte non valide."},400);
-      const {data:attempt,error}=await db.from("department_command_exam_attempts").select("*").eq("id",id).eq("user_id",user.id).eq("department_id",membership.department_id).maybeSingle();
+      const {data:attempt,error}=await db.from("department_command_exam_attempts").select("*").eq("id",id).eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).maybeSingle();
       if(error||!attempt||attempt.completed_at||new Date(attempt.started_at).getTime()<Date.now()-30*60*1000) return reply(req,{error:"Prova non valida o scaduta."},409);
       if (!commandExamReady) return reply(req,{ error: "Requisiti del Test di comando non più soddisfatti." }, 403);
       const score=answers.reduce((n:number,a:number,i:number)=>n+(a===commandExam[i].correct_index?1:0),0),passed=score>=4;
-      const {error:saveError}=await db.from("department_command_exam_attempts").update({answers,score,passed,completed_at:passed?null:new Date().toISOString()}).eq("id",id).is("completed_at",null);
+      const {error:saveError}=await db.from("department_command_exam_attempts").update({answers,score,passed,completed_at:passed?null:new Date().toISOString()}).eq("id",id).eq("service_branch",branch).is("completed_at",null);
       if(saveError)return reply(req,{error:"Impossibile registrare la prova."},500);
       if(!passed)return reply(req,{score,total:6,passed:false,message:"Prova non superata. Puoi riprovare dopo aver ripassato i criteri di comando."});
       const {data:promotion,error:promotionError}=await db.rpc("promote_department_commander",{p_user_id:user.id,p_department_id:membership.department_id,p_exam_attempt_id:id});
@@ -133,14 +138,14 @@ Deno.serve(async (req: Request) => {
       return reply(req,{score,total:6,passed:true,promotion,membership:await getMembership(user.id, branch)});
     }
     if (action === "command_board") {
-      const {data:command,error:commandError}=await db.from("department_commanders").select("commander_user_id,vice_user_id,appointed_at").eq("department_id",membership.department_id).maybeSingle();
+      const {data:command,error:commandError}=await db.from("department_commanders").select("commander_user_id,vice_user_id,appointed_at").eq("department_id",membership.department_id).eq("service_branch",branch).maybeSingle();
       if(commandError)return reply(req,{error:"Impossibile leggere la catena di comando."},500);
       if(command?.commander_user_id!==user.id) {
-        const {data:assigned}=await db.from("department_exercise_assignments").select("id,exercise_id,assigned_at").eq("user_id",user.id).order("assigned_at",{ascending:false});
+        const {data:assigned}=await db.from("department_exercise_assignments").select("id,exercise_id,assigned_at").eq("user_id",user.id).eq("service_branch",branch).order("assigned_at",{ascending:false});
         const ids2=(assigned??[]).map((a:any)=>a.exercise_id);
-        const {data:exercises}=ids2.length?await db.from("department_exercises").select("id,title,created_at").in("id",ids2):{data:[]};
+        const {data:exercises}=ids2.length?await db.from("department_exercises").select("id,title,created_at").in("id",ids2).eq("service_branch",branch):{data:[]};
         const exMap=new Map((exercises??[]).map((x:any)=>[x.id,x]));
-        const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)):{data:[]};
+        const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)).eq("service_branch",branch):{data:[]};
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
         return reply(req,{is_commander:false,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
@@ -151,9 +156,9 @@ Deno.serve(async (req: Request) => {
       if(profilesError)return reply(req,{error:"Impossibile leggere i nominativi del reparto."},500);
       const names=new Map((profiles??[]).map((p:any)=>[p.id,p]));
       const roster=(members??[]).map((m:any)=>({user_id:m.user_id,rank:m.rank,exp:m.exp,name:names.get(m.user_id)?.display_name||names.get(m.user_id)?.username||"Utente"}));
-      const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("active",true).order("created_at",{ascending:false});
+      const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("service_branch",branch).eq("active",true).order("created_at",{ascending:false});
       const exIds=(exercises??[]).map((x:any)=>x.id);
-      const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds):{data:[]};
+      const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds).eq("service_branch",branch):{data:[]};
       const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)):{data:[]};
       const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
       const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
@@ -174,18 +179,18 @@ Deno.serve(async (req: Request) => {
     if (action === "exercise_start") {
       if(isCommander) return reply(req,{error:"Il comandante non può svolgere test di reparto assegnati."},403);
       const assignmentId=String(body.assignment_id??"");
-      const {data:assignment,error}=await db.from("department_exercise_assignments").select("id,exercise_id").eq("id",assignmentId).eq("user_id",user.id).maybeSingle();
+      const {data:assignment,error}=await db.from("department_exercise_assignments").select("id,exercise_id").eq("id",assignmentId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
       if(error||!assignment)return reply(req,{error:"Esercitazione non assegnata a questo account."},404);
-      const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active,assigned_by").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("active",true).maybeSingle();
+      const {data:exercise,error:exerciseError}=await db.from("department_exercises").select("id,department_id,title,active,assigned_by").eq("id",assignment.exercise_id).eq("department_id",membership.department_id).eq("service_branch",branch).eq("active",true).maybeSingle();
       if(exerciseError||!exercise) return reply(req,{error:"Test non appartenente al tuo reparto o non disponibile."},403);
-      const {data:questions,error:questionError}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).order("id");
+      const {data:questions,error:questionError}=await db.from("department_exercise_questions").select("id,prompt,options").eq("exercise_id",assignment.exercise_id).eq("service_branch",branch).order("id");
        if(questionError||!questions||questions.length!==6) return reply(req,{error:"Domande del test non disponibili."},500);
-       const {data:existing,error:existingError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
+       const {data:existing,error:existingError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).eq("service_branch",branch).maybeSingle();
        if(existingError)return reply(req,{error:"Impossibile verificare il tentativo già aperto."},500);
        if(existing?.completed_at)return reply(req,{error:"Esercitazione già completata."},409);
        let attempt=existing;
        if(!attempt){
-         const {data:created,error:createError}=await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id}).select("id,answers,started_at,completed_at").single();
+         const {data:created,error:createError}=await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id,service_branch:branch}).select("id,answers,started_at,completed_at").single();
          if(createError){
            const {data:concurrent,error:concurrentError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
            if(concurrentError||!concurrent||concurrent.completed_at)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
@@ -211,10 +216,10 @@ Deno.serve(async (req: Request) => {
     if (action === "start") {
       if(isCommander) return reply(req,{error:"Il comandante non può più svolgere quiz personali di reparto."},403);
       if(Number(membership.rank)>=6 && Number(membership.exp)>=2100) return reply(req,{error:"Hai raggiunto il 100% EXP: è disponibile il Test di comando."},403);
-      const { data: open, error: openError } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id", user.id).eq("department_id", membership.department_id).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: open, error: openError } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id", user.id).eq("department_id", membership.department_id).eq("service_branch",branch).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle();
       if (openError) return reply(req,{ error: "Impossibile verificare la sessione reparto" }, 500);
       if (open && new Date(open.started_at).getTime() >= Date.now() - SESSION_MS) {
-        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id", open.question_ids);
+        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id", open.question_ids).eq("service_branch",branch);
         if (error || !rows) return reply(req,{ error: "Impossibile riprendere il quiz reparto" }, 500);
         const byId = new Map(rows.map(q => [q.id, q]));
         const questions = open.question_ids.map((id: string) => byId.get(id)).filter(Boolean);
@@ -223,14 +228,14 @@ Deno.serve(async (req: Request) => {
       }
       if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
-      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("rank_band", band).eq("active", true);
+      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
       const rotationWindow = 24 * 60 * 60 * 1000;
       const rotationSince = new Date(Date.now() - rotationWindow).toISOString();
       const { data: recent, error: recentError } = await db.from("department_quiz_attempts")
         .select("question_ids,completed_at").eq("user_id", user.id)
-        .eq("department_id", membership.department_id).not("completed_at", "is", null)
+        .eq("department_id", membership.department_id).eq("service_branch",branch).not("completed_at", "is", null)
         .gte("completed_at", rotationSince).order("completed_at", { ascending: true });
       if (recentError) return reply(req,{ error: "Impossibile verificare la rotazione delle domande." }, 500);
       const used = new Set<string>();
@@ -251,10 +256,10 @@ Deno.serve(async (req: Request) => {
         return reply(req,{ error: "Le domande già svolte sono in ripristino.", available: availablePool.length, cooldown_until: cooldownUntil ? new Date(cooldownUntil).toISOString() : null });
       }
       const shuffled = [...availablePool]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } const selected = shuffled.slice(0, 4);
-      const { data: attempt, error: insertError } = await db.from("department_quiz_attempts").insert({ user_id: user.id, department_id: membership.department_id, question_ids: selected.map(q => q.id) }).select("id,started_at").single();
+      const { data: attempt, error: insertError } = await db.from("department_quiz_attempts").insert({ user_id: user.id, department_id: membership.department_id, question_ids: selected.map(q => q.id), service_branch:branch }).select("id,started_at").single();
       if (insertError) {
         if (insertError.code === "23505") {
-          const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).is("completed_at",null).maybeSingle();
+          const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
           if (concurrent) {
             const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids);
             if (!concurrentError && concurrentRows) {
@@ -274,11 +279,11 @@ Deno.serve(async (req: Request) => {
       const attemptId = String(body.attempt_id ?? "");
       const answers = body.answers;
       if (!/^[0-9a-f-]{36}$/i.test(attemptId) || !Array.isArray(answers) || answers.length < 1 || answers.length > 4 || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) return reply(req,{ error: "Checkpoint non valido" }, 400);
-      const { data: attempt, error } = await db.from("department_quiz_attempts").select("id,started_at,completed_at").eq("id", attemptId).eq("user_id", user.id).eq("department_id", membership.department_id).maybeSingle();
+      const { data: attempt, error } = await db.from("department_quiz_attempts").select("id,started_at,completed_at").eq("id", attemptId).eq("user_id", user.id).eq("department_id", membership.department_id).eq("service_branch",branch).maybeSingle();
       if (error || !attempt) return reply(req,{ error: "Sessione reparto non trovata" }, 404);
       if (attempt.completed_at) return reply(req,{ error: "Quiz reparto già consegnato" }, 409);
       if (new Date(attempt.started_at).getTime() < Date.now() - SESSION_MS) return reply(req,{ error: "Sessione reparto scaduta" }, 410);
-      const { error: saveError } = await db.from("department_quiz_attempts").update({ answers }).eq("id", attemptId).eq("user_id", user.id).is("completed_at", null);
+      const { error: saveError } = await db.from("department_quiz_attempts").update({ answers }).eq("id", attemptId).eq("user_id", user.id).eq("service_branch",branch).is("completed_at", null);
       if (saveError) return reply(req,{ error: "Checkpoint non salvato" }, 500);
       return reply(req,{ saved: true, count: answers.length });
     }
