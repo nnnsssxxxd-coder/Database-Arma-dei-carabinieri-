@@ -945,6 +945,30 @@ html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color
 @media(max-width:520px){.traffic-hud>div{padding:8px}.traffic-hud strong{font-size:1rem}.traffic-controls{gap:5px}.traffic-control{min-height:54px!important;font-size:.78rem}.traffic-control small{font-size:.49rem}.traffic-clues{grid-template-columns:1fr}.traffic-decisions{grid-template-columns:1fr}.traffic-decisions button{min-height:44px}.traffic-actions{grid-template-columns:1fr 1fr}.traffic-heading{align-items:flex-start}.traffic-unit-mark{font-size:.57rem;padding:7px}.home-device-tools{gap:8px}.home-device-tools>div:first-child{flex-basis:100%}}
 
  .traffic-clues button{padding:11px 9px;border:1px solid #506574;border-radius:8px;background:#14232c;color:#e1ebf1;font-size:.72rem;font-weight:800;text-align:left}.traffic-clues button:disabled{border-color:#39785d;background:#10251e;color:#8de2b4}.traffic-inspection-feedback{grid-column:1/-1;margin:2px 0!important;padding:9px 10px;border-left:3px solid #d2ad54;background:#ffffff08;color:#c6d2d9!important;font-size:.73rem}.traffic-check-detail{grid-column:1/-1;margin:0!important;padding:8px 10px;border-radius:7px;background:#0b171c;color:#d4e0e6!important;font-size:.75rem}
+
+/* Premium patrol cockpit: isolated visual upgrade for the traffic game */
+.traffic-panel{position:relative;background:radial-gradient(ellipse at 50% -18%,#334b5b 0%,#121d26 42%,#070b10 100%)!important;border:1px solid #465967!important;box-shadow:0 22px 55px #0008,inset 0 1px #ffffff12!important}
+.traffic-heading{padding-bottom:12px;border-bottom:1px solid #ffffff16}.traffic-heading .eyebrow{color:#e0b85d;letter-spacing:.19em;font-weight:900}
+.traffic-unit-mark{box-shadow:0 0 22px #79b5d31c,inset 0 1px #ffffff18}
+.traffic-hud>div{position:relative;overflow:hidden;background:linear-gradient(145deg,#17232d,#090f15);border-color:#506473;box-shadow:0 8px 18px #0005,inset 0 1px #ffffff10}
+.traffic-hud>div:after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(#e3c46c,#b64b48)}
+.traffic-hud strong{font-size:clamp(1.15rem,3.4vw,1.65rem);text-shadow:0 0 16px #a9d7f333}
+.traffic-scene-wrap{border-radius:16px;border-color:#718797;box-shadow:0 16px 34px #0009,inset 0 0 0 1px #ffffff18}
+.traffic-scene-wrap:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#07111c55,transparent 24%,transparent 72%,#07111c77),linear-gradient(90deg,#07111c22,transparent 15%,transparent 85%,#07111c22);box-shadow:inset 0 0 42px #0008}
+.traffic-scene-overlay{z-index:1;backdrop-filter:blur(10px);box-shadow:0 8px 22px #0006}
+.traffic-pulse{animation:trafficPulse 1.6s ease-in-out infinite}@keyframes trafficPulse{50%{opacity:.35;box-shadow:0 0 3px #60d69a}}
+.traffic-mission-row{background:linear-gradient(110deg,#182733,#0b1219);border-color:#50616d;box-shadow:inset 0 1px #ffffff10}
+.traffic-branch-chip{background:#ffffff0a;box-shadow:inset 0 1px #ffffff12}
+.traffic-controls{gap:10px}.traffic-control{position:relative;overflow:hidden;min-height:68px!important;border-radius:12px!important;box-shadow:0 7px 15px #0006,inset 0 1px #ffffff18!important;letter-spacing:.06em}
+.traffic-control:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#ffffff12,transparent 50%);pointer-events:none}
+.traffic-control.steering{background:linear-gradient(145deg,#293d4b,#14222c)!important}
+.traffic-control.accelerate{box-shadow:0 0 18px #2c9b6a30,inset 0 1px #ffffff22!important}.traffic-control.brake{box-shadow:0 0 18px #b84c4530,inset 0 1px #ffffff22!important}
+.traffic-actions button{border-radius:11px!important;letter-spacing:.04em;font-weight:900;box-shadow:0 8px 18px #0005}
+.traffic-actions #trafficStart{background:linear-gradient(135deg,#b52c38,#731b27)!important;border:1px solid #f16b76!important}
+.traffic-actions #trafficStop{background:linear-gradient(135deg,#293a48,#111c25)!important;border:1px solid #617887!important}
+.traffic-inspection,.traffic-result{box-shadow:0 15px 30px #0007,inset 0 1px #ffffff12}.traffic-decisions button{border-radius:10px!important;box-shadow:0 5px 12px #0004}
+@media(max-width:520px){.traffic-controls{gap:6px}.traffic-control{min-height:62px!important;border-radius:10px!important}.traffic-scene-wrap canvas{aspect-ratio:4/3}.traffic-hud{gap:6px}.traffic-hud>div{border-radius:9px}}
+
 </style>
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
