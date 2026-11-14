@@ -1859,9 +1859,9 @@ sessionRestorePromise=(async()=>{try{
  const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,ACCEL_W=100,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2;
  const colors=["#d4d9dc","#8e3d3d","#526779","#c5bda7","#353d43","#aab9c2","#d0a24c"];
  let session=null,scenario=null,raf=0,last=0,phase="ready",speed=0,playerLane=3,laneVisual=3,accel=false,brake=false,paused=false,offset=0,time=0,cars=[],targetId=null,lights=false,siren=false,hardBrakes=0,overspeed=0,travel=0,collisionAvoids=0,selectedCar=null;
- const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),laneX=p=>p<=2?ROAD_X+LANE_W*(p+.5):p<=3?ROAD_X+ROAD_W/2+LANE_W+(p-2)*(LANE_W/2+ACCEL_W/2):ROAD_X+ROAD_W+ACCEL_W/2+SHOULDER_W/2+(p-3)*SHOULDER_W/2;
+ const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),laneX=p=>p<=2?ROAD_X+LANE_W*(p+.5):p<=3?ROAD_X+ROAD_W/2+LANE_W+(p-2)*(LANE_W/2+ACCEL_W/2):ROAD_X+ROAD_W+ACCEL_W/2+SHOULDER_W/2+(p-3)*(ACCEL_W/2+SHOULDER_W/2);
  function message(s){$("patrolToast").textContent=s}
- function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficStatus").textContent=({ready:"PRONTO",merge:"IMMISSIONE",patrol:"PATTUGLIA",signal:"ALT SEGNALATO",pull:"ACCOSTAMENTO",stopped:"FERMO",inspect:"CONTROLLO"})[phase]||"PATTUGLIA";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
+ function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"IMMISSIONE":playerLane===4?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficStatus").textContent=({ready:"PRONTO",merge:"IMMISSIONE",patrol:"PATTUGLIA",signal:"ALT SEGNALATO",pull:"ACCOSTAMENTO",stopped:"FERMO",inspect:"CONTROLLO"})[phase]||"PATTUGLIA";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
  function initCars(){
   cars=Array.from({length:15},(_,i)=>({id:"v"+i,lane:i%3,lanePos:i%3,y:rand(-520,500),speed:rand(68,126),desired:rand(78,132),color:colors[i%colors.length],w:rand(37,43),length:rand(65,76),nextChange:rand(5,13),pull:false,pulled:false,plate:""+String.fromCharCode(65+Math.floor(rand(0,26)))+Math.floor(rand(100,999))+"ZZ",model:["Berlina","SUV","Utilitaria","Station wagon","Coupé"][i%5]}));
  }
@@ -1907,7 +1907,7 @@ sessionRestorePromise=(async()=>{try{
   const target=cars.find(c=>c.id===targetId&&c.pulled);
   if(target&&phase==="pull"&&laneVisual>2.65){const gap=PLAYER_Y-target.y;if(gap<90)speed=Math.min(speed,Math.max(0,(gap-24)*1.15));}
  }
- function canStop(){const t=cars.find(c=>c.id===targetId);if(!t||!t.pulled||playerLane!==3)return false;const d=(PLAYER_Y-t.y)/SCALE;return d>=8&&d<=32&&speed<=8;}
+ function canStop(){const t=cars.find(c=>c.id===targetId);if(!t||!t.pulled||playerLane!==4)return false;const d=(PLAYER_Y-t.y)/SCALE;return d>=8&&d<=32&&speed<=8;}
  function drawCar(x,y,w,h,color,police=false,selected=false){
   ctx.save();ctx.translate(x,y);ctx.fillStyle="#0009";ctx.beginPath();ctx.roundRect(-w/2+3,-h/2+5,w,h,9);ctx.fill();
   if(selected){ctx.strokeStyle="#ffd66d";ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(-w/2-5,-h/2-5,w+10,h+10,12);ctx.stroke();}
@@ -1922,7 +1922,7 @@ sessionRestorePromise=(async()=>{try{
  }
  function draw(){
   ctx.clearRect(0,0,W,H);ctx.fillStyle="#244331";ctx.fillRect(0,0,W,H);
-  for(let i=0;i<18;i++){const y=((i*97+offset*.25)%700)-80;ctx.fillStyle=i%2?"#31513d":"#294936";ctx.fillRect(12,y,145,55);ctx.fillRect(805,y+22,142,52);}
+  for(let i=0;i<18;i++){const y=((i*97+offset*.25)%700)-80;ctx.fillStyle=i%2?"#31513d":"#294936";ctx.fillRect(12,y,145,55);ctx.fillRect(840,y+22,105,52);}
   const x=ROAD_X,w=ROAD_W+ACCEL_W+SHOULDER_W;ctx.fillStyle="#858d90";ctx.fillRect(x-18,0,w+36,H);ctx.fillStyle="#333b40";ctx.fillRect(x,0,ROAD_W,H);ctx.fillStyle="#555f63";ctx.fillRect(x+ROAD_W,0,ACCEL_W,H);ctx.fillStyle="#6d7476";ctx.fillRect(x+ROAD_W+ACCEL_W,0,SHOULDER_W,H);
   ctx.fillStyle="#d9dfe0";ctx.fillRect(x+ROAD_W+ACCEL_W+6,0,4,H);ctx.fillRect(x+ROAD_W+ACCEL_W+SHOULDER_W-7,0,4,H);
   ctx.strokeStyle="#dfe4e5";ctx.lineWidth=3;ctx.setLineDash([34,26]);ctx.lineDashOffset=-(offset%60);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(x+i*LANE_W,0);ctx.lineTo(x+i*LANE_W,H);ctx.stroke();}ctx.setLineDash([]);
@@ -1957,7 +1957,7 @@ sessionRestorePromise=(async()=>{try{
  }
  function selectVehicle(e){
   if(!["patrol","signal"].includes(phase)||!session)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
-  let hit=null,best=Infinity;cars.forEach(c=>{if(c.pull||c.y<35||c.y>H-25)return;const cx=ROAD_X+LANE_W*(c.lanePos+.5),d=Math.hypot((x-cx)*.85,y-c.y);if(d<Math.max(c.w,c.length)*.72&&d<best){hit=c;best=d;}});
+  let hit=null,best=Infinity;cars.forEach(c=>{if(c.pull||c.lane>2||c.y<35||c.y>PLAYER_Y-70)return;const cx=ROAD_X+LANE_W*(c.lanePos+.5),d=Math.hypot((x-cx)*.85,y-c.y);if(d<Math.max(c.w,c.length)*.72&&d<best){hit=c;best=d;}});
   if(hit){targetId=hit.id;selectedCar=hit;$("patrolTargetTag").classList.remove("hidden");message("Veicolo selezionato: "+hit.model+" · "+hit.plate+". Premi SEGNALA ALT per chiedere l'accostamento.");draw();setHud();}
  }
  async function signalStop(){
