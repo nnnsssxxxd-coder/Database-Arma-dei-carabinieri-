@@ -60,7 +60,7 @@ Deno.serve(async(req:Request)=>{
   if(body.action==="start") {
     await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
-    if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
+    if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
     if(openSession) {
       const existing=scenarios.find(item=>item.id===openSession.scenario_id);
@@ -74,8 +74,24 @@ Deno.serve(async(req:Request)=>{
       if(error.code==="23505") return reply(req,{error:"Hai già un controllo aperto. Completa il controllo in corso oppure attendi la sua scadenza."},409);
       throw error;
     }
-    const {action:correctAction,...publicScenario}=scenario;
+    const {action:correctAction,clues:privateClues,...publicScenario}=scenario;
     return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:publicScenario,service_branch:branch},201);
+  }
+  if(body.action==="inspect") {
+    const sessionId=String(body.session_id??"");
+    const checkId=String(body.check_id??"");
+    const checkIndex={documents:0,vehicle:1,conduct:2}[checkId];
+    if(!/^[0-9a-f-]{36}$/i.test(sessionId)||checkIndex===undefined) return reply(req,{error:"Verifica non valida"},400);
+    const {data:session,error:se}=await db.from("traffic_control_sessions").select("id,scenario_id,checks_completed,expires_at,completed_at").eq("id",sessionId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(se||!session||session.completed_at) return reply(req,{error:"Sessione di controllo non valida"},404);
+    if(new Date(session.expires_at).getTime()<Date.now()) return reply(req,{error:"Tempo del controllo scaduto. Avvia un nuovo servizio."},410);
+    const scenario=scenarios.find(item=>item.id===session.scenario_id);
+    if(!scenario) return reply(req,{error:"Scenario non disponibile"},404);
+    const completed=Array.isArray(session.checks_completed)?session.checks_completed:[];
+    if(!completed.includes(checkId)) completed.push(checkId);
+    const {error:ue}=await db.from("traffic_control_sessions").update({checks_completed:completed}).eq("id",sessionId).eq("user_id",user.id);
+    if(ue) throw ue;
+    return reply(req,{check_id:checkId,detail:scenario.clues[checkIndex],completed_checks:completed,all_checked:completed.length>=3});
   }
   if(body.action==="finish") {
     const sessionId=String(body.session_id??"");
