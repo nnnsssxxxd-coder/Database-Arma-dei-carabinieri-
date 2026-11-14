@@ -1897,8 +1897,12 @@ sessionRestorePromise=(async()=>{try{
  function laneChange(next){
   if(next<0||next>4||next===playerLane)return false;
   if(next===3&&phase!=="merge"){message("La corsia di accelerazione termina: completa l'immissione.");return false;}
-  if(next===4&&phase!=="pull"){message("La corsia di emergenza si usa solo per l'accostamento nello scenario.");return false;}
-  if(!gapSafe(next,PLAYER_Y)){message("Corsia occupata: attendi uno spazio sicuro prima di spostarti.");return false;}
+  if(next===4){
+   if(phase!=="pull"){message("La corsia di emergenza è disponibile durante l'accostamento.");return false;}
+   const target=cars.find(c=>c.id===targetId&&c.pulled),distance=target?(PLAYER_Y-target.y)/SCALE:-1;
+   if(!target||distance<8||distance>120){message("Attendi il veicolo accostato e mantieni una distanza di sicurezza.");return false;}
+   if(!gapSafe(4,PLAYER_Y,targetId,false,speed)){message("Corsia di emergenza occupata: attendi uno spazio libero.");return false;}
+  }else if(!gapSafe(next,PLAYER_Y,null,true,speed)){message("Corsia occupata: attendi uno spazio sicuro prima di spostarti.");return false;}
   playerLane=next;return true;
  }
  function updateTraffic(dt){
@@ -1963,9 +1967,9 @@ sessionRestorePromise=(async()=>{try{
    }
   }
   const target=cars.find(c=>c.id===targetId&&c.pulled);
-  if(target&&phase==="pull"&&laneVisual>2.65){
+  if(target&&phase==="pull"){
    const gap=(PLAYER_Y-target.y)/SCALE;
-   if(gap<32&&gap>0)speed=Math.min(speed,Math.max(0,(gap-7)*2.4));
+   if(gap>0&&gap<48)speed=Math.min(speed,Math.max(0,(gap-8)*2.1));
   }
  }
  function drawCar(x,y,w,h,color,police=false,selected=false){
