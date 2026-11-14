@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
       const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("service_branch",branch).eq("active",true).order("created_at",{ascending:false});
       const exIds=(exercises??[]).map((x:any)=>x.id);
       const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds).eq("service_branch",branch):{data:[]};
-      const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)):{data:[]};
+      const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)).eq("service_branch",branch):{data:[]};
       const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
       const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
       const results=(assignments??[]).map((a:any)=>({assignment_id:a.id,user_id:a.user_id,name:names.get(a.user_id)?.display_name||names.get(a.user_id)?.username||"Utente",title:exerciseMap.get(a.exercise_id)?.title||"Test di reparto",score:attemptMap.get(a.id)?.score??null,correct_answers:attemptMap.get(a.id)?.correct_answers??null,exp_awarded:attemptMap.get(a.id)?.exp_awarded??null,completed_at:attemptMap.get(a.id)?.completed_at??null}));
@@ -192,7 +192,7 @@ Deno.serve(async (req: Request) => {
        if(!attempt){
          const {data:created,error:createError}=await db.from("department_exercise_attempts").insert({assignment_id:assignment.id,user_id:user.id,service_branch:branch}).select("id,answers,started_at,completed_at").single();
          if(createError){
-           const {data:concurrent,error:concurrentError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).maybeSingle();
+           const {data:concurrent,error:concurrentError}=await db.from("department_exercise_attempts").select("id,answers,started_at,completed_at").eq("assignment_id",assignment.id).eq("service_branch",branch).maybeSingle();
            if(concurrentError||!concurrent||concurrent.completed_at)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
            attempt=concurrent;
          }else attempt=created;
@@ -226,7 +226,7 @@ Deno.serve(async (req: Request) => {
         if (questions.length !== 4) return reply(req,{ error: "Sessione reparto non più disponibile" }, 409);
         return reply(req,{ attempt_id: open.id, questions, answers: open.answers ?? [], expires_at: new Date(new Date(open.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
       }
-      if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).is("completed_at", null);
+      if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).eq("service_branch",branch).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
       const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
