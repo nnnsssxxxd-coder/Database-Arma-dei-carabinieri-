@@ -1820,7 +1820,7 @@ sessionRestorePromise=(async()=>{try{
 <script id="traffic-control-game">
 (()=>{
  const el=id=>document.getElementById(id);
- let session=null,scenario=null,raf=0,last=0,speed=0,distance=180,lane=1,steer=0,accel=false,brake=false,driving=false,stopped=false,offset=0,trafficCars=[];
+ let session=null,scenario=null,raf=0,last=0,speed=0,distance=180,lane=1,targetLane=1,steer=0,accel=false,brake=false,driving=false,stopped=false,offset=0,trafficCars=[];
  const canvas=el("trafficScene"),ctx=canvas?.getContext("2d");
  const branchName=()=>selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI";
  const carColors=["#b9c3ca","#8f3938","#354b61","#d1c7a7","#4e565d","#d8dce0"];
@@ -1838,12 +1838,12 @@ sessionRestorePromise=(async()=>{try{
   ctx.fillStyle="#e8c85b";ctx.fillRect(roadX+roadW/2-3,0,6,H);
   ctx.fillStyle="#d9e1e5";ctx.font="bold 12px Arial";ctx.textAlign="left";ctx.fillText("SS 18 · ZONA URBANA",22,34);ctx.font="10px Arial";ctx.fillStyle="#a9b8be";ctx.fillText("LIMITE 50",22,51);
   trafficCars.forEach((c,i)=>{const y=((c.y+offset*(.45+c.speed/90)+620)%700)-80;drawCar(roadX+roadW*(c.lane+.5)/3,y,c.w,76,c.color);});
-  const targetY=Math.max(105,Math.min(340,150+distance*.65));if(session&&!stopped){drawCar(roadX+roadW*(lane+.5)/3,targetY,50,88,selectedBranch==="finanza"?"#b7b5a8":"#394b5b");ctx.strokeStyle="#f5d36a";ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.strokeRect(roadX+roadW*(lane+.5)/3-39,targetY-53,78,106);ctx.setLineDash([]);ctx.fillStyle="#f5d36a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("OBIETTIVO",roadX+roadW*(lane+.5)/3,targetY-62);}
+  const targetY=Math.max(105,Math.min(340,150+distance*.65));if(session&&!stopped){drawCar(roadX+roadW*(targetLane+.5)/3,targetY,50,88,selectedBranch==="finanza"?"#b7b5a8":"#394b5b");ctx.strokeStyle="#f5d36a";ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.strokeRect(roadX+roadW*(targetLane+.5)/3-39,targetY-53,78,106);ctx.setLineDash([]);ctx.fillStyle="#f5d36a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("OBIETTIVO",roadX+roadW*(targetLane+.5)/3,targetY-62);}
   drawCar(roadX+roadW*(lane+.5)/3,H-115,58,104,selectedBranch==="finanza"?"#b9b5a4":"#172e45",true);
   ctx.fillStyle="#ffffff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI",W/2,H-28);
   ctx.fillStyle="#ffffff18";ctx.fillRect(roadX+roadW/2-1,H-170,2,50);
  }
- function updateHud(){el("trafficSpeed").innerHTML=Math.round(speed)+' <small>km/h</small>';el("trafficDistance").innerHTML=Math.max(0,Math.round(distance))+' <small>m</small>';el("trafficStatus").textContent=stopped?"VEICOLO FERMO":driving?"IN MARCIA":session?"PRONTO":"IN ATTESA";el("trafficStop").disabled=!session||stopped||distance>7||speed>8;}
+ function updateHud(){el("trafficSpeed").innerHTML=Math.round(speed)+' <small>km/h</small>';el("trafficDistance").innerHTML=Math.max(0,Math.round(distance))+' <small>m</small>';el("trafficStatus").textContent=stopped?"VEICOLO FERMO":driving?"IN MARCIA":session?"PRONTO":"IN ATTESA";el("trafficStop").disabled=!session||stopped||distance>7||speed>8||lane!==targetLane;}
  function frame(t){if(!driving)return;const dt=Math.min(.05,(t-last)/1000||0);last=t;if(accel)speed=Math.min(95,speed+34*dt);if(brake)speed=Math.max(0,speed-65*dt);if(!accel&&!brake)speed=Math.max(0,speed-4*dt);distance=Math.max(0,distance-speed*dt*.72);offset+=speed*dt*1.8;draw();updateHud();raf=requestAnimationFrame(frame);}
  function setDriving(on){driving=on;if(on){last=performance.now();raf=requestAnimationFrame(frame);}else{cancelAnimationFrame(raf);}}
  function setMessage(text){el("trafficMissionText").textContent=text;}
@@ -1852,12 +1852,12 @@ sessionRestorePromise=(async()=>{try{
   if(!selectedBranch||!user||!profile){setMessage("Accedi al tuo Corpo per iniziare.");return;}
   el("trafficStart").disabled=true;setMessage("Richiesta scenario al centro operativo…");
   try{
-   const d=await api("start");session=d.session_id;scenario=d.scenario;speed=0;distance=180;lane=1;offset=0;stopped=false;accel=false;brake=false;initCars();el("trafficInspection").classList.add("hidden");el("trafficResult").classList.add("hidden");el("trafficSceneOverlay").classList.add("hidden");el("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CC · PATTUGLIA";el("trafficBranchChip").textContent=branchName();el("trafficMissionTitle").textContent="Raggiungi e ferma il veicolo";setMessage("Veicolo obiettivo individuato. Avvicinati e fermati in sicurezza entro la distanza indicata.");el("trafficStart").textContent="Nuovo servizio";setDriving(true);updateHud();
+   const d=await api("start");session=d.session_id;scenario=d.scenario;speed=0;distance=180;lane=1;targetLane=Math.floor(Math.random()*3);offset=0;stopped=false;accel=false;brake=false;initCars();el("trafficInspection").classList.add("hidden");el("trafficResult").classList.add("hidden");el("trafficSceneOverlay").classList.add("hidden");el("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CC · PATTUGLIA";el("trafficBranchChip").textContent=branchName();el("trafficMissionTitle").textContent="Raggiungi e ferma il veicolo";setMessage("Veicolo obiettivo individuato. Avvicinati e fermati in sicurezza entro la distanza indicata.");el("trafficStart").textContent="Nuovo servizio";setDriving(true);updateHud();
   }catch(e){setMessage(e.message);el("trafficStart").disabled=false;}
  }
  function stop(){
   if(!session||stopped)return;
-  if(distance>7||speed>8){setMessage("Per fermare il veicolo devi avvicinarti entro 7 metri e scendere sotto 8 km/h.");return;}
+  if(distance>7||speed>8||lane!==targetLane){setMessage(lane!==targetLane?"Allineati alla corsia del veicolo obiettivo prima di fermarlo.":"Per fermare il veicolo devi avvicinarti entro 7 metri e scendere sotto 8 km/h.");return;}
   setDriving(false);speed=0;stopped=true;accel=false;brake=false;updateHud();el("trafficStop").disabled=true;
   el("trafficVehicleTitle").textContent=scenario.vehicle+" · "+scenario.model;el("trafficCaseId").textContent="CONTROLLO "+scenario.plate;el("trafficVehicleMeta").textContent="Targa "+scenario.plate+" · Conducente: "+scenario.driver;el("trafficSituation").textContent=scenario.situation;el("trafficClues").innerHTML=scenario.clues.map(x=>"<span>"+x.replaceAll("<","&lt;").replaceAll(">","&gt;")+"</span>").join("");el("trafficInspection").classList.remove("hidden");el("trafficMissionTitle").textContent="Valutazione del controllo";setMessage("Controllo avviato: esamina gli elementi e scegli una decisione proporzionata.");el("trafficInspection").scrollIntoView({behavior:"smooth",block:"nearest"});
  }
