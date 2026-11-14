@@ -968,7 +968,7 @@ html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color
 .traffic-actions #trafficStart{background:linear-gradient(135deg,#b52c38,#731b27)!important;border:1px solid #f16b76!important}
 .traffic-actions #trafficStop{background:linear-gradient(135deg,#293a48,#111c25)!important;border:1px solid #617887!important}
 .traffic-inspection,.traffic-result{box-shadow:0 15px 30px #0007,inset 0 1px #ffffff12}.traffic-decisions button{border-radius:10px!important;box-shadow:0 5px 12px #0004}
-@media(max-width:520px){.traffic-controls{gap:6px}.traffic-control{min-height:62px!important;border-radius:10px!important}.traffic-scene-wrap canvas{aspect-ratio:4/3}.traffic-hud{gap:6px}.traffic-hud>div{border-radius:9px}}
+@media(max-width:520px){.traffic-controls{gap:6px}.traffic-control{min-height:62px!important;border-radius:10px!important}.traffic-scene-wrap canvas{aspect-ratio:16/9}.traffic-hud{gap:6px}.traffic-hud>div{border-radius:9px}}
 
 </style>
 <style id="force-world-themes">
@@ -1881,7 +1881,7 @@ sessionRestorePromise=(async()=>{try{
   return {quality:Math.max(0,quality-collisionCount*18),travel:Math.round(travelMeters),overspeed:Math.round(overspeedSeconds),hardBrakes:hardBrakeCount,collisions:collisionCount};
  }
  function rounded(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
- function drawCar(x,y,w,h,color,police=false){ctx.save();ctx.translate(x,y);ctx.fillStyle="#0008";rounded(-w/2+3,-h/2+5,w,h,9);ctx.fillStyle=color;rounded(-w/2,-h/2,w,h,9);ctx.fillStyle=police?"#101820":"#26333d";rounded(-w/2+5,-h/2+9,w-10,h*.34,4);ctx.fillStyle="#b8d3df";rounded(-w/2+6,-h/2+10,w-12,h*.29,3);ctx.fillStyle="#111";rounded(-w/2-3,-h/2+8,5,13,2);rounded(w/2-2,-h/2+8,5,13,2);rounded(-w/2-3,h/2-20,5,13,2);rounded(w/2-2,h/2-20,5,13,2);ctx.fillStyle=police?"#e9f1f5":"#dce5e9";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.fillText(police?(selectedBranch==="finanza"?"GdF":"CC"): " ",0,3);if(police){ctx.fillStyle=selectedBranch==="finanza"?"#e0c34e":"#b9d7e9";ctx.fillRect(-w/2+3,2,w-6,4);ctx.fillStyle="#e43a48";ctx.fillRect(-w/2+3,7,w-6,2);ctx.fillStyle="#e8f5ff";ctx.fillRect(-8,-h/2+2,7,3);ctx.fillStyle="#e34c57";ctx.fillRect(1,-h/2+2,7,3);}ctx.restore();}
+ function drawCar(x,y,w,h,color,police=false){ctx.save();ctx.translate(x,y);ctx.fillStyle="#0008";rounded(-w/2+3,-h/2+5,w,h,9);ctx.fillStyle=color;rounded(-w/2,-h/2,w,h,9);ctx.fillStyle=police?"#101820":"#26333d";rounded(-w/2+5,-h/2+9,w-10,h*.34,4);ctx.fillStyle="#b8d3df";rounded(-w/2+6,-h/2+10,w-12,h*.29,3);ctx.fillStyle="#111";rounded(-w/2-3,-h/2+8,5,13,2);rounded(w/2-2,-h/2+8,5,13,2);rounded(-w/2-3,h/2-20,5,13,2);rounded(w/2-2,h/2-20,5,13,2);ctx.fillStyle=police?"#e9f1f5":"#dce5e9";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.fillText(police?(selectedBranch==="finanza"?"GdF":"CC"): " ",0,3);if(police){ctx.fillStyle=selectedBranch==="finanza"?"#e0c34e":"#b9d7e9";ctx.fillRect(-w/2+3,2,w-6,4);ctx.fillStyle="#e43a48";ctx.fillRect(-w/2+3,7,w-6,2);if(lightsOn){const flash=Math.floor(simulationTime*7)%2===0;ctx.fillStyle=flash?"#e84b55":"#f3f6fa";ctx.fillRect(-10,-h/2+2,9,5);ctx.fillStyle=flash?"#f3f6fa":"#e84b55";ctx.fillRect(1,-h/2+2,9,5);}else{ctx.fillStyle="#e8f5ff";ctx.fillRect(-8,-h/2+2,7,3);ctx.fillStyle="#e34c57";ctx.fillRect(1,-h/2+2,7,3);}if(sirenOn){ctx.fillStyle="#dceaf4";ctx.font="bold 8px Arial";ctx.fillText("SIRENA",0,-h/2-5);}}ctx.restore();}
  function draw(){
   if(!ctx)return;const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
   ctx.fillStyle="#233b32";ctx.fillRect(0,0,W,H);
@@ -1914,7 +1914,7 @@ sessionRestorePromise=(async()=>{try{
    drawPedestrian(roadX+roadW+28+(p%2)*12,((py+95)%680),simulationTime*2.5+p,"#8eb6c5");
   }
   const targetY=Math.max(105,Math.min(340,330-distance*.9));if(session&&!stopped){drawCar(roadX+roadW*(targetLane+.5)/3,targetY,50,88,selectedBranch==="finanza"?"#b7b5a8":"#394b5b");ctx.strokeStyle="#f5d36a";ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.strokeRect(roadX+roadW*(targetLane+.5)/3-39,targetY-53,78,106);ctx.setLineDash([]);ctx.fillStyle="#f5d36a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("OBIETTIVO",roadX+roadW*(targetLane+.5)/3,targetY-62);}
-  laneVisual+=(lane-laneVisual)*Math.min(1,dtSafeForDraw()*10);drawCar(roadX+roadW*(laneVisual+.5)/3,H-115,58,104,selectedBranch==="finanza"?"#b9b5a4":"#172e45",true);
+  laneVisual+=(lane-laneVisual)*.18;drawCar(roadX+roadW*(laneVisual+.5)/3,H-115,58,104,selectedBranch==="finanza"?"#b9b5a4":"#172e45",true);
   ctx.fillStyle="#ffffff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI",W/2,H-28);
   ctx.fillStyle="#ffffff18";ctx.fillRect(roadX+roadW/2-1,H-170,2,50);
  }
