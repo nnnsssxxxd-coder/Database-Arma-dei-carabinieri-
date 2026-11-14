@@ -970,6 +970,17 @@ html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color
 .traffic-inspection,.traffic-result{box-shadow:0 15px 30px #0007,inset 0 1px #ffffff12}.traffic-decisions button{border-radius:10px!important;box-shadow:0 5px 12px #0004}
 @media(max-width:520px){.traffic-controls{gap:6px}.traffic-control{min-height:62px!important;border-radius:10px!important}.traffic-scene-wrap canvas{aspect-ratio:16/9}.traffic-hud{gap:6px}.traffic-hud>div{border-radius:9px}}
 
+
+/* Free-roam motorway patrol game */
+.patrol-game{padding:10px!important;background:radial-gradient(ellipse at 50% 0,#233442,#080d12 72%)!important;border:1px solid #354653!important;overflow:hidden}
+.patrol-topbar{display:grid;gap:9px}.patrol-brand{display:flex;align-items:center;gap:9px;color:#e8f1f6;font-size:.68rem;letter-spacing:.16em}.patrol-live{width:8px;height:8px;border-radius:50%;background:#6bd89a;box-shadow:0 0 12px #6bd89a}
+.patrol-hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.patrol-hud>div{min-width:0;padding:8px 10px;background:#080e14;border:1px solid #354957;border-radius:9px}.patrol-hud small{display:block;color:#8fa4b3;font-size:.57rem;letter-spacing:.1em;font-weight:900}.patrol-hud b{display:block;color:#f5f8fa;font-size:1.03rem;margin-top:4px;font-variant-numeric:tabular-nums}.patrol-hud i{font-size:.62rem;color:#9aabb6;font-style:normal}
+.patrol-world{position:relative;margin-top:9px;overflow:hidden;border:1px solid #536b7b;border-radius:13px;background:#15251d;box-shadow:0 14px 30px #0008}.patrol-world canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:pan-y}.patrol-toast{position:absolute;left:10px;right:10px;bottom:10px;width:max-content;max-width:calc(100% - 20px);padding:8px 11px;border-radius:8px;background:#071018e8;border:1px solid #ffffff26;color:#e8f1f6;font-size:.68rem;font-weight:800;pointer-events:none}.patrol-target-tag{position:absolute;right:10px;top:10px;padding:7px 9px;border-radius:7px;background:#d8ad45;color:#17130a;font-size:.62rem;font-weight:950;letter-spacing:.08em}
+.patrol-controls{display:grid;grid-template-columns:.8fr 1.2fr 1.2fr .8fr;gap:7px;margin:9px 0}.patrol-controls button,.patrol-actions button,.patrol-tools button{min-width:0;min-height:48px;border-radius:10px;font-size:.72rem;font-weight:950;letter-spacing:.04em;touch-action:none;user-select:none}.patrol-steer{background:linear-gradient(145deg,#344b5b,#172630)!important;border:1px solid #627887!important;color:#fff}.patrol-pedal{color:#fff!important}.patrol-brake{background:linear-gradient(145deg,#763b35,#321a1a)!important;border-color:#a95b53!important}.patrol-gas{background:linear-gradient(145deg,#176044,#0e3025)!important;border-color:#3c9a70!important}
+.patrol-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.patrol-actions button{padding:8px 4px;background:linear-gradient(145deg,#253744,#111d26)!important;border:1px solid #586e7d!important;color:#f1f6f9}.patrol-actions #trafficStart{background:linear-gradient(145deg,#b52c38,#701b26)!important;border-color:#f16b76!important}.patrol-actions button:disabled,.patrol-tools button:disabled{opacity:.35;filter:grayscale(.7)}
+.patrol-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:7px}.patrol-tools button{min-height:38px;background:#111b23!important;border:1px solid #435766!important;color:#cbd9e2}.patrol-tools button[aria-pressed="true"]{background:#54431c!important;border-color:#d3b35b!important;color:#ffe7a4}
+.patrol-game .traffic-inspection,.patrol-game .traffic-result{margin-top:12px;padding:13px;border-radius:11px;background:#101a22;border-color:#526777}.patrol-game .traffic-decisions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.patrol-game .traffic-decisions button{min-width:0;padding:8px 5px;font-size:.68rem}
+@media(max-width:430px){.patrol-game{padding:8px!important}.patrol-hud b{font-size:.9rem}.patrol-controls{gap:5px}.patrol-controls button{min-height:45px;font-size:.66rem}.patrol-actions{gap:5px}.patrol-actions button{min-height:45px;font-size:.61rem}.patrol-tools button{font-size:.61rem}.patrol-game .traffic-decisions{grid-template-columns:1fr}.patrol-toast{font-size:.61rem}}
 </style>
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
@@ -1390,21 +1401,19 @@ footer{padding:14px 8px 22px;font-size:10px}
 </section>
 
 <section id="assignedExercises" class="panel hidden"><div class="eyebrow">GESTIONE DEL REPARTO · SIMULAZIONE</div><h2 id="assignedExercisesTitle">Test di reparto assegnato</h2><p id="assignedExercisesDescription" class="muted small">I test assegnati dal Comandante del tuo reparto e i relativi esiti.</p><div id="commanderTools" class="notice2 hidden"><label for="exerciseTitle">Titolo del test<input id="exerciseTitle" maxlength="100" value="Test di reparto · valutazione e sicurezza"></label><button id="assignCqbExercise" class="primary" type="button">Assegna Test</button><p id="assignExerciseMessage" class="small" role="status"></p><h3>Esiti dei test assegnati</h3><div id="commanderResults"></div></div><div id="memberExercises" class="notice2 hidden"><h3>Test di reparto assegnati</h3><div id="memberExerciseList"></div></div><div id="exerciseRunner" class="hidden"><div id="exerciseAssignedBy" class="notice2 hidden" aria-live="polite"></div><h3 id="exerciseRunnerTitle">Esercitazione</h3><div id="exerciseQuestions"></div><button id="submitExercise" class="primary" type="button">Consegna risposte</button><p id="exerciseMessage" class="small" role="status"></p></div><div id="commandRoster" class="notice2"><h3>Organico di reparto</h3><div id="commandRosterList"></div></div></section>
-<section id="traffic" class="panel hidden traffic-panel">
- <div class="traffic-heading"><div><div class="eyebrow">SIMULAZIONE OPERATIVA · MODALITÀ PATTUGLIA</div><h2>Controllo del traffico</h2><p class="muted small">Guida la vettura di servizio, raggiungi il veicolo e valuta il controllo con attenzione.</p></div><div class="traffic-unit-mark" id="trafficUnitMark">PATTUGLIA</div></div>
- <div class="traffic-hud"><div><span>VELOCITÀ</span><strong id="trafficSpeed">0 <small>km/h</small></strong></div><div><span>DISTANZA</span><strong id="trafficDistance">— <small>m</small></strong></div><div><span>STATO</span><strong id="trafficStatus">IN ATTESA</strong></div></div>
- <div class="traffic-scene-wrap"><canvas id="trafficScene" width="960" height="540" aria-label="Vista dall'alto della strada e dei veicoli della simulazione"></canvas><div class="traffic-scene-overlay" id="trafficSceneOverlay"><span class="traffic-pulse"></span><strong>POSTO DI SERVIZIO</strong><small>Pronto per il pattugliamento</small></div></div>
- <div class="traffic-mission-row"><div><span class="traffic-kicker">MISSIONE ATTIVA</span><strong id="trafficMissionTitle">Pattuglia urbana</strong><p id="trafficMissionText">Avvia il servizio per ricevere un controllo casuale.</p></div><div class="traffic-branch-chip" id="trafficBranchChip">CORPO</div></div>
- <div class="traffic-controls" id="trafficControls">
-  <button type="button" class="traffic-control steering" data-drive="left" aria-label="Sterza a sinistra">◀<small>SINISTRA</small></button>
-  <button type="button" class="traffic-control brake" data-drive="brake">FRENA<small>RALLENTA</small></button>
-  <button type="button" class="traffic-control accelerate" data-drive="accelerate">ACCELERA<small>TIENI PREMUTO</small></button>
-  <button type="button" class="traffic-control steering" data-drive="right" aria-label="Sterza a destra">▶<small>DESTRA</small></button>
+<section id="traffic" class="panel hidden traffic-panel patrol-game">
+ <div class="patrol-topbar"><div class="patrol-brand"><span class="patrol-live"></span><strong id="trafficUnitMark">PATTUGLIA</strong></div><div class="patrol-hud"><div><small>VELOCITÀ</small><b id="trafficSpeed">0 <i>km/h</i></b></div><div><small>MARcia</small><b id="trafficLane">SVINCOLO</b></div><div><small>STATO</small><b id="trafficStatus">PRONTO</b></div></div></div>
+ <div class="patrol-world"><canvas id="trafficScene" width="960" height="540" aria-label="Autostrada vista dall'alto: seleziona un veicolo per fermarlo"></canvas><div class="patrol-toast" id="patrolToast">Tocca INIZIA TURNO per uscire dall'area di servizio</div><div class="patrol-target-tag hidden" id="patrolTargetTag">VEICOLO SELEZIONATO</div></div>
+ <div class="patrol-controls" id="trafficControls">
+  <button type="button" class="patrol-steer" data-drive="left" aria-label="Sposta a sinistra">◀</button>
+  <button type="button" class="patrol-pedal patrol-brake" data-drive="brake">FRENO</button>
+  <button type="button" class="patrol-pedal patrol-gas" data-drive="accelerate">ACCELERA</button>
+  <button type="button" class="patrol-steer" data-drive="right" aria-label="Sposta a destra">▶</button>
  </div>
- <div class="traffic-actions"><button id="trafficStart" class="primary" type="button">Avvia pattugliamento</button><button id="trafficStop" type="button" disabled>Ferma il veicolo</button></div>
- <div id="trafficInspection" class="traffic-inspection hidden"><div class="traffic-inspection-head"><span class="traffic-kicker">CONTROLLO SU STRADA</span><span class="traffic-case-id" id="trafficCaseId">VERIFICA</span></div><h3 id="trafficVehicleTitle">Veicolo fermato</h3><div class="traffic-vehicle-meta" id="trafficVehicleMeta"></div><p id="trafficSituation"></p><div class="traffic-clues" id="trafficClues"></div><h4>Qual è la decisione corretta?</h4><div class="traffic-decisions"><button type="button" data-traffic-action="sanzione">Contesta l'infrazione</button><button type="button" data-traffic-action="avviso">Richiamo / avviso</button><button type="button" data-traffic-action="nessuna_violazione">Nessuna violazione</button></div><p class="tiny muted">La simulazione premia la valutazione corretta, non il numero di sanzioni.</p></div>
+ <div class="patrol-actions"><button id="trafficStart" class="primary" type="button">INIZIA TURNO</button><button id="trafficSignal" type="button" disabled>SEGNALA ALT</button><button id="trafficStop" type="button" disabled>FERMA E CONTROLLA</button></div>
+ <div class="patrol-tools"><button id="trafficPause" type="button" disabled>PAUSA</button><button id="trafficLights" type="button" aria-pressed="false" disabled>LAMPEGGIANTI</button><button id="trafficSiren" type="button" aria-pressed="false" disabled>SIRENA</button></div>
+ <div id="trafficInspection" class="traffic-inspection hidden"><div class="traffic-inspection-head"><span class="traffic-kicker">CONTROLLO SU STRADA</span><span class="traffic-case-id" id="trafficCaseId">VERIFICA</span></div><h3 id="trafficVehicleTitle">Veicolo fermato</h3><div class="traffic-vehicle-meta" id="trafficVehicleMeta"></div><p id="trafficSituation"></p><div class="traffic-clues" id="trafficClues"></div><h4>Esito del controllo</h4><div class="traffic-decisions"><button type="button" data-traffic-action="sanzione">Contesta l'infrazione</button><button type="button" data-traffic-action="avviso">Richiamo / avviso</button><button type="button" data-traffic-action="nessuna_violazione">Nessuna violazione</button></div><p class="tiny muted">Valuta gli elementi del controllo prima di decidere.</p></div>
  <div id="trafficResult" class="traffic-result hidden" role="status" aria-live="polite"></div>
- <div class="traffic-footnote">Scenario didattico fittizio. Le decisioni non sostituiscono procedure, formazione o disposizioni ufficiali.</div>
 </section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" minlength="2" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>Corpo<select id="newBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <span>Progetto dimostrativo indipendente</span></footer>
@@ -1845,154 +1854,146 @@ sessionRestorePromise=(async()=>{try{
 </script>
 <script id="traffic-control-game">
 (()=>{
- const el=id=>document.getElementById(id);
- let session=null,scenario=null,raf=0,last=0,speed=0,distance=180,lane=1,laneVisual=1,targetLane=1,steer=0,accel=false,brake=false,driving=false,paused=false,stopped=false,offset=0,trafficCars=[],simulationTime=0,travelMeters=0,overspeedSeconds=0,hardBrakeCount=0,collisionCount=0,lastTrafficNotice=0,hardBrakeActive=false,lightsOn=false,sirenOn=false,collisionCooldown=0;
- const canvas=el("trafficScene"),ctx=canvas?.getContext("2d");
- const branchName=()=>selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI";
- const carColors=["#b9c3ca","#8f3938","#354b61","#d1c7a7","#4e565d","#d8dce0"];
- const rand=(a,b)=>a+Math.random()*(b-a);
+ const $=id=>document.getElementById(id),canvas=$("trafficScene"),ctx=canvas?.getContext("2d");
+ if(!canvas||!ctx)return;
+ const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2;
+ const colors=["#d4d9dc","#8e3d3d","#526779","#c5bda7","#353d43","#aab9c2","#d0a24c"];
+ let session=null,scenario=null,raf=0,last=0,phase="ready",speed=0,playerLane=3,laneVisual=3,accel=false,brake=false,paused=false,offset=0,time=0,cars=[],targetId=null,lights=false,siren=false,hardBrakes=0,overspeed=0,travel=0,collisionAvoids=0,selectedCar=null;
+ const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),roadCenter=i=>ROAD_X+LANE_W*(i+.5);
+ function message(s){$("patrolToast").textContent=s}
+ function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficStatus").textContent=({ready:"PRONTO",merge:"IMMISSIONE",patrol:"PATTUGLIA",signal:"ALT SEGNALATO",pull:"ACCOSTAMENTO",stopped:"FERMO",inspect:"CONTROLLO"})[phase]||"PATTUGLIA";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
  function initCars(){
-  trafficCars=Array.from({length:10},(_,i)=>{const baseSpeed=rand(22,58);return{id:i,lane:i%3,y:rand(-80,canvas.height+180),color:carColors[i%carColors.length],speed:baseSpeed,baseSpeed,w:rand(40,48),nextLaneAt:rand(3,10),braking:false};});
+  cars=Array.from({length:15},(_,i)=>({id:"v"+i,lane:i%3,lanePos:i%3,y:rand(-520,500),speed:rand(68,126),desired:rand(78,132),color:colors[i%colors.length],w:rand(37,43),length:rand(65,76),nextChange:rand(5,13),pull:false,pulled:false,plate:""+String.fromCharCode(65+Math.floor(rand(0,26)))+Math.floor(rand(100,999))+"ZZ",model:["Berlina","SUV","Utilitaria","Station wagon","Coupé"][i%5]}));
+ }
+ function gapSafe(lane,y,excludeId=null){
+  return cars.filter(c=>c.id!==excludeId&&Math.round(c.lanePos)===lane).every(c=>Math.abs(c.y-y)>Math.max(92, speed*.78));
+ }
+ function laneChange(next){
+  if(next<0||next>3||next===playerLane)return false;
+  if(next===3&&phase!=="pull"&&phase!=="stopped"){message("La corsia di emergenza non è una corsia di marcia.");return false;}
+  if(!gapSafe(next,PLAYER_Y)){message("Corsia occupata: attendi uno spazio sicuro prima di spostarti.");return false;}
+  playerLane=next;return true;
  }
  function updateTraffic(dt){
-  simulationTime+=dt;
-  trafficCars.forEach(car=>{
-   car.y+=(speed-car.speed)*dt*1.35;
-   if(car.y>canvas.height+95)car.y=-rand(90,500);
-   if(car.y<-110)car.y=canvas.height+rand(100,360);
-   car.braking=false;
-   const ahead=trafficCars.filter(other=>other!==car&&other.lane===car.lane&&other.y<car.y&&car.y-other.y<125).sort((a,b)=>b.y-a.y)[0];
-   if(ahead){car.braking=true;car.speed=Math.max(12,Math.min(car.speed,ahead.speed-5));}else{car.speed=Math.min(car.baseSpeed,car.speed+7*dt);}
-   if(simulationTime>=car.nextLaneAt){
-    const candidates=[0,1,2].filter(next=>next!==car.lane&&trafficCars.every(other=>other===car||other.lane!==next||Math.abs(other.y-car.y)>145));
-    if(candidates.length&&Math.random()>.35)car.lane=candidates[Math.floor(Math.random()*candidates.length)];
-    car.nextLaneAt=simulationTime+rand(4,11);
+  const target=cars.find(c=>c.id===targetId);
+  cars.forEach(c=>{
+   const leader=cars.filter(o=>o!==c&&Math.round(o.lanePos)===Math.round(c.lanePos)&&o.y<c.y).sort((a,b)=>b.y-a.y)[0];
+   const gap=leader?c.y-leader.y:9999;
+   const safe=42+c.speed*.72;
+   let desired=c.desired;
+   if(leader&&gap<safe+65)desired=Math.min(desired,Math.max(25,leader.speed-Math.max(0,(safe+65-gap)*.75)));
+   if(c.pull){desired=0;if(!c.pulled&&gapSafe(3,c.y,c.id)){c.lane=3;c.lanePos+=(3-c.lanePos)*Math.min(1,dt*1.35);if(c.lanePos>2.94&&c.speed<5)c.pulled=true;}}
+   c.speed+=(clamp(desired-c.speed,-34*dt,18*dt));
+   c.y+=(speed-c.speed)*SCALE*dt;
+   if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
+    const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id));
+    if(opts.length){c.lane=opts[Math.floor(Math.random()*opts.length)];}
+    c.nextChange=time+rand(5,12);
    }
+   c.lanePos+=(c.lane-c.lanePos)*Math.min(1,dt*1.15);
+   if(!c.pull&&(c.y>H+130||c.y<-700)){c.y=c.y>H+130?-rand(180,680):H+rand(180,600);c.lane=Math.floor(rand(0,3));c.lanePos=c.lane;c.speed=rand(70,125);c.desired=rand(78,132);}
   });
+  // Fail-safe longitudinal spacing: a follower is never allowed to enter the leader's safety envelope.
+  for(let lane=0;lane<4;lane++){
+   const row=cars.filter(c=>Math.round(c.lanePos)===lane).sort((a,b)=>a.y-b.y);
+   for(let i=1;i<row.length;i++){const leader=row[i-1],follower=row[i],minGap=45+follower.speed*.68;if(follower.y-leader.y<minGap){follower.y=leader.y+minGap;follower.speed=Math.min(follower.speed,leader.speed);}}
+  }
  }
- function drawPedestrian(x,y,phase,color){
-  ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(phase)*.12);
-  ctx.fillStyle="#0007";ctx.beginPath();ctx.ellipse(2,15,7,3,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#d8b18b";ctx.beginPath();ctx.arc(0,-7,4.5,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle=color;ctx.lineWidth=5;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(0,-1);ctx.lineTo(0,9);ctx.moveTo(0,2);ctx.lineTo(-5,7+Math.sin(phase)*3);ctx.moveTo(0,2);ctx.lineTo(5,7-Math.sin(phase)*3);ctx.moveTo(0,9);ctx.lineTo(-4,16+Math.cos(phase)*2);ctx.moveTo(0,9);ctx.lineTo(4,16-Math.cos(phase)*2);ctx.stroke();ctx.restore();
+ function playerSafeSpeed(dt){
+  const front=cars.filter(c=>Math.abs(c.lanePos-laneVisual)<.32&&c.y<PLAYER_Y).sort((a,b)=>b.y-a.y)[0];
+  if(front){const gap=PLAYER_Y-front.y,required=52+speed*.72;if(gap<required+35){speed=Math.min(speed,Math.max(0,front.speed-(required+35-gap)*.9));collisionAvoids++;}}
+  const target=cars.find(c=>c.id===targetId&&c.pulled);
+  if(target&&phase==="pull"&&laneVisual>2.65){const gap=PLAYER_Y-target.y;if(gap<90)speed=Math.min(speed,Math.max(0,(gap-24)*1.15));}
  }
- function drivingReport(){
-  const quality=Math.max(0,100-Math.round(overspeedSeconds*3)-hardBrakeCount*8);
-  return {quality:Math.max(0,quality-collisionCount*18),travel:Math.round(travelMeters),overspeed:Math.round(overspeedSeconds),hardBrakes:hardBrakeCount,collisions:collisionCount};
+ function canStop(){const t=cars.find(c=>c.id===targetId);if(!t||!t.pulled||playerLane!==3)return false;const d=(PLAYER_Y-t.y)/SCALE;return d>=8&&d<=32&&speed<=8;}
+ function drawCar(x,y,w,h,color,police=false,selected=false){
+  ctx.save();ctx.translate(x,y);ctx.fillStyle="#0009";ctx.beginPath();ctx.roundRect(-w/2+3,-h/2+5,w,h,9);ctx.fill();
+  if(selected){ctx.strokeStyle="#ffd66d";ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(-w/2-5,-h/2-5,w+10,h+10,12);ctx.stroke();}
+  ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,8);ctx.fill();
+  ctx.fillStyle=police?"#101a23":"#283b49";ctx.beginPath();ctx.roundRect(-w*.36,-h*.34,w*.72,h*.28,5);ctx.fill();
+  ctx.fillStyle="#b7d0dc";ctx.beginPath();ctx.roundRect(-w*.34,-h*.31,w*.68,h*.21,3);ctx.fill();
+  ctx.fillStyle="#111";ctx.fillRect(-w/2-2,-h*.32,4,13);ctx.fillRect(w/2-2,-h*.32,4,13);ctx.fillRect(-w/2-2,h*.28,4,13);ctx.fillRect(w/2-2,h*.28,4,13);
+  ctx.fillStyle=police?"#e9f2f7":"#f7dca4";ctx.fillRect(-w*.35,-h/2+3,8,4);ctx.fillRect(w*.35-8,-h/2+3,8,4);
+  ctx.fillStyle=police?"#d52c3b":"#e44b45";ctx.fillRect(-w*.35,h/2-7,8,4);ctx.fillRect(w*.35-8,h/2-7,8,4);
+  if(police){ctx.fillStyle=selectedBranch==="finanza"?"#d7b64f":"#dce8f0";ctx.fillRect(-w*.38,-2,w*.76,5);if(lights){ctx.fillStyle=Math.floor(time*8)%2?"#ed424c":"#4d9bff";ctx.fillRect(-w*.28,-h/2-3,10,5);ctx.fillRect(w*.08,-h/2-3,10,5);}}
+  ctx.restore();
  }
- function rounded(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
- function drawCar(x,y,w,h,color,police=false){ctx.save();ctx.translate(x,y);ctx.fillStyle="#0008";rounded(-w/2+3,-h/2+5,w,h,9);ctx.fillStyle=color;rounded(-w/2,-h/2,w,h,9);ctx.fillStyle=police?"#101820":"#26333d";rounded(-w/2+5,-h/2+9,w-10,h*.34,4);ctx.fillStyle="#b8d3df";rounded(-w/2+6,-h/2+10,w-12,h*.29,3);ctx.fillStyle="#111";rounded(-w/2-3,-h/2+8,5,13,2);rounded(w/2-2,-h/2+8,5,13,2);rounded(-w/2-3,h/2-20,5,13,2);rounded(w/2-2,h/2-20,5,13,2);ctx.fillStyle=police?"#e9f1f5":"#dce5e9";ctx.font="bold 7px Arial";ctx.textAlign="center";ctx.fillText(police?(selectedBranch==="finanza"?"GdF":"CC"): " ",0,3);if(police){ctx.fillStyle=selectedBranch==="finanza"?"#e0c34e":"#b9d7e9";ctx.fillRect(-w/2+3,2,w-6,4);ctx.fillStyle="#e43a48";ctx.fillRect(-w/2+3,7,w-6,2);if(lightsOn){const flash=Math.floor(simulationTime*7)%2===0;ctx.fillStyle=flash?"#e84b55":"#f3f6fa";ctx.fillRect(-10,-h/2+2,9,5);ctx.fillStyle=flash?"#f3f6fa":"#e84b55";ctx.fillRect(1,-h/2+2,9,5);}else{ctx.fillStyle="#e8f5ff";ctx.fillRect(-8,-h/2+2,7,3);ctx.fillStyle="#e34c57";ctx.fillRect(1,-h/2+2,7,3);}if(sirenOn){ctx.fillStyle="#dceaf4";ctx.font="bold 8px Arial";ctx.fillText("SIRENA",0,-h/2-5);}}ctx.restore();}
  function draw(){
-  if(!ctx)return;const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
-  ctx.fillStyle="#233b32";ctx.fillRect(0,0,W,H);
-  for(let i=0;i<9;i++){const x=i*125+((offset*.3)%125);ctx.fillStyle=i%2?"#294638":"#314d3b";ctx.fillRect(x,0,74,H);ctx.fillStyle="#536b50";ctx.fillRect(x+14,18,48,42);ctx.fillRect(x+5,340,58,70);}
-  const roadX=185,roadW=590;ctx.fillStyle="#59636a";ctx.fillRect(roadX-8,0,roadW+16,H);ctx.fillStyle="#242b31";ctx.fillRect(roadX,0,roadW,H);
-  // Urban details: pavements, shop fronts, crossing and traffic signal
-  ctx.fillStyle="#8c9697";ctx.fillRect(roadX-8,0,8,H);ctx.fillRect(roadX+roadW,0,8,H);
-  for(let side=0;side<2;side++){const sx=side?roadX+roadW+26:24;for(let j=0;j<4;j++){const by=((j*170+offset*.22)%720)-90;ctx.fillStyle=side?"#344c50":"#3b4d50";ctx.fillRect(sx,by,side?130:125,112);ctx.fillStyle="#526a6c";ctx.fillRect(sx+10,by+13,side?108:104,32);ctx.fillStyle="#253b43";for(let w=0;w<3;w++)ctx.fillRect(sx+12+w*32,by+58,22,29);ctx.fillStyle="#8b7d6a";ctx.fillRect(sx+8,by+94,side?112:108,5);}}
-  const crossingY=(((offset*1.1)%950)+170)%950-200;
-  if(crossingY>20&&crossingY<500){ctx.fillStyle="#e8eceb";for(let k=0;k<8;k++)ctx.fillRect(roadX+95+k*48,crossingY,25,58);}
-  ctx.fillStyle="#d4d7c9";ctx.fillRect(roadX+5,0,4,H);ctx.fillRect(roadX+roadW-9,0,4,H);
-  ctx.strokeStyle="#d4d9d9";ctx.lineWidth=3;ctx.setLineDash([30,26]);ctx.lineDashOffset=-(offset%56);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(roadX+roadW*i/3,0);ctx.lineTo(roadX+roadW*i/3,H);ctx.stroke();}ctx.setLineDash([]);
-  ctx.fillStyle="#e8c85b";ctx.fillRect(roadX+roadW/2-3,0,6,H);
-  // Signal post and animated red/green lamps
-  ctx.fillStyle="#101820";ctx.fillRect(roadX+roadW-28,82,8,118);ctx.fillStyle="#18232a";rounded(roadX+roadW-39,54,30,58,6);
-  const signalGreen=(Math.floor(simulationTime/9)%2)===1;
-  ctx.fillStyle=signalGreen?"#4a5a5c":"#e24d4d";ctx.beginPath();ctx.arc(roadX+roadW-24,68,7,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=signalGreen?"#52d68a":"#53665c";ctx.beginPath();ctx.arc(roadX+roadW-24,94,7,0,Math.PI*2);ctx.fill();
-  // Street lamps and dashed parking bays
-  for(let k=0;k<4;k++){const py=((k*180+offset*.65)%720)-90;ctx.fillStyle="#172229";ctx.fillRect(roadX-22,py,3,48);ctx.fillStyle="#f2e3a2";ctx.beginPath();ctx.arc(roadX-20,py,6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c4c9c7";ctx.fillRect(roadX+roadW+12,py+30,35,3);}
-  ctx.fillStyle="#d9e1e5";ctx.font="bold 12px Arial";ctx.textAlign="left";ctx.fillText("SS 18 · ZONA URBANA",22,34);ctx.font="10px Arial";ctx.fillStyle="#a9b8be";ctx.fillText("LIMITE 50",22,51);
-  trafficCars.forEach(c=>{
-   const x=roadX+roadW*(c.lane+.5)/3;
-   drawCar(x,c.y,c.w,76,c.color);
-   if(c.braking){ctx.fillStyle="#ff514c";ctx.fillRect(x-c.w/2+5,c.y+29,7,4);ctx.fillRect(x+c.w/2-12,c.y+29,7,4);}
-  });
-  for(let p=0;p<4;p++){
-   const py=((p*173+simulationTime*13)%650)+35;
-   drawPedestrian(roadX-28+(p%2)*12,py,simulationTime*3+p,p%2?"#d6dce0":"#bd9b65");
-   drawPedestrian(roadX+roadW+28+(p%2)*12,((py+95)%680),simulationTime*2.5+p,"#8eb6c5");
-  }
-  const targetY=Math.max(105,Math.min(340,330-distance*.9));if(session&&!stopped){drawCar(roadX+roadW*(targetLane+.5)/3,targetY,50,88,selectedBranch==="finanza"?"#b7b5a8":"#394b5b");ctx.strokeStyle="#f5d36a";ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.strokeRect(roadX+roadW*(targetLane+.5)/3-39,targetY-53,78,106);ctx.setLineDash([]);ctx.fillStyle="#f5d36a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("OBIETTIVO",roadX+roadW*(targetLane+.5)/3,targetY-62);}
-  laneVisual+=(lane-laneVisual)*.18;drawCar(roadX+roadW*(laneVisual+.5)/3,H-115,58,104,selectedBranch==="finanza"?"#b9b5a4":"#172e45",true);
-  ctx.fillStyle="#ffffff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI",W/2,H-28);
-  ctx.fillStyle="#ffffff18";ctx.fillRect(roadX+roadW/2-1,H-170,2,50);
+  ctx.clearRect(0,0,W,H);ctx.fillStyle="#244331";ctx.fillRect(0,0,W,H);
+  for(let i=0;i<18;i++){const y=((i*97+offset*.25)%700)-80;ctx.fillStyle=i%2?"#31513d":"#294936";ctx.fillRect(12,y,145,55);ctx.fillRect(805,y+22,142,52);}
+  const x=ROAD_X,w=ROAD_W+SHOULDER_W;ctx.fillStyle="#858d90";ctx.fillRect(x-18,0,w+36,H);ctx.fillStyle="#333b40";ctx.fillRect(x,0,ROAD_W,H);ctx.fillStyle="#6d7476";ctx.fillRect(x+ROAD_W,0,SHOULDER_W,H);
+  ctx.fillStyle="#d9dfe0";ctx.fillRect(x+ROAD_W+6,0,4,H);ctx.fillRect(x+ROAD_W+SHOULDER_W-7,0,4,H);
+  ctx.strokeStyle="#dfe4e5";ctx.lineWidth=3;ctx.setLineDash([34,26]);ctx.lineDashOffset=-(offset%60);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(x+i*LANE_W,0);ctx.lineTo(x+i*LANE_W,H);ctx.stroke();}ctx.setLineDash([]);
+  ctx.strokeStyle="#e7d88d";ctx.lineWidth=2;ctx.setLineDash([18,24]);ctx.beginPath();ctx.moveTo(x+ROAD_W+24,0);ctx.lineTo(x+ROAD_W+24,H);ctx.stroke();ctx.setLineDash([]);
+  // Emergency-lane hatching and motorway roadside details
+  for(let y=-50+(offset%72);y<H;y+=72){ctx.strokeStyle="#aeb5b5";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+ROAD_W+8,y);ctx.lineTo(x+ROAD_W+38,y+20);ctx.stroke();}
+  for(let i=0;i<3;i++){const y=((i*230+offset*.55)%760)-110;ctx.fillStyle="#a9b1b2";ctx.fillRect(x-32,y,10,42);ctx.fillStyle="#dce2e3";ctx.fillRect(x-29,y+4,4,32);}
+  // Vehicles
+  cars.slice().sort((a,b)=>a.y-b.y).forEach(c=>{const cx=ROAD_X+LANE_W*(c.lanePos+.5);drawCar(cx,c.y,c.w,c.length,c.color,false,c.id===targetId);if(c.id===targetId){ctx.fillStyle="#ffe28a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("ALT",cx,c.y-c.length/2-12);}});
+  // Patrol vehicle and subtle lane indicator
+  laneVisual+=(playerLane-laneVisual)*.2;const px=ROAD_X+LANE_W*(laneVisual+.5);drawCar(px,PLAYER_Y,53,94,selectedBranch==="finanza"?"#b7b5a8":"#172d40",true,false);
+  if(lights&&siren){ctx.fillStyle="#f5e3a0";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.fillText("SIRENA ATTIVA",px,PLAYER_Y+65);}
+  ctx.fillStyle="#ffffff";ctx.font="bold 11px Arial";ctx.textAlign="left";ctx.fillText("A1 · AUTOSTRADA",20,28);
  }
- function updateHud(){el("trafficSpeed").innerHTML=Math.round(speed)+' <small>km/h</small>';el("trafficDistance").innerHTML=Math.max(0,Math.round(distance))+' <small>m</small>';el("trafficStatus").textContent=stopped?"VEICOLO FERMO":paused?"IN PAUSA":driving?"IN MARCIA":session?"PRONTO":"IN ATTESA";el("trafficStop").disabled=!session||stopped||distance>7||speed>8||lane!==targetLane;}
- function frame(t){
-  if(!driving)return;
-  const dt=Math.min(.05,(t-last)/1000||0);last=t;
-  const previousSpeed=speed;
-  if(accel)speed=Math.min(95,speed+34*dt);
-  if(brake)speed=Math.max(0,speed-65*dt);
-  if(!accel&&!brake)speed=Math.max(0,speed-4*dt);
-  if(brake&&previousSpeed-speed>1&&!hardBrakeActive){hardBrakeCount++;hardBrakeActive=true;}if(!brake)hardBrakeActive=false;
-  if(speed>50)overspeedSeconds+=dt;
-  travelMeters+=speed*dt/3.6;
-  distance=Math.max(0,distance-speed*dt*.278);
-  offset+=speed*dt*1.8;
-  if(simulationTime-lastTrafficNotice>12&&trafficCars.some(c=>c.braking&&c.y>canvas.height*.35&&c.y<canvas.height*.7)){
-   lastTrafficNotice=simulationTime;
-   setMessage("Traffico rallentato: mantieni la distanza di sicurezza e modula la velocità.");
-  }
-  updateTraffic(dt);collisionCooldown=Math.max(0,collisionCooldown-dt);const patrolY=canvas.height-165;for(const car of trafficCars){if(collisionCooldown<=0&&car.lane===lane&&Math.abs(car.y-patrolY)<62&&speed>12){collisionCount++;collisionCooldown=2.2;speed=Math.max(0,speed*.42);car.y=-160;setMessage("Urto evitabile: rallenta e mantieni la distanza di sicurezza.");break;}}draw();updateHud();raf=requestAnimationFrame(frame);
+ function loop(t){
+  if(phase==="ready"||paused||phase==="stopped"||phase==="inspect")return;
+  const dt=Math.min(.04,(t-last)/1000||0);last=t;time+=dt;
+  const old=speed;if(accel)speed=Math.min(145,speed+24*dt);if(brake)speed=Math.max(0,speed-48*dt);if(!accel&&!brake)speed=Math.max(0,speed-2*dt);
+  if(brake&&old-speed>1)hardBrakes++;if(speed>130)overspeed+=dt;travel+=speed*dt/3.6;offset+=speed*dt*1.4;
+  if(phase==="merge"&&laneVisual<2.1){phase="patrol";message("Immissione completata. Tocca un'auto sulla carreggiata per selezionarla.");}
+  updateTraffic(dt);playerSafeSpeed(dt);
+  if(phase==="pull"){const target=cars.find(c=>c.id===targetId);if(target?.pulled)message("Veicolo accostato. Spostati sulla corsia di emergenza, fermati a distanza e avvia il controllo.");}
+  draw();setHud();raf=requestAnimationFrame(loop);
  }
- function setDriving(on){driving=on;if(on){paused=false;last=performance.now();raf=requestAnimationFrame(frame);}else{cancelAnimationFrame(raf);}}
-  function togglePause(){if(!session||stopped)return;if(driving){accel=false;brake=false;setDriving(false);paused=true;el("trafficPause").textContent="RIPRENDI SERVIZIO";}else{setDriving(true);el("trafficPause").textContent="METTI IN PAUSA";}updateHud();}
-  function toggleEmergency(kind){if(!session||stopped)return;if(kind==="lights"){lightsOn=!lightsOn;el("trafficLights").setAttribute("aria-pressed",String(lightsOn));el("trafficLights").textContent=lightsOn?"LAMPEGGIANTI: ON":"LAMPEGGIANTI: OFF";}else{sirenOn=!sirenOn;el("trafficSiren").setAttribute("aria-pressed",String(sirenOn));el("trafficSiren").textContent=sirenOn?"SIRENA: ON":"SIRENA: OFF";}draw();}
- function setMessage(text){el("trafficMissionText").textContent=text;}
- async function api(action,extra={}){const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action,service_branch:selectedBranch,...extra}});if(error){let msg="";try{msg=(await error.context?.json())?.error||"";}catch(_){}throw new Error(msg||error.message||"Servizio non disponibile");}if(data?.error)throw new Error(data.error);return data;}
+ function run(){cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(loop);}
+ async function api(action,extra={}){const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action,service_branch:selectedBranch,...extra}});if(error){let m="";try{m=(await error.context?.json())?.error||"";}catch(_){}throw new Error(m||error.message||"Servizio non disponibile");}if(data?.error)throw new Error(data.error);return data;}
  async function start(){
-  if(!selectedBranch||!user||!profile){setMessage("Accedi al tuo Corpo per iniziare.");return;}
-  el("trafficStart").disabled=true;setMessage("Richiesta scenario al centro operativo…");
-  try{
-   const d=await api("start");session=d.session_id;scenario=d.scenario;speed=0;distance=180;lane=1;laneVisual=1;targetLane=Math.floor(Math.random()*3);offset=0;simulationTime=0;travelMeters=0;overspeedSeconds=0;hardBrakeCount=0;collisionCount=0;collisionCooldown=0;lastTrafficNotice=0;hardBrakeActive=false;stopped=false;paused=false;lightsOn=false;sirenOn=false;accel=false;brake=false;initCars();el("trafficPause").textContent="METTI IN PAUSA";el("trafficLights").textContent="LAMPEGGIANTI: OFF";el("trafficSiren").textContent="SIRENA: OFF";el("trafficInspection").classList.add("hidden");el("trafficResult").classList.add("hidden");el("trafficSceneOverlay").classList.add("hidden");el("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CC · PATTUGLIA";el("trafficBranchChip").textContent=branchName();el("trafficMissionTitle").textContent="Raggiungi e ferma il veicolo";setMessage("Veicolo obiettivo individuato. Avvicinati e fermati in sicurezza entro la distanza indicata.");el("trafficStart").textContent="Nuovo servizio";setDriving(true);updateHud();
-  }catch(e){setMessage(e.message);el("trafficStart").disabled=false;}
+  if(!selectedBranch||!user||!profile){message("Accedi al tuo Corpo per iniziare.");return;}
+  $("trafficStart").disabled=true;message("Avvio pattuglia…");
+  try{const d=await api("start");session=d.session_id;scenario=d.scenario;phase="merge";speed=0;playerLane=3;laneVisual=3;time=0;offset=0;targetId=null;lights=false;siren=false;hardBrakes=0;overspeed=0;travel=0;collisionAvoids=0;accel=false;brake=false;initCars();$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");$("patrolTargetTag").classList.add("hidden");$("trafficPause").disabled=false;$("trafficLights").disabled=false;$("trafficSiren").disabled=false;$("trafficStart").textContent="TURNO IN CORSO";$("trafficStart").disabled=true;$("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CARABINIERI";message("Parti dalla corsia di emergenza: accelera e spostati a sinistra nella corsia di marcia.");run();setHud();}
+  catch(e){message(e.message);$("trafficStart").disabled=false;}
+ }
+ function selectVehicle(e){
+  if(!["patrol","signal"].includes(phase)||!session)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
+  let hit=null,best=Infinity;cars.forEach(c=>{if(c.pull||c.y<35||c.y>H-25)return;const cx=ROAD_X+LANE_W*(c.lanePos+.5),d=Math.hypot((x-cx)*.85,y-c.y);if(d<Math.max(c.w,c.length)*.72&&d<best){hit=c;best=d;}});
+  if(hit){targetId=hit.id;selectedCar=hit;$("patrolTargetTag").classList.remove("hidden");message("Veicolo selezionato: "+hit.model+" · "+hit.plate+". Premi SEGNALA ALT per chiedere l'accostamento.");draw();setHud();}
+ }
+ async function signalStop(){
+  const target=cars.find(c=>c.id===targetId);if(!target||!["patrol","signal"].includes(phase))return;
+  phase="signal";target.pull=true;lights=true;siren=true;phase="pull";message("ALT segnalato. Il veicolo cercherà uno spazio sicuro sulla corsia di emergenza.");$("trafficSignal").disabled=true;draw();setHud();
  }
  function stop(){
-  if(!session||stopped)return;
-  if(distance>7||speed>8||lane!==targetLane){setMessage(lane!==targetLane?"Allineati alla corsia del veicolo obiettivo prima di fermarlo.":"Per fermare il veicolo devi avvicinarti entro 7 metri e scendere sotto 8 km/h.");return;}
-  setDriving(false);speed=0;stopped=true;accel=false;brake=false;updateHud();el("trafficStop").disabled=true;
-  el("trafficVehicleTitle").textContent=scenario.vehicle+" · "+scenario.model;el("trafficCaseId").textContent="CONTROLLO "+scenario.plate;el("trafficVehicleMeta").textContent="Targa "+scenario.plate+" · Conducente: "+scenario.driver;el("trafficSituation").textContent=scenario.situation;el("trafficClues").innerHTML="<button type=\"button\" data-inspect=\"documents\">01 · Verifica documenti</button><button type=\"button\" data-inspect=\"vehicle\">02 · Verifica veicolo</button><button type=\"button\" data-inspect=\"conduct\">03 · Valuta condotta</button><p id=\"trafficInspectionFeedback\" class=\"traffic-inspection-feedback\">Completa tutte e tre le verifiche per sbloccare la decisione.</p>";el("trafficInspection").querySelector(".traffic-decisions").classList.add("hidden");el("trafficInspection").classList.remove("hidden");el("trafficMissionTitle").textContent="Valutazione del controllo";setMessage("Controllo avviato: esamina gli elementi e scegli una decisione proporzionata.");el("trafficInspection").scrollIntoView({behavior:"smooth",block:"nearest"});
+  if(!canStop()){message("Per il controllo: attendi che il veicolo sia accostato, entra nella corsia di emergenza e fermati a 8–32 metri sotto 8 km/h.");return;}
+  cancelAnimationFrame(raf);phase="stopped";speed=0;accel=false;brake=false;lights=true;siren=false;
+  $("trafficVehicleTitle").textContent=scenario.vehicle+" · "+scenario.model;$("trafficCaseId").textContent="CONTROLLO "+scenario.plate;$("trafficVehicleMeta").textContent="Targa "+scenario.plate+" · Conducente: "+scenario.driver;$("trafficSituation").textContent=scenario.situation;
+  $("trafficClues").innerHTML='<button type="button" data-inspect="documents">01 · Documenti</button><button type="button" data-inspect="vehicle">02 · Veicolo</button><button type="button" data-inspect="conduct">03 · Condotta</button><p id="trafficInspectionFeedback" class="traffic-inspection-feedback">Completa tutte e tre le verifiche per sbloccare la decisione.</p>';
+  $("trafficInspection").querySelector(".traffic-decisions").classList.add("hidden");$("trafficInspection").classList.remove("hidden");$("trafficPause").disabled=true;message("Veicolo fermo in sicurezza. Completa le verifiche.");setHud();$("trafficInspection").scrollIntoView({behavior:"smooth",block:"nearest"});
  }
- async function inspect(checkId,button){
-  if(!session||!stopped||button.disabled)return;
-  button.disabled=true;button.textContent="VERIFICA IN CORSO…";
-  try{const result=await api("inspect",{session_id:session,check_id:checkId});button.textContent="✓ "+({documents:"DOCUMENTI VERIFICATI",vehicle:"VEICOLO VERIFICATO",conduct:"CONDOTTA VALUTATA"}[checkId]);const line=document.createElement("p");line.textContent=result.detail;line.className="traffic-check-detail";el("trafficClues").insertBefore(line,el("trafficInspectionFeedback"));if(result.all_checked){el("trafficInspectionFeedback").textContent="Tutte le verifiche sono complete. Ora scegli la decisione corretta.";el("trafficInspection").querySelector(".traffic-decisions").classList.remove("hidden");}else{el("trafficInspectionFeedback").textContent="Verifiche completate: "+result.completed_checks.length+"/3";}}
-  catch(e){button.disabled=false;button.textContent=({documents:"01 · Verifica documenti",vehicle:"02 · Verifica veicolo",conduct:"03 · Valuta condotta"}[checkId]);el("trafficInspectionFeedback").textContent=e.message;}
+ async function inspect(id,b){
+  if(!session||phase!=="stopped"||b.disabled)return;b.disabled=true;b.textContent="VERIFICA…";
+  try{const result=await api("inspect",{session_id:session,check_id:id});b.textContent="✓ "+({documents:"DOCUMENTI",vehicle:"VEICOLO",conduct:"CONDOTTA"}[id]);const p=document.createElement("p");p.textContent=result.detail;p.className="traffic-check-detail";$("trafficClues").insertBefore(p,$("trafficInspectionFeedback"));if(result.all_checked){$("trafficInspectionFeedback").textContent="Verifiche complete. Scegli l'esito."; $("trafficInspection").querySelector(".traffic-decisions").classList.remove("hidden");}else $("trafficInspectionFeedback").textContent="Verifiche: "+result.completed_checks.length+"/3";}
+  catch(e){b.disabled=false;b.textContent=({documents:"01 · Documenti",vehicle:"02 · Veicolo",conduct:"03 · Condotta"}[id]);$("trafficInspectionFeedback").textContent=e.message;}
  }
  async function decide(action){
-  if(!session||!stopped)return;
-  el("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=true);
-  try{
-   const result=await api("finish",{session_id:session,chosen_action:action});
-   const correct=!!result.correct;const reward=Number(result.exp_awarded)||0;
-   if(result.progress){progress={...progress,...result.progress};try{render();}catch(e){console.warn("Aggiornamento EXP:",e);}}
-   el("trafficResult").classList.remove("hidden");
-   const report=drivingReport();
-   el("trafficResult").innerHTML="<strong>"+(correct?"Controllo corretto":"Valutazione non corretta")+"</strong><p>"+result.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"La decisione è stata registrata sul profilo.":"Nessuna EXP assegnata: controlla gli indizi e riprova con un nuovo scenario.")+"</p><div class='traffic-drive-report'><b>RAPPORTO DI GUIDA</b><span>Condotta: "+report.quality+"/100</span><span>Percorso: "+report.travel+" m</span><span>Eccesso velocità: "+report.overspeed+" s</span><span>Frenate brusche: "+report.hardBrakes+"</span><span>Urti: "+report.collisions+"</span></div><button id='trafficNext' type='button' class='primary'>Prossimo controllo</button>";
-   el("trafficInspection").classList.add("hidden");el("trafficStart").disabled=false;el("trafficStart").textContent="Nuovo controllo";el("trafficMissionTitle").textContent=correct?"Controllo completato":"Controllo da migliorare";setMessage("Servizio concluso. Puoi avviare un nuovo controllo.");
-   el("trafficNext").addEventListener("click",()=>{el("trafficResult").classList.add("hidden");start();});
-   session=null;scenario=null;updateHud();
-  }catch(e){el("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=false);el("trafficResult").classList.remove("hidden");el("trafficResult").textContent=e.message;}
+  if(!session||phase!=="stopped")return;$("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=true);
+  try{const result=await api("finish",{session_id:session,chosen_action:action});const correct=!!result.correct,reward=Number(result.exp_awarded)||0;if(result.progress){progress={...progress,...result.progress};try{render();}catch(e){console.warn("EXP refresh",e);}}
+   const report={distance:Math.round(travel),overspeed:Math.round(overspeed),hard:hardBrakes,avoids:collisionAvoids};
+   $("trafficResult").classList.remove("hidden");$("trafficResult").innerHTML="<strong>"+(correct?"Controllo corretto":"Valutazione non corretta")+"</strong><p>"+result.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"EXP registrata sul profilo.":"Nessuna EXP assegnata.")+"</p><div class='traffic-drive-report'><b>RAPPORTO DI SERVIZIO</b><span>Percorso: "+report.distance+" m</span><span>Eccesso velocità: "+report.overspeed+" s</span><span>Frenate: "+report.hard+"</span><span>Interventi anticollisione: "+report.avoids+"</span></div><button id='trafficNext' class='primary' type='button'>NUOVO TURNO</button>";
+   $("trafficInspection").classList.add("hidden");$("trafficNext").addEventListener("click",()=>{reset();start();});session=null;scenario=null;phase="ready";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficSignal").disabled=true;$("trafficStop").disabled=true;setHud();
+  }catch(e){$("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=false);$("trafficResult").classList.remove("hidden");$("trafficResult").textContent=e.message;}
  }
- function bindDrive(){
-  document.querySelectorAll("[data-drive]").forEach(b=>{
-   const key=b.dataset.drive;
-   const down=e=>{e.preventDefault();if(!session||stopped||paused)return;if(key==="accelerate")accel=true;else if(key==="brake")brake=true;else if(key==="left"||key==="right"){steer=key==="left"?-1:1;lane=Math.max(0,Math.min(2,lane+steer));draw();updateHud();}try{b.setPointerCapture(e.pointerId);}catch(_){}};
-   const up=e=>{if(e)e.preventDefault();if(key==="accelerate")accel=false;if(key==="brake")brake=false;};
-   b.addEventListener("pointerdown",down);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("lostpointercapture",up);
-  });
-  window.addEventListener("pointerup",()=>{accel=false;brake=false;});
+ function reset(){cancelAnimationFrame(raf);session=null;scenario=null;phase="ready";speed=0;playerLane=3;laneVisual=3;cars=[];targetId=null;accel=false;brake=false;paused=false;lights=false;siren=false;$("patrolTargetTag").classList.add("hidden");$("trafficPause").textContent="PAUSA";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");draw();setHud();message("Tocca INIZIA TURNO per partire dall'area di servizio.");}
+ function pause(){if(!session||phase==="stopped")return;paused=!paused;accel=false;brake=false;$("trafficPause").textContent=paused?"RIPRENDI":"PAUSA";if(paused)cancelAnimationFrame(raf);else run();setHud();}
+ function bind(){
+  document.querySelectorAll("#trafficControls [data-drive]").forEach(b=>{const k=b.dataset.drive;const down=e=>{e.preventDefault();if(!session||paused||phase==="stopped")return;if(k==="accelerate")accel=true;else if(k==="brake")brake=true;else{const n=playerLane+(k==="left"?-1:1);if(laneChange(n)){draw();setHud();}}try{b.setPointerCapture(e.pointerId);}catch(_){}};
+   const up=e=>{if(e)e.preventDefault();if(k==="accelerate")accel=false;if(k==="brake")brake=false;};b.addEventListener("pointerdown",down);["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,up));});
+  window.addEventListener("pointerup",()=>{accel=false;brake=false;});canvas.addEventListener("pointerdown",selectVehicle);
+  $("trafficStart").addEventListener("click",start);$("trafficSignal").addEventListener("click",signalStop);$("trafficStop").addEventListener("click",stop);$("trafficPause").addEventListener("click",pause);
+  $("trafficLights").addEventListener("click",()=>{lights=!lights;$("trafficLights").setAttribute("aria-pressed",String(lights));draw();});$("trafficSiren").addEventListener("click",()=>{siren=!siren;$("trafficSiren").setAttribute("aria-pressed",String(siren));});
+  $("trafficInspection").addEventListener("click",e=>{const c=e.target.closest("[data-inspect]");if(c){inspect(c.dataset.inspect,c);return;}const b=e.target.closest("[data-traffic-action]");if(b)decide(b.dataset.trafficAction);});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){accel=false;brake=false;if(session&&!paused)pause();}});
  }
- function init(){
-  if(!canvas||!ctx)return;
-  el("trafficBranchChip").textContent=branchName();draw();updateHud();
-  const extras=document.createElement("div");extras.className="traffic-extras";extras.innerHTML='<button id="trafficPause" type="button">METTI IN PAUSA</button><button id="trafficLights" type="button" aria-pressed="false">LAMPEGGIANTI: OFF</button><button id="trafficSiren" type="button" aria-pressed="false">SIRENA: OFF</button>';el("trafficControls").after(extras);el("trafficPause").addEventListener("click",togglePause);el("trafficLights").addEventListener("click",()=>toggleEmergency("lights"));el("trafficSiren").addEventListener("click",()=>toggleEmergency("siren"));el("trafficStart").addEventListener("click",start);el("trafficStop").addEventListener("click",stop);
-  el("trafficInspection").addEventListener("click",e=>{const check=e.target.closest("[data-inspect]");if(check){inspect(check.dataset.inspect,check);return;}const b=e.target.closest("[data-traffic-action]");if(b)decide(b.dataset.trafficAction);});
-  bindDrive();
-  document.addEventListener("visibilitychange",()=>{if(document.hidden){accel=false;brake=false;}});
- }
+ function init(){$("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CARABINIERI";draw();setHud();bind();message("Tocca INIZIA TURNO per uscire dall'area di servizio.");}
  document.addEventListener("DOMContentLoaded",init);
 })();
 </script><script>
