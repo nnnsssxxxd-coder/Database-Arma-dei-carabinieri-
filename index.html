@@ -1833,9 +1833,20 @@ sessionRestorePromise=(async()=>{try{
   ctx.fillStyle="#233b32";ctx.fillRect(0,0,W,H);
   for(let i=0;i<9;i++){const x=i*125+((offset*.3)%125);ctx.fillStyle=i%2?"#294638":"#314d3b";ctx.fillRect(x,0,74,H);ctx.fillStyle="#536b50";ctx.fillRect(x+14,18,48,42);ctx.fillRect(x+5,340,58,70);}
   const roadX=185,roadW=590;ctx.fillStyle="#59636a";ctx.fillRect(roadX-8,0,roadW+16,H);ctx.fillStyle="#242b31";ctx.fillRect(roadX,0,roadW,H);
+  // Urban details: pavements, shop fronts, crossing and traffic signal
+  ctx.fillStyle="#8c9697";ctx.fillRect(roadX-8,0,8,H);ctx.fillRect(roadX+roadW,0,8,H);
+  for(let side=0;side<2;side++){const sx=side?roadX+roadW+26:24;for(let j=0;j<4;j++){const by=((j*170+offset*.22)%720)-90;ctx.fillStyle=side?"#344c50":"#3b4d50";ctx.fillRect(sx,by,side?130:125,112);ctx.fillStyle="#526a6c";ctx.fillRect(sx+10,by+13,side?108:104,32);ctx.fillStyle="#253b43";for(let w=0;w<3;w++)ctx.fillRect(sx+12+w*32,by+58,22,29);ctx.fillStyle="#8b7d6a";ctx.fillRect(sx+8,by+94,side?112:108,5);}}
+  const crossingY=(((offset*1.1)%950)+170)%950-200;
+  if(crossingY>20&&crossingY<500){ctx.fillStyle="#e8eceb";for(let k=0;k<8;k++)ctx.fillRect(roadX+95+k*48,crossingY,25,58);}
   ctx.fillStyle="#d4d7c9";ctx.fillRect(roadX+5,0,4,H);ctx.fillRect(roadX+roadW-9,0,4,H);
   ctx.strokeStyle="#d4d9d9";ctx.lineWidth=3;ctx.setLineDash([30,26]);ctx.lineDashOffset=-(offset%56);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(roadX+roadW*i/3,0);ctx.lineTo(roadX+roadW*i/3,H);ctx.stroke();}ctx.setLineDash([]);
   ctx.fillStyle="#e8c85b";ctx.fillRect(roadX+roadW/2-3,0,6,H);
+  // Signal post and animated red/green lamps
+  ctx.fillStyle="#101820";ctx.fillRect(roadX+roadW-28,82,8,118);ctx.fillStyle="#18232a";rounded(roadX+roadW-39,54,30,58,6);
+  ctx.fillStyle=(Math.floor(offset/180)%2===0)?"#e24d4d":"#4a5a5c";ctx.beginPath();ctx.arc(roadX+roadW-24,68,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=(Math.floor(offset/180)%2===0)?"#53665c":"#52d68a";ctx.beginPath();ctx.arc(roadX+roadW-24,94,7,0,Math.PI*2);ctx.fill();
+  // Street lamps and dashed parking bays
+  for(let k=0;k<4;k++){const py=((k*180+offset*.65)%720)-90;ctx.fillStyle="#172229";ctx.fillRect(roadX-22,py,3,48);ctx.fillStyle="#f2e3a2";ctx.beginPath();ctx.arc(roadX-20,py,6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c4c9c7";ctx.fillRect(roadX+roadW+12,py+30,35,3);}
   ctx.fillStyle="#d9e1e5";ctx.font="bold 12px Arial";ctx.textAlign="left";ctx.fillText("SS 18 · ZONA URBANA",22,34);ctx.font="10px Arial";ctx.fillStyle="#a9b8be";ctx.fillText("LIMITE 50",22,51);
   trafficCars.forEach((c,i)=>{const y=((c.y+offset*(.45+c.speed/90)+620)%700)-80;drawCar(roadX+roadW*(c.lane+.5)/3,y,c.w,76,c.color);});
   const targetY=Math.max(105,Math.min(340,330-distance*.9));if(session&&!stopped){drawCar(roadX+roadW*(targetLane+.5)/3,targetY,50,88,selectedBranch==="finanza"?"#b7b5a8":"#394b5b");ctx.strokeStyle="#f5d36a";ctx.lineWidth=3;ctx.setLineDash([7,7]);ctx.strokeRect(roadX+roadW*(targetLane+.5)/3-39,targetY-53,78,106);ctx.setLineDash([]);ctx.fillStyle="#f5d36a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("OBIETTIVO",roadX+roadW*(targetLane+.5)/3,targetY-62);}
