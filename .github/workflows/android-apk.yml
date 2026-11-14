@@ -74,7 +74,7 @@ jobs:
           for script in /tmp/inline-*.js; do node --check "$script"; done
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Verify dependency tree
         run: npm ls --depth=0
