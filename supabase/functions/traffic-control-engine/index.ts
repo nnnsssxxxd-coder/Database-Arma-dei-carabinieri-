@@ -52,6 +52,11 @@ Deno.serve(async(req:Request)=>{
     await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
     if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
+    const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
+    if(openSession) {
+      const existing=scenarios.find(item=>item.id===openSession.scenario_id);
+      if(existing) { const {action:existingAnswer,...publicExisting}=existing; return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200); }
+    }
     const scenario=scenarios[Math.floor(Math.random()*scenarios.length)];
     const {data:session,error}=await db.from("traffic_control_sessions").insert({
       user_id:user.id,service_branch:branch,scenario_id:scenario.id,correct_action:scenario.action
