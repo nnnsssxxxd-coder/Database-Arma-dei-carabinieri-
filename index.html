@@ -1915,7 +1915,7 @@ sessionRestorePromise=(async()=>{try{
    const desiredGap=s0+Math.max(0,v*T+(v*dv)/(2*Math.sqrt(a*b)));
    let acceleration=a*(1-Math.pow(v/v0,4)-(leader?Math.pow(desiredGap/gap,2):0));
    if(c.pull&&c.lane<4){
-    acceleration=clamp((50/3.6-v)*.85,-1.4,1.2);
+    acceleration=Math.min(acceleration,clamp((50/3.6-v)*.85,-1.4,1.2));
     if(Math.abs(c.lanePos-c.lane)<.12){
      const nextLane=c.lane+1;
      if(gapSafe(nextLane,c.y,c.id,false,c.speed))c.lane=nextLane;
