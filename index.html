@@ -1878,7 +1878,7 @@ sessionRestorePromise=(async()=>{try{
  function bindDrive(){
   document.querySelectorAll("[data-drive]").forEach(b=>{
    const key=b.dataset.drive;
-   const down=e=>{e.preventDefault();if(!session||stopped)return;if(key==="accelerate")accel=true;else if(key==="brake")brake=true;else if(key==="left"||key==="right"){steer=key==="left"?-1:1;lane=Math.max(0,Math.min(2,lane+steer));draw();}};
+   const down=e=>{e.preventDefault();if(!session||stopped)return;if(key==="accelerate")accel=true;else if(key==="brake")brake=true;else if(key==="left"||key==="right"){steer=key==="left"?-1:1;lane=Math.max(0,Math.min(2,lane+steer));draw();updateHud();}};
    const up=e=>{if(e)e.preventDefault();if(key==="accelerate")accel=false;if(key==="brake")brake=false;};
    b.addEventListener("pointerdown",down);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("lostpointercapture",up);
   });
