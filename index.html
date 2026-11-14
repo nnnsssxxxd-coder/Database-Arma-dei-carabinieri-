@@ -1846,13 +1846,13 @@ sessionRestorePromise=(async()=>{try{
 <script id="traffic-control-game">
 (()=>{
  const el=id=>document.getElementById(id);
- let session=null,scenario=null,raf=0,last=0,speed=0,distance=180,lane=1,targetLane=1,steer=0,accel=false,brake=false,driving=false,stopped=false,offset=0,trafficCars=[],simulationTime=0,travelMeters=0,overspeedSeconds=0,hardBrakeCount=0,lastTrafficNotice=0;
+ let session=null,scenario=null,raf=0,last=0,speed=0,distance=180,lane=1,targetLane=1,steer=0,accel=false,brake=false,driving=false,stopped=false,offset=0,trafficCars=[],simulationTime=0,travelMeters=0,overspeedSeconds=0,hardBrakeCount=0,lastTrafficNotice=0,hardBrakeActive=false;
  const canvas=el("trafficScene"),ctx=canvas?.getContext("2d");
  const branchName=()=>selectedBranch==="finanza"?"GUARDIA DI FINANZA":"CARABINIERI";
  const carColors=["#b9c3ca","#8f3938","#354b61","#d1c7a7","#4e565d","#d8dce0"];
  const rand=(a,b)=>a+Math.random()*(b-a);
  function initCars(){
-  trafficCars=Array.from({length:10},(_,i)=>({id:i,lane:i%3,y:rand(-620,480),color:carColors[i%carColors.length],speed:rand(18,58),w:rand(40,48),nextLaneAt:rand(3,10),braking:false}));
+  trafficCars=Array.from({length:10},(_,i)=>({id:i,lane:i%3,y:rand(-80,canvas.height+180),color:carColors[i%carColors.length],speed:rand(18,58),w:rand(40,48),nextLaneAt:rand(3,10),braking:false}));
  }
  function updateTraffic(dt){
   simulationTime+=dt;
@@ -1926,7 +1926,7 @@ sessionRestorePromise=(async()=>{try{
   if(accel)speed=Math.min(95,speed+34*dt);
   if(brake)speed=Math.max(0,speed-65*dt);
   if(!accel&&!brake)speed=Math.max(0,speed-4*dt);
-  if(previousSpeed-speed>22)hardBrakeCount++;
+  if(brake&&previousSpeed-speed>1&&!hardBrakeActive){hardBrakeCount++;hardBrakeActive=true;}if(!brake)hardBrakeActive=false;
   if(speed>50)overspeedSeconds+=dt;
   travelMeters+=speed*dt/3.6;
   distance=Math.max(0,distance-speed*dt*.278);
@@ -1944,7 +1944,7 @@ sessionRestorePromise=(async()=>{try{
   if(!selectedBranch||!user||!profile){setMessage("Accedi al tuo Corpo per iniziare.");return;}
   el("trafficStart").disabled=true;setMessage("Richiesta scenario al centro operativo…");
   try{
-   const d=await api("start");session=d.session_id;scenario=d.scenario;speed=0;distance=180;lane=1;targetLane=Math.floor(Math.random()*3);offset=0;simulationTime=0;travelMeters=0;overspeedSeconds=0;hardBrakeCount=0;lastTrafficNotice=0;stopped=false;accel=false;brake=false;initCars();el("trafficInspection").classList.add("hidden");el("trafficResult").classList.add("hidden");el("trafficSceneOverlay").classList.add("hidden");el("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CC · PATTUGLIA";el("trafficBranchChip").textContent=branchName();el("trafficMissionTitle").textContent="Raggiungi e ferma il veicolo";setMessage("Veicolo obiettivo individuato. Avvicinati e fermati in sicurezza entro la distanza indicata.");el("trafficStart").textContent="Nuovo servizio";setDriving(true);updateHud();
+   const d=await api("start");session=d.session_id;scenario=d.scenario;speed=0;distance=180;lane=1;targetLane=Math.floor(Math.random()*3);offset=0;simulationTime=0;travelMeters=0;overspeedSeconds=0;hardBrakeCount=0;lastTrafficNotice=0;hardBrakeActive=false;stopped=false;accel=false;brake=false;initCars();el("trafficInspection").classList.add("hidden");el("trafficResult").classList.add("hidden");el("trafficSceneOverlay").classList.add("hidden");el("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CC · PATTUGLIA";el("trafficBranchChip").textContent=branchName();el("trafficMissionTitle").textContent="Raggiungi e ferma il veicolo";setMessage("Veicolo obiettivo individuato. Avvicinati e fermati in sicurezza entro la distanza indicata.");el("trafficStart").textContent="Nuovo servizio";setDriving(true);updateHud();
   }catch(e){setMessage(e.message);el("trafficStart").disabled=false;}
  }
  function stop(){
