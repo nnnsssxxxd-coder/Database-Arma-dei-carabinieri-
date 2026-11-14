@@ -1918,7 +1918,7 @@ sessionRestorePromise=(async()=>{try{
     acceleration=Math.min(acceleration,clamp((50/3.6-v)*.85,-1.4,1.2));
     if(Math.abs(c.lanePos-c.lane)<.12){
      const nextLane=c.lane+1;
-     if(gapSafe(nextLane,c.y,c.id,false,c.speed))c.lane=nextLane;
+     if(gapSafe(nextLane,c.y,c.id,true,c.speed))c.lane=nextLane;
     }
    }
    if(c.pull&&c.lane===4)acceleration=Math.min(acceleration,-2.2);
@@ -1930,7 +1930,7 @@ sessionRestorePromise=(async()=>{try{
     if(c.lanePos>3.94&&c.speed<5)c.pulled=true;
    }else{
     if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
-     const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id,false,c.speed));
+     const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id,true,c.speed));
      if(opts.length)c.lane=opts[Math.floor(Math.random()*opts.length)];
      c.nextChange=time+rand(5,12);
     }
