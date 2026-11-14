@@ -1914,9 +1914,12 @@ sessionRestorePromise=(async()=>{try{
    const a=c.accel||1.4,b=c.decel||2.4,T=1.65,s0=7;
    const desiredGap=s0+Math.max(0,v*T+(v*dv)/(2*Math.sqrt(a*b)));
    let acceleration=a*(1-Math.pow(v/v0,4)-(leader?Math.pow(desiredGap/gap,2):0));
-   if(c.pull&&c.lane!==4){
-    if(gapSafe(4,c.y,c.id,false,c.speed))c.lane=4;
-    else acceleration=clamp((50/3.6-v)*1.1,-1.2,1.2);
+   if(c.pull&&c.lane<4){
+    acceleration=clamp((50/3.6-v)*.85,-1.4,1.2);
+    if(Math.abs(c.lanePos-c.lane)<.12){
+     const nextLane=c.lane+1;
+     if(gapSafe(nextLane,c.y,c.id,false,c.speed))c.lane=nextLane;
+    }
    }
    if(c.pull&&c.lane===4)acceleration=Math.min(acceleration,-2.2);
    acceleration=clamp(acceleration,-(c.pull?4.5:6),2.2);
