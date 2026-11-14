@@ -1856,21 +1856,23 @@ sessionRestorePromise=(async()=>{try{
 (()=>{
  const $=id=>document.getElementById(id),canvas=$("trafficScene"),ctx=canvas?.getContext("2d");
  if(!canvas||!ctx)return;
- const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2;
+ const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,ACCEL_W=100,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2;
  const colors=["#d4d9dc","#8e3d3d","#526779","#c5bda7","#353d43","#aab9c2","#d0a24c"];
  let session=null,scenario=null,raf=0,last=0,phase="ready",speed=0,playerLane=3,laneVisual=3,accel=false,brake=false,paused=false,offset=0,time=0,cars=[],targetId=null,lights=false,siren=false,hardBrakes=0,overspeed=0,travel=0,collisionAvoids=0,selectedCar=null;
- const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),roadCenter=i=>ROAD_X+LANE_W*(i+.5);
+ const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),laneX=p=>p<=2?ROAD_X+LANE_W*(p+.5):p<=3?ROAD_X+ROAD_W/2+LANE_W+(p-2)*(LANE_W/2+ACCEL_W/2):ROAD_X+ROAD_W+ACCEL_W/2+SHOULDER_W/2+(p-3)*SHOULDER_W/2;
  function message(s){$("patrolToast").textContent=s}
  function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficStatus").textContent=({ready:"PRONTO",merge:"IMMISSIONE",patrol:"PATTUGLIA",signal:"ALT SEGNALATO",pull:"ACCOSTAMENTO",stopped:"FERMO",inspect:"CONTROLLO"})[phase]||"PATTUGLIA";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
  function initCars(){
   cars=Array.from({length:15},(_,i)=>({id:"v"+i,lane:i%3,lanePos:i%3,y:rand(-520,500),speed:rand(68,126),desired:rand(78,132),color:colors[i%colors.length],w:rand(37,43),length:rand(65,76),nextChange:rand(5,13),pull:false,pulled:false,plate:""+String.fromCharCode(65+Math.floor(rand(0,26)))+Math.floor(rand(100,999))+"ZZ",model:["Berlina","SUV","Utilitaria","Station wagon","Coupé"][i%5]}));
  }
- function gapSafe(lane,y,excludeId=null){
-  return cars.filter(c=>c.id!==excludeId&&Math.round(c.lanePos)===lane).every(c=>Math.abs(c.y-y)>Math.max(92, speed*.78));
+ function gapSafe(lane,y,excludeId=null,checkPlayer=false){
+  if(checkPlayer&&lane===playerLane&&Math.abs(PLAYER_Y-y)<Math.max(112,speed*.9))return false;
+  return cars.filter(c=>c.id!==excludeId&&Math.round(c.lanePos)===lane).every(c=>Math.abs(c.y-y)>Math.max(112,speed*.9));
  }
  function laneChange(next){
-  if(next<0||next>3||next===playerLane)return false;
-  if(next===3&&phase!=="pull"&&phase!=="stopped"){message("La corsia di emergenza non è una corsia di marcia.");return false;}
+  if(next<0||next>4||next===playerLane)return false;
+  if(next===3&&phase!=="merge"){message("La corsia di accelerazione termina: completa l'immissione.");return false;}
+  if(next===4&&phase!=="pull"){message("La corsia di emergenza si usa solo per l'accostamento nello scenario.");return false;}
   if(!gapSafe(next,PLAYER_Y)){message("Corsia occupata: attendi uno spazio sicuro prima di spostarti.");return false;}
   playerLane=next;return true;
  }
@@ -1882,11 +1884,11 @@ sessionRestorePromise=(async()=>{try{
    const safe=42+c.speed*.72;
    let desired=c.desired;
    if(leader&&gap<safe+65)desired=Math.min(desired,Math.max(25,leader.speed-Math.max(0,(safe+65-gap)*.75)));
-   if(c.pull){desired=0;if(!c.pulled&&gapSafe(3,c.y,c.id)){c.lane=3;c.lanePos+=(3-c.lanePos)*Math.min(1,dt*1.35);if(c.lanePos>2.94&&c.speed<5)c.pulled=true;}}
+   if(c.pull){desired=0;if(!c.pulled&&gapSafe(4,c.y,c.id,true)){c.lane=4;c.lanePos+=(4-c.lanePos)*Math.min(1,dt*1.35);if(c.lanePos>3.94&&c.speed<5)c.pulled=true;}}
    c.speed+=(clamp(desired-c.speed,-34*dt,18*dt));
    c.y+=(speed-c.speed)*SCALE*dt;
    if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
-    const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id));
+    const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id,true));
     if(opts.length){c.lane=opts[Math.floor(Math.random()*opts.length)];}
     c.nextChange=time+rand(5,12);
    }
@@ -1921,17 +1923,17 @@ sessionRestorePromise=(async()=>{try{
  function draw(){
   ctx.clearRect(0,0,W,H);ctx.fillStyle="#244331";ctx.fillRect(0,0,W,H);
   for(let i=0;i<18;i++){const y=((i*97+offset*.25)%700)-80;ctx.fillStyle=i%2?"#31513d":"#294936";ctx.fillRect(12,y,145,55);ctx.fillRect(805,y+22,142,52);}
-  const x=ROAD_X,w=ROAD_W+SHOULDER_W;ctx.fillStyle="#858d90";ctx.fillRect(x-18,0,w+36,H);ctx.fillStyle="#333b40";ctx.fillRect(x,0,ROAD_W,H);ctx.fillStyle="#6d7476";ctx.fillRect(x+ROAD_W,0,SHOULDER_W,H);
-  ctx.fillStyle="#d9dfe0";ctx.fillRect(x+ROAD_W+6,0,4,H);ctx.fillRect(x+ROAD_W+SHOULDER_W-7,0,4,H);
+  const x=ROAD_X,w=ROAD_W+ACCEL_W+SHOULDER_W;ctx.fillStyle="#858d90";ctx.fillRect(x-18,0,w+36,H);ctx.fillStyle="#333b40";ctx.fillRect(x,0,ROAD_W,H);ctx.fillStyle="#555f63";ctx.fillRect(x+ROAD_W,0,ACCEL_W,H);ctx.fillStyle="#6d7476";ctx.fillRect(x+ROAD_W+ACCEL_W,0,SHOULDER_W,H);
+  ctx.fillStyle="#d9dfe0";ctx.fillRect(x+ROAD_W+ACCEL_W+6,0,4,H);ctx.fillRect(x+ROAD_W+ACCEL_W+SHOULDER_W-7,0,4,H);
   ctx.strokeStyle="#dfe4e5";ctx.lineWidth=3;ctx.setLineDash([34,26]);ctx.lineDashOffset=-(offset%60);for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(x+i*LANE_W,0);ctx.lineTo(x+i*LANE_W,H);ctx.stroke();}ctx.setLineDash([]);
-  ctx.strokeStyle="#e7d88d";ctx.lineWidth=2;ctx.setLineDash([18,24]);ctx.beginPath();ctx.moveTo(x+ROAD_W+24,0);ctx.lineTo(x+ROAD_W+24,H);ctx.stroke();ctx.setLineDash([]);
-  // Emergency-lane hatching and motorway roadside details
-  for(let y=-50+(offset%72);y<H;y+=72){ctx.strokeStyle="#aeb5b5";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+ROAD_W+8,y);ctx.lineTo(x+ROAD_W+38,y+20);ctx.stroke();}
+  ctx.strokeStyle="#e5e8e8";ctx.lineWidth=3;ctx.setLineDash([22,20]);ctx.beginPath();ctx.moveTo(x+ROAD_W,0);ctx.lineTo(x+ROAD_W,H);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle="#e7d88d";ctx.lineWidth=2;ctx.setLineDash([18,24]);ctx.beginPath();ctx.moveTo(x+ROAD_W+ACCEL_W,0);ctx.lineTo(x+ROAD_W+ACCEL_W,H);ctx.stroke();ctx.setLineDash([]);
+  // Corsia di accelerazione e corsia di emergenza separate
+  for(let y=-50+(offset%72);y<H;y+=72){ctx.strokeStyle="#d8dfe0";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+ROAD_W+8,y);ctx.lineTo(x+ROAD_W+ACCEL_W-8,y+22);ctx.stroke();
   for(let i=0;i<3;i++){const y=((i*230+offset*.55)%760)-110;ctx.fillStyle="#a9b1b2";ctx.fillRect(x-32,y,10,42);ctx.fillStyle="#dce2e3";ctx.fillRect(x-29,y+4,4,32);}
   // Vehicles
-  cars.slice().sort((a,b)=>a.y-b.y).forEach(c=>{const cx=ROAD_X+LANE_W*(c.lanePos+.5);drawCar(cx,c.y,c.w,c.length,c.color,false,c.id===targetId);if(c.id===targetId){ctx.fillStyle="#ffe28a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("ALT",cx,c.y-c.length/2-12);}});
+  cars.slice().sort((a,b)=>a.y-b.y).forEach(c=>{const cx=laneX(c.lanePos);drawCar(cx,c.y,c.w,c.length,c.color,false,c.id===targetId);if(c.id===targetId){ctx.fillStyle="#ffe28a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("ALT",cx,c.y-c.length/2-12);}});
   // Patrol vehicle and subtle lane indicator
-  laneVisual+=(playerLane-laneVisual)*.2;const px=ROAD_X+LANE_W*(laneVisual+.5);drawCar(px,PLAYER_Y,53,94,selectedBranch==="finanza"?"#b7b5a8":"#172d40",true,false);
+  laneVisual+=(playerLane-laneVisual)*.2;const px=laneX(laneVisual);drawCar(px,PLAYER_Y,53,94,selectedBranch==="finanza"?"#b7b5a8":"#172d40",true,false);
   if(lights&&siren){ctx.fillStyle="#f5e3a0";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.fillText("SIRENA ATTIVA",px,PLAYER_Y+65);}
   ctx.fillStyle="#ffffff";ctx.font="bold 11px Arial";ctx.textAlign="left";ctx.fillText("A1 · AUTOSTRADA",20,28);
  }
@@ -1950,7 +1952,7 @@ sessionRestorePromise=(async()=>{try{
  async function start(){
   if(!selectedBranch||!user||!profile){message("Accedi al tuo Corpo per iniziare.");return;}
   $("trafficStart").disabled=true;message("Avvio pattuglia…");
-  try{const d=await api("start");session=d.session_id;scenario=d.scenario;phase="merge";speed=0;playerLane=3;laneVisual=3;time=0;offset=0;targetId=null;lights=false;siren=false;hardBrakes=0;overspeed=0;travel=0;collisionAvoids=0;accel=false;brake=false;initCars();$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");$("patrolTargetTag").classList.add("hidden");$("trafficPause").disabled=false;$("trafficLights").disabled=false;$("trafficSiren").disabled=false;$("trafficStart").textContent="TURNO IN CORSO";$("trafficStart").disabled=true;$("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CARABINIERI";message("Parti dalla corsia di emergenza: accelera e spostati a sinistra nella corsia di marcia.");run();setHud();}
+  try{const d=await api("start");session=d.session_id;scenario=d.scenario;phase="merge";speed=0;playerLane=3;laneVisual=3;time=0;offset=0;targetId=null;lights=false;siren=false;hardBrakes=0;overspeed=0;travel=0;collisionAvoids=0;accel=false;brake=false;initCars();$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");$("patrolTargetTag").classList.add("hidden");$("trafficPause").disabled=false;$("trafficLights").disabled=false;$("trafficSiren").disabled=false;$("trafficStart").textContent="TURNO IN CORSO";$("trafficStart").disabled=true;$("trafficUnitMark").textContent=selectedBranch==="finanza"?"GdF · PATTUGLIA":"CARABINIERI";message("Parti dalla corsia di accelerazione: accelera e inserisciti nella corsia di marcia quando lo spazio è libero.");run();setHud();}
   catch(e){message(e.message);$("trafficStart").disabled=false;}
  }
  function selectVehicle(e){
@@ -1985,7 +1987,7 @@ sessionRestorePromise=(async()=>{try{
  function reset(){cancelAnimationFrame(raf);session=null;scenario=null;phase="ready";speed=0;playerLane=3;laneVisual=3;cars=[];targetId=null;accel=false;brake=false;paused=false;lights=false;siren=false;$("patrolTargetTag").classList.add("hidden");$("trafficPause").textContent="PAUSA";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");draw();setHud();message("Tocca INIZIA TURNO per partire dall'area di servizio.");}
  function pause(){if(!session||phase==="stopped")return;paused=!paused;accel=false;brake=false;$("trafficPause").textContent=paused?"RIPRENDI":"PAUSA";if(paused)cancelAnimationFrame(raf);else run();setHud();}
  function bind(){
-  document.querySelectorAll("#trafficControls [data-drive]").forEach(b=>{const k=b.dataset.drive;const down=e=>{e.preventDefault();if(!session||paused||phase==="stopped")return;if(k==="accelerate")accel=true;else if(k==="brake")brake=true;else{const n=playerLane+(k==="left"?-1:1);if(laneChange(n)){draw();setHud();}}try{b.setPointerCapture(e.pointerId);}catch(_){}};
+  document.querySelectorAll("#trafficControls [data-drive]").forEach(b=>{const k=b.dataset.drive;const down=e=>{e.preventDefault();if(!session||paused||phase==="stopped")return;if(k==="accelerate")accel=true;else if(k==="brake")brake=true;else{const n=playerLane+(k==="left"?-1:(phase==="pull"&&playerLane===2?2:1));if(laneChange(n)){draw();setHud();}}try{b.setPointerCapture(e.pointerId);}catch(_){}};
    const up=e=>{if(e)e.preventDefault();if(k==="accelerate")accel=false;if(k==="brake")brake=false;};b.addEventListener("pointerdown",down);["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,up));});
   window.addEventListener("pointerup",()=>{accel=false;brake=false;});canvas.addEventListener("pointerdown",selectVehicle);
   $("trafficStart").addEventListener("click",start);$("trafficSignal").addEventListener("click",signalStop);$("trafficStop").addEventListener("click",stop);$("trafficPause").addEventListener("click",pause);
