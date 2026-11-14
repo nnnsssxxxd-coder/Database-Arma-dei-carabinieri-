@@ -944,6 +944,7 @@ body:not(:has(#credentialPanel:not(.hidden))) .project-disclaimer{border-color:#
 html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color:#d6eaff}html[data-service="finanza"] .traffic-branch-chip{border-color:#c6ad53;color:#f2dc91}
 @media(max-width:520px){.traffic-hud>div{padding:8px}.traffic-hud strong{font-size:1rem}.traffic-controls{gap:5px}.traffic-control{min-height:54px!important;font-size:.78rem}.traffic-control small{font-size:.49rem}.traffic-clues{grid-template-columns:1fr}.traffic-decisions{grid-template-columns:1fr}.traffic-decisions button{min-height:44px}.traffic-actions{grid-template-columns:1fr 1fr}.traffic-heading{align-items:flex-start}.traffic-unit-mark{font-size:.57rem;padding:7px}.home-device-tools{gap:8px}.home-device-tools>div:first-child{flex-basis:100%}}
 
+ .traffic-clues button{padding:11px 9px;border:1px solid #506574;border-radius:8px;background:#14232c;color:#e1ebf1;font-size:.72rem;font-weight:800;text-align:left}.traffic-clues button:disabled{border-color:#39785d;background:#10251e;color:#8de2b4}.traffic-inspection-feedback{grid-column:1/-1;margin:2px 0!important;padding:9px 10px;border-left:3px solid #d2ad54;background:#ffffff08;color:#c6d2d9!important;font-size:.73rem}.traffic-check-detail{grid-column:1/-1;margin:0!important;padding:8px 10px;border-radius:7px;background:#0b171c;color:#d4e0e6!important;font-size:.75rem}
 </style>
 <style id="force-world-themes">
 :root[data-service="carabinieri"]{--gold:#d71930;--gold2:#ff5360;--line:#3a3a3a;--surface:#111;--surface2:#1a1a1a;--bg:#050505}
@@ -1870,7 +1871,13 @@ sessionRestorePromise=(async()=>{try{
   if(!session||stopped)return;
   if(distance>7||speed>8||lane!==targetLane){setMessage(lane!==targetLane?"Allineati alla corsia del veicolo obiettivo prima di fermarlo.":"Per fermare il veicolo devi avvicinarti entro 7 metri e scendere sotto 8 km/h.");return;}
   setDriving(false);speed=0;stopped=true;accel=false;brake=false;updateHud();el("trafficStop").disabled=true;
-  el("trafficVehicleTitle").textContent=scenario.vehicle+" · "+scenario.model;el("trafficCaseId").textContent="CONTROLLO "+scenario.plate;el("trafficVehicleMeta").textContent="Targa "+scenario.plate+" · Conducente: "+scenario.driver;el("trafficSituation").textContent=scenario.situation;el("trafficClues").innerHTML=scenario.clues.map(x=>"<span>"+x.replaceAll("<","&lt;").replaceAll(">","&gt;")+"</span>").join("");el("trafficInspection").classList.remove("hidden");el("trafficMissionTitle").textContent="Valutazione del controllo";setMessage("Controllo avviato: esamina gli elementi e scegli una decisione proporzionata.");el("trafficInspection").scrollIntoView({behavior:"smooth",block:"nearest"});
+  el("trafficVehicleTitle").textContent=scenario.vehicle+" · "+scenario.model;el("trafficCaseId").textContent="CONTROLLO "+scenario.plate;el("trafficVehicleMeta").textContent="Targa "+scenario.plate+" · Conducente: "+scenario.driver;el("trafficSituation").textContent=scenario.situation;el("trafficClues").innerHTML="<button type=\"button\" data-inspect=\"documents\">01 · Verifica documenti</button><button type=\"button\" data-inspect=\"vehicle\">02 · Verifica veicolo</button><button type=\"button\" data-inspect=\"conduct\">03 · Valuta condotta</button><p id=\"trafficInspectionFeedback\" class=\"traffic-inspection-feedback\">Completa tutte e tre le verifiche per sbloccare la decisione.</p>";el("trafficInspection").querySelector(".traffic-decisions").classList.add("hidden");el("trafficInspection").classList.remove("hidden");el("trafficMissionTitle").textContent="Valutazione del controllo";setMessage("Controllo avviato: esamina gli elementi e scegli una decisione proporzionata.");el("trafficInspection").scrollIntoView({behavior:"smooth",block:"nearest"});
+ }
+ async function inspect(checkId,button){
+  if(!session||!stopped||button.disabled)return;
+  button.disabled=true;button.textContent="VERIFICA IN CORSO…";
+  try{const result=await api("inspect",{session_id:session,check_id:checkId});button.textContent="✓ "+({documents:"DOCUMENTI VERIFICATI",vehicle:"VEICOLO VERIFICATO",conduct:"CONDOTTA VALUTATA"}[checkId]);const line=document.createElement("p");line.textContent=result.detail;line.className="traffic-check-detail";el("trafficClues").insertBefore(line,el("trafficInspectionFeedback"));if(result.all_checked){el("trafficInspectionFeedback").textContent="Tutte le verifiche sono complete. Ora scegli la decisione corretta.";el("trafficInspection").querySelector(".traffic-decisions").classList.remove("hidden");}else{el("trafficInspectionFeedback").textContent="Verifiche completate: "+result.completed_checks.length+"/3";}}
+  catch(e){button.disabled=false;button.textContent=({documents:"01 · Verifica documenti",vehicle:"02 · Verifica veicolo",conduct:"03 · Valuta condotta"}[checkId]);el("trafficInspectionFeedback").textContent=e.message;}
  }
  async function decide(action){
   if(!session||!stopped)return;
@@ -1899,7 +1906,7 @@ sessionRestorePromise=(async()=>{try{
   if(!canvas||!ctx)return;
   el("trafficBranchChip").textContent=branchName();draw();updateHud();
   el("trafficStart").addEventListener("click",start);el("trafficStop").addEventListener("click",stop);
-  el("trafficInspection").addEventListener("click",e=>{const b=e.target.closest("[data-traffic-action]");if(b)decide(b.dataset.trafficAction);});
+  el("trafficInspection").addEventListener("click",e=>{const check=e.target.closest("[data-inspect]");if(check){inspect(check.dataset.inspect,check);return;}const b=e.target.closest("[data-traffic-action]");if(b)decide(b.dataset.trafficAction);});
   bindDrive();
   document.addEventListener("visibilitychange",()=>{if(document.hidden){accel=false;brake=false;}});
  }
