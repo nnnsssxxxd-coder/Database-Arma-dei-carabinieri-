@@ -6,7 +6,8 @@ const ALLOWED_ORIGINS = new Set([
   "capacitor://localhost",
   "http://localhost",
   "http://localhost:8100",
-  "https://localhost:8100"
+  "https://localhost:8100",
+  "https://nnnsssxxxd-coder.github.io"
 ]);
 function corsHeaders(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
