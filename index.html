@@ -974,12 +974,12 @@ html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color
 /* Free-roam motorway patrol game */
 .patrol-game{padding:10px!important;background:radial-gradient(ellipse at 50% 0,#233442,#080d12 72%)!important;border:1px solid #354653!important;overflow:hidden}
 .patrol-topbar{display:grid;gap:9px}.patrol-brand{display:flex;align-items:center;gap:9px;color:#e8f1f6;font-size:.68rem;letter-spacing:.16em}.patrol-live{width:8px;height:8px;border-radius:50%;background:#6bd89a;box-shadow:0 0 12px #6bd89a}
-.patrol-hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.patrol-hud>div{min-width:0;padding:8px 10px;background:#080e14;border:1px solid #354957;border-radius:9px}.patrol-hud small{display:block;color:#8fa4b3;font-size:.57rem;letter-spacing:.1em;font-weight:900}.patrol-hud b{display:block;color:#f5f8fa;font-size:1.03rem;margin-top:4px;font-variant-numeric:tabular-nums}.patrol-hud i{font-size:.62rem;color:#9aabb6;font-style:normal}
+.patrol-hud{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.patrol-hud>div{min-width:0;padding:8px 10px;background:#080e14;border:1px solid #354957;border-radius:9px}.patrol-hud small{display:block;color:#8fa4b3;font-size:.57rem;letter-spacing:.1em;font-weight:900}.patrol-hud b{display:block;color:#f5f8fa;font-size:1.03rem;margin-top:4px;font-variant-numeric:tabular-nums}.patrol-hud i{font-size:.62rem;color:#9aabb6;font-style:normal}
 .patrol-world{position:relative;margin-top:9px;overflow:hidden;border:1px solid #536b7b;border-radius:13px;background:#15251d;box-shadow:0 14px 30px #0008}.patrol-world canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:pan-y}.patrol-toast{position:absolute;left:10px;right:10px;bottom:10px;width:max-content;max-width:calc(100% - 20px);padding:8px 11px;border-radius:8px;background:#071018e8;border:1px solid #ffffff26;color:#e8f1f6;font-size:.68rem;font-weight:800;pointer-events:none}.patrol-target-tag{position:absolute;right:10px;top:10px;padding:7px 9px;border-radius:7px;background:#d8ad45;color:#17130a;font-size:.62rem;font-weight:950;letter-spacing:.08em}
 .patrol-controls{display:grid;grid-template-columns:.8fr 1.2fr 1.2fr .8fr;gap:7px;margin:9px 0}.patrol-controls button,.patrol-actions button,.patrol-tools button{min-width:0;min-height:48px;border-radius:10px;font-size:.72rem;font-weight:950;letter-spacing:.04em;touch-action:none;user-select:none}.patrol-steer{background:linear-gradient(145deg,#344b5b,#172630)!important;border:1px solid #627887!important;color:#fff}.patrol-pedal{color:#fff!important}.patrol-brake{background:linear-gradient(145deg,#763b35,#321a1a)!important;border-color:#a95b53!important}.patrol-gas{background:linear-gradient(145deg,#176044,#0e3025)!important;border-color:#3c9a70!important}
 .patrol-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.patrol-actions button{padding:8px 4px;background:linear-gradient(145deg,#253744,#111d26)!important;border:1px solid #586e7d!important;color:#f1f6f9}.patrol-actions #trafficStart{background:linear-gradient(145deg,#b52c38,#701b26)!important;border-color:#f16b76!important}.patrol-actions button:disabled,.patrol-tools button:disabled{opacity:.35;filter:grayscale(.7)}
 .patrol-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:7px}.patrol-tools button{min-height:38px;background:#111b23!important;border:1px solid #435766!important;color:#cbd9e2}.patrol-tools button[aria-pressed="true"]{background:#54431c!important;border-color:#d3b35b!important;color:#ffe7a4}
-.patrol-game .traffic-inspection,.patrol-game .traffic-result{margin-top:12px;padding:13px;border-radius:11px;background:#101a22;border-color:#526777}.patrol-game .traffic-decisions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.patrol-game .traffic-decisions button{min-width:0;padding:8px 5px;font-size:.68rem}
+.patrol-game .traffic-inspection,.patrol-game .traffic-result{margin-top:10px;padding:12px;border-radius:11px;background:#101a22;border-color:#526777}.patrol-game .traffic-inspection-head .traffic-kicker,.patrol-game .traffic-inspection>h4,.patrol-game .traffic-inspection>p:not(#trafficSituation){display:none}.patrol-game .traffic-inspection>h3{margin:3px 0 6px}.patrol-game .traffic-result>p{font-size:.78rem}.patrol-game .traffic-result .exp-earned{margin:5px 0}.patrol-game .traffic-result button{width:100%;margin-top:8px}.patrol-game .traffic-decisions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.patrol-game .traffic-decisions button{min-width:0;padding:8px 5px;font-size:.68rem}
 @media(max-width:430px){.patrol-game{padding:8px!important}.patrol-hud b{font-size:.9rem}.patrol-controls{gap:5px}.patrol-controls button{min-height:45px;font-size:.66rem}.patrol-actions{gap:5px}.patrol-actions button{min-height:45px;font-size:.61rem}.patrol-tools button{font-size:.61rem}.patrol-game .traffic-decisions{grid-template-columns:1fr}.patrol-toast{font-size:.61rem}}
 </style>
 <style id="force-world-themes">
@@ -1402,7 +1402,7 @@ footer{padding:14px 8px 22px;font-size:10px}
 
 <section id="assignedExercises" class="panel hidden"><div class="eyebrow">GESTIONE DEL REPARTO · SIMULAZIONE</div><h2 id="assignedExercisesTitle">Test di reparto assegnato</h2><p id="assignedExercisesDescription" class="muted small">I test assegnati dal Comandante del tuo reparto e i relativi esiti.</p><div id="commanderTools" class="notice2 hidden"><label for="exerciseTitle">Titolo del test<input id="exerciseTitle" maxlength="100" value="Test di reparto · valutazione e sicurezza"></label><button id="assignCqbExercise" class="primary" type="button">Assegna Test</button><p id="assignExerciseMessage" class="small" role="status"></p><h3>Esiti dei test assegnati</h3><div id="commanderResults"></div></div><div id="memberExercises" class="notice2 hidden"><h3>Test di reparto assegnati</h3><div id="memberExerciseList"></div></div><div id="exerciseRunner" class="hidden"><div id="exerciseAssignedBy" class="notice2 hidden" aria-live="polite"></div><h3 id="exerciseRunnerTitle">Esercitazione</h3><div id="exerciseQuestions"></div><button id="submitExercise" class="primary" type="button">Consegna risposte</button><p id="exerciseMessage" class="small" role="status"></p></div><div id="commandRoster" class="notice2"><h3>Organico di reparto</h3><div id="commandRosterList"></div></div></section>
 <section id="traffic" class="panel hidden traffic-panel patrol-game">
- <div class="patrol-topbar"><div class="patrol-brand"><span class="patrol-live"></span><strong id="trafficUnitMark">PATTUGLIA</strong></div><div class="patrol-hud"><div><small>VELOCITÀ</small><b id="trafficSpeed">0 <i>km/h</i></b></div><div><small>MARcia</small><b id="trafficLane">SVINCOLO</b></div><div><small>STATO</small><b id="trafficStatus">PRONTO</b></div></div></div>
+ <div class="patrol-topbar"><div class="patrol-brand"><span class="patrol-live"></span><strong id="trafficUnitMark">PATTUGLIA</strong></div><div class="patrol-hud"><div><small>VELOCITÀ</small><b id="trafficSpeed">0 <i>km/h</i></b></div><div><small>CORSIA</small><b id="trafficLane">SVINCOLO</b></div></div></div>
  <div class="patrol-world"><canvas id="trafficScene" width="960" height="540" aria-label="Autostrada vista dall'alto: seleziona un veicolo per fermarlo"></canvas><div class="patrol-toast" id="patrolToast">Tocca INIZIA TURNO per uscire dall'area di servizio</div><div class="patrol-target-tag hidden" id="patrolTargetTag">VEICOLO SELEZIONATO</div></div>
  <div class="patrol-controls" id="trafficControls">
   <button type="button" class="patrol-steer" data-drive="left" aria-label="Sposta a sinistra">◀</button>
@@ -1412,7 +1412,7 @@ footer{padding:14px 8px 22px;font-size:10px}
  </div>
  <div class="patrol-actions"><button id="trafficStart" class="primary" type="button">INIZIA TURNO</button><button id="trafficSignal" type="button" disabled>SEGNALA ALT</button><button id="trafficStop" type="button" disabled>FERMA E CONTROLLA</button></div>
  <div class="patrol-tools"><button id="trafficPause" type="button" disabled>PAUSA</button><button id="trafficLights" type="button" aria-pressed="false" disabled>LAMPEGGIANTI</button><button id="trafficSiren" type="button" aria-pressed="false" disabled>SIRENA</button></div>
- <div id="trafficInspection" class="traffic-inspection hidden"><div class="traffic-inspection-head"><span class="traffic-kicker">CONTROLLO SU STRADA</span><span class="traffic-case-id" id="trafficCaseId">VERIFICA</span></div><h3 id="trafficVehicleTitle">Veicolo fermato</h3><div class="traffic-vehicle-meta" id="trafficVehicleMeta"></div><p id="trafficSituation"></p><div class="traffic-clues" id="trafficClues"></div><h4>Esito del controllo</h4><div class="traffic-decisions"><button type="button" data-traffic-action="sanzione">Contesta l'infrazione</button><button type="button" data-traffic-action="avviso">Richiamo / avviso</button><button type="button" data-traffic-action="nessuna_violazione">Nessuna violazione</button></div><p class="tiny muted">Valuta gli elementi del controllo prima di decidere.</p></div>
+ <div id="trafficInspection" class="traffic-inspection hidden"><div class="traffic-inspection-head"><span class="traffic-kicker">CONTROLLO SU STRADA</span><span class="traffic-case-id" id="trafficCaseId">VERIFICA</span></div><h3 id="trafficVehicleTitle">Veicolo fermato</h3><div class="traffic-vehicle-meta" id="trafficVehicleMeta"></div><p id="trafficSituation"></p><div class="traffic-clues" id="trafficClues"></div><h4>Esito del controllo</h4><div class="traffic-decisions"><button type="button" data-traffic-action="sanzione">Contesta l'infrazione</button><button type="button" data-traffic-action="avviso">Richiamo / avviso</button><button type="button" data-traffic-action="nessuna_violazione">Nessuna violazione</button></div></div>
  <div id="trafficResult" class="traffic-result hidden" role="status" aria-live="polite"></div>
 </section><section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account allievo</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" minlength="2" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>Corpo<select id="newBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account allievo</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
@@ -1856,18 +1856,30 @@ sessionRestorePromise=(async()=>{try{
 (()=>{
  const $=id=>document.getElementById(id),canvas=$("trafficScene"),ctx=canvas?.getContext("2d");
  if(!canvas||!ctx)return;
- const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,ACCEL_W=100,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2;
+ const W=960,H=540,ROAD_X=210,LANE_W=132,ROAD_W=LANE_W*3,ACCEL_W=100,SHOULDER_W=78,PLAYER_Y=425,SCALE=3.2,STEP=1/60;
  const colors=["#d4d9dc","#8e3d3d","#526779","#c5bda7","#353d43","#aab9c2","#d0a24c"];
- let session=null,scenario=null,raf=0,last=0,phase="ready",speed=0,playerLane=3,laneVisual=3,accel=false,brake=false,paused=false,offset=0,time=0,cars=[],targetId=null,lights=false,siren=false,hardBrakes=0,overspeed=0,travel=0,collisionAvoids=0,selectedCar=null;
+ let session=null,scenario=null,raf=0,last=0,accumulator=0,phase="ready",speed=0,playerLane=3,laneVisual=3,accel=false,brake=false,paused=false,offset=0,time=0,cars=[],targetId=null,lights=false,siren=false,hardBrakes=0,overspeed=0,travel=0,collisionAvoids=0,selectedCar=null,avoidCooldown=0;
  const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),laneX=p=>p<=2?ROAD_X+LANE_W*(p+.5):p<=3?ROAD_X+ROAD_W/2+LANE_W+(p-2)*(LANE_W/2+ACCEL_W/2):ROAD_X+ROAD_W+ACCEL_W/2+(p-3)*(ACCEL_W/2+SHOULDER_W/2);
  function message(s){$("patrolToast").textContent=s}
- function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"IMMISSIONE":playerLane===4?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficStatus").textContent=({ready:"PRONTO",merge:"IMMISSIONE",patrol:"PATTUGLIA",signal:"ALT SEGNALATO",pull:"ACCOSTAMENTO",stopped:"FERMO",inspect:"CONTROLLO"})[phase]||"PATTUGLIA";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
+ function setHud(){ $("trafficSpeed").innerHTML=Math.round(speed)+' <i>km/h</i>'; $("trafficLane").textContent=playerLane===3?"IMMISSIONE":playerLane===4?"EMERGENZA":playerLane===2?"DESTRA":playerLane===1?"CENTRALE":"SORPASSO";$("trafficSignal").disabled=!session||!["patrol","signal"].includes(phase)||!targetId;$("trafficStop").disabled=phase!=="pull"||!canStop(); }
  function initCars(){
-  cars=Array.from({length:15},(_,i)=>({id:"v"+i,lane:i%3,lanePos:i%3,y:rand(-520,500),speed:rand(68,126),desired:rand(78,132),color:colors[i%colors.length],w:rand(37,43),length:rand(65,76),nextChange:rand(5,13),pull:false,pulled:false,plate:""+String.fromCharCode(65+Math.floor(rand(0,26)))+Math.floor(rand(100,999))+"ZZ",model:["Berlina","SUV","Utilitaria","Station wagon","Coupé"][i%5]}));
+  cars=Array.from({length:15},(_,i)=>{const lane=i%3,slot=Math.floor(i/3);return{id:"v"+i,lane,lanePos:lane,y:-520+slot*220+rand(-22,22),speed:rand(76,116),desired:rand(82,128),accel:1.4,decel:2.4,color:colors[i%colors.length],w:rand(37,43),length:rand(65,76),nextChange:rand(5,13),pull:false,pulled:false,plate:String.fromCharCode(65+Math.floor(rand(0,26)))+Math.floor(rand(100,999))+"ZZ",model:["Berlina","SUV","Utilitaria","Station wagon","Coupé"][i%5]};});
  }
- function gapSafe(lane,y,excludeId=null,checkPlayer=false){
-  if(checkPlayer&&lane===playerLane&&Math.abs(PLAYER_Y-y)<Math.max(112,speed*.9))return false;
-  return cars.filter(c=>c.id!==excludeId&&Math.round(c.lanePos)===lane).every(c=>Math.abs(c.y-y)>Math.max(112,speed*.9));
+ function lateralConflict(a,b){
+  const aa=[a.lanePos,a.lane],bb=[b.lanePos,b.lane];
+  return Math.min(...aa.flatMap(x=>bb.map(y=>Math.abs(x-y))))<.48;
+ }
+ function gapSafe(lane,y,excludeId=null,checkPlayer=false,candidateSpeed=speed){
+  const frontNeed=SCALE*(8+(candidateSpeed/3.6)*1.65),rearNeed=SCALE*(8+(candidateSpeed/3.6)*1.8);
+  for(const c of cars){
+   if(c.id===excludeId)continue;
+   if(Math.min(Math.abs(c.lanePos-lane),Math.abs(c.lane-lane))>=.62)continue;
+   const delta=c.y-y;
+   if(delta<0&&-delta<frontNeed)return false;
+   if(delta>=0&&delta<rearNeed)return false;
+  }
+  if(checkPlayer&&Math.abs(lane-playerLane)<.62&&Math.abs(PLAYER_Y-y)<Math.max(frontNeed,rearNeed))return false;
+  return true;
  }
  function laneChange(next){
   if(next<0||next>4||next===playerLane)return false;
@@ -1878,36 +1890,62 @@ sessionRestorePromise=(async()=>{try{
  }
  function updateTraffic(dt){
   const target=cars.find(c=>c.id===targetId);
-  cars.forEach(c=>{
-   const leader=cars.filter(o=>o!==c&&Math.round(o.lanePos)===Math.round(c.lanePos)&&o.y<c.y).sort((a,b)=>b.y-a.y)[0];
-   const gap=leader?c.y-leader.y:9999;
-   const safe=42+c.speed*.72;
-   let desired=c.desired;
-   if(leader&&gap<safe+65)desired=Math.min(desired,Math.max(25,leader.speed-Math.max(0,(safe+65-gap)*.75)));
-   if(c.pull){desired=0;if(!c.pulled&&gapSafe(4,c.y,c.id,true)){c.lane=4;c.lanePos+=(4-c.lanePos)*Math.min(1,dt*1.35);if(c.lanePos>3.94&&c.speed<5)c.pulled=true;}}
-   c.speed+=(clamp(desired-c.speed,-34*dt,18*dt));
-   c.y+=(speed-c.speed)*SCALE*dt;
-   if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
-    const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id,true));
-    if(opts.length){c.lane=opts[Math.floor(Math.random()*opts.length)];}
-    c.nextChange=time+rand(5,12);
+  for(const c of cars){
+   const leader=cars.filter(o=>o!==c&&lateralConflict(c,o)&&o.y<c.y).sort((a,b)=>b.y-a.y)[0];
+   const gap=leader?Math.max(.1,(c.y-leader.y)/SCALE):9999;
+   const v=Math.max(0,c.speed/3.6),v0=Math.max(1,c.desired/3.6),dv=leader?v-leader.speed/3.6:0;
+   const a=c.accel||1.4,b=c.decel||2.4,T=1.65,s0=7;
+   const desiredGap=s0+Math.max(0,v*T+(v*dv)/(2*Math.sqrt(a*b)));
+   let acceleration=a*(1-Math.pow(v/v0,4)-(leader?Math.pow(desiredGap/gap,2):0));
+   if(c.pull&&c.lane!==4){
+    if(gapSafe(4,c.y,c.id,false,c.speed))c.lane=4;
+    else acceleration=Math.min(acceleration,-.7);
    }
-   c.lanePos+=(c.lane-c.lanePos)*Math.min(1,dt*1.15);
-   if(!c.pull&&(c.y>H+130||c.y<-700)){c.y=c.y>H+130?-rand(180,680):H+rand(180,600);c.lane=Math.floor(rand(0,3));c.lanePos=c.lane;c.speed=rand(70,125);c.desired=rand(78,132);}
-  });
-  // Fail-safe longitudinal spacing: a follower is never allowed to enter the leader's safety envelope.
-  for(let lane=0;lane<4;lane++){
-   const row=cars.filter(c=>Math.round(c.lanePos)===lane).sort((a,b)=>a.y-b.y);
-   for(let i=1;i<row.length;i++){const leader=row[i-1],follower=row[i],minGap=45+follower.speed*.68;if(follower.y-leader.y<minGap){follower.y=leader.y+minGap;follower.speed=Math.min(follower.speed,leader.speed);}}
+   if(c.pull&&c.lane===4)acceleration=Math.min(acceleration,-2.2);
+   acceleration=clamp(acceleration,-(c.pull?4.5:6),2.2);
+   c.speed=clamp(c.speed+acceleration*3.6*dt,0,c.desired);
+   c.y+=(speed-c.speed)*SCALE*dt;
+   if(c.pull&&c.lane===4){
+    c.lanePos+=(4-c.lanePos)*Math.min(1,dt*1.45);
+    if(c.lanePos>3.94&&c.speed<5)c.pulled=true;
+   }else{
+    if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
+     const opts=[c.lane-1,c.lane+1].filter(n=>n>=0&&n<=2&&gapSafe(n,c.y,c.id,false,c.speed));
+     if(opts.length)c.lane=opts[Math.floor(Math.random()*opts.length)];
+     c.nextChange=time+rand(5,12);
+    }
+    c.lanePos+=(c.lane-c.lanePos)*Math.min(1,dt*1.35);
+   }
+   if(!c.pull&&(c.y>H+130||c.y<-700)){
+    let spawn=c.y>H+130?-rand(260,620):H+rand(260,620),tries=0;
+    while(!gapSafe(c.lane,spawn,c.id,false,c.speed)&&tries++<8)spawn-=150;
+    c.y=spawn;c.lane=Math.floor(rand(0,3));c.lanePos=c.lane;c.speed=rand(76,116);c.desired=rand(82,128);
+   }
+  }
+  // Risolve eventuali sovrapposizioni tra ingombri laterali prima del rendering.
+  for(let pass=0;pass<2;pass++)for(let i=0;i<cars.length;i++)for(let j=i+1;j<cars.length;j++){
+   const a=cars[i],b=cars[j];if(!lateralConflict(a,b))continue;
+   const front=a.y<=b.y?a:b,rear=front===a?b:a;
+   const minGap=(front.length+rear.length)/2+SCALE*7;
+   if(rear.y-front.y<minGap){rear.y=front.y+minGap;rear.speed=Math.min(rear.speed,front.speed);}
   }
  }
  function playerSafeSpeed(dt){
-  const front=cars.filter(c=>Math.abs(c.lanePos-laneVisual)<.32&&c.y<PLAYER_Y).sort((a,b)=>b.y-a.y)[0];
-  if(front){const gap=PLAYER_Y-front.y,required=52+speed*.72;if(gap<required+35){speed=Math.min(speed,Math.max(0,front.speed-(required+35-gap)*.9));collisionAvoids++;}}
+  avoidCooldown=Math.max(0,avoidCooldown-dt);
+  const front=cars.filter(c=>Math.abs(c.lanePos-laneVisual)<.42&&c.y<PLAYER_Y).sort((a,b)=>b.y-a.y)[0];
+  if(front){
+   const gap=(PLAYER_Y-front.y)/SCALE,required=8+(speed/3.6)*1.8;
+   if(gap<required+4){
+    const safeSpeed=Math.max(0,front.speed+(gap-8)*2.1);
+    if(speed>safeSpeed){speed=Math.max(safeSpeed,speed-7*dt);if(avoidCooldown===0){collisionAvoids++;avoidCooldown=1.2;}}
+   }
+  }
   const target=cars.find(c=>c.id===targetId&&c.pulled);
-  if(target&&phase==="pull"&&laneVisual>2.65){const gap=PLAYER_Y-target.y;if(gap<90)speed=Math.min(speed,Math.max(0,(gap-24)*1.15));}
+  if(target&&phase==="pull"&&laneVisual>2.65){
+   const gap=(PLAYER_Y-target.y)/SCALE;
+   if(gap<32&&gap>0)speed=Math.min(speed,Math.max(0,(gap-7)*2.4));
+  }
  }
- function canStop(){const t=cars.find(c=>c.id===targetId);if(!t||!t.pulled||playerLane!==4)return false;const d=(PLAYER_Y-t.y)/SCALE;return d>=8&&d<=32&&speed<=8;}
  function drawCar(x,y,w,h,color,police=false,selected=false){
   ctx.save();ctx.translate(x,y);ctx.fillStyle="#0009";ctx.beginPath();ctx.roundRect(-w/2+3,-h/2+5,w,h,9);ctx.fill();
   if(selected){ctx.strokeStyle="#ffd66d";ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(-w/2-5,-h/2-5,w+10,h+10,12);ctx.stroke();}
@@ -1937,17 +1975,26 @@ sessionRestorePromise=(async()=>{try{
   if(lights&&siren){ctx.fillStyle="#f5e3a0";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.fillText("SIRENA ATTIVA",px,PLAYER_Y+65);}
   ctx.fillStyle="#ffffff";ctx.font="bold 11px Arial";ctx.textAlign="left";ctx.fillText("A1 · AUTOSTRADA",20,28);
  }
+ function stepSimulation(dt){
+  time+=dt;const old=speed;
+  if(accel)speed=Math.min(145,speed+22*dt);
+  if(brake)speed=Math.max(0,speed-42*dt);
+  if(!accel&&!brake)speed=Math.max(0,speed-1.6*dt);
+  if(brake&&old-speed>1)hardBrakes++;
+  if(speed>130)overspeed+=dt;
+  travel+=speed*dt/3.6;offset+=speed*dt*1.4;
+  if(phase==="merge"&&playerLane<=2&&Math.abs(laneVisual-playerLane)<.12){phase="patrol";message("Immissione completata. Seleziona un veicolo sulla carreggiata.");}
+  updateTraffic(dt);playerSafeSpeed(dt);
+  if(phase==="pull"){const target=cars.find(c=>c.id===targetId);if(target?.pulled)message("Veicolo in corsia di emergenza. Raggiungilo e fermati a distanza di sicurezza.");}
+ }
  function loop(t){
   if(phase==="ready"||paused||phase==="stopped"||phase==="inspect")return;
-  const dt=Math.min(.04,(t-last)/1000||0);last=t;time+=dt;
-  const old=speed;if(accel)speed=Math.min(145,speed+24*dt);if(brake)speed=Math.max(0,speed-48*dt);if(!accel&&!brake)speed=Math.max(0,speed-2*dt);
-  if(brake&&old-speed>1)hardBrakes++;if(speed>130)overspeed+=dt;travel+=speed*dt/3.6;offset+=speed*dt*1.4;
-  if(phase==="merge"&&laneVisual<2.1){phase="patrol";message("Immissione completata. Tocca un'auto sulla carreggiata per selezionarla.");}
-  updateTraffic(dt);playerSafeSpeed(dt);
-  if(phase==="pull"){const target=cars.find(c=>c.id===targetId);if(target?.pulled)message("Veicolo accostato. Spostati sulla corsia di emergenza, fermati a distanza e avvia il controllo.");}
+  const frameDt=Math.min(.12,Math.max(0,(t-last)/1000));last=t;accumulator+=frameDt;
+  let steps=0;while(accumulator>=STEP&&steps<8){stepSimulation(STEP);accumulator-=STEP;steps++;}
+  if(steps===8)accumulator=0;
   draw();setHud();raf=requestAnimationFrame(loop);
  }
- function run(){cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(loop);}
+ function run(){cancelAnimationFrame(raf);last=performance.now();accumulator=0;raf=requestAnimationFrame(loop);}
  async function api(action,extra={}){const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action,service_branch:selectedBranch,...extra}});if(error){let m="";try{m=(await error.context?.json())?.error||"";}catch(_){}throw new Error(m||error.message||"Servizio non disponibile");}if(data?.error)throw new Error(data.error);return data;}
  async function start(){
   if(!selectedBranch||!user||!profile){message("Accedi al tuo Corpo per iniziare.");return;}
@@ -1958,7 +2005,7 @@ sessionRestorePromise=(async()=>{try{
  function selectVehicle(e){
   if(!["patrol","signal"].includes(phase)||!session)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
   let hit=null,best=Infinity;cars.forEach(c=>{if(c.pull||c.lane>2||c.y<35||c.y>PLAYER_Y-70)return;const cx=laneX(c.lanePos),d=Math.hypot((x-cx)*.85,y-c.y);if(d<Math.max(c.w,c.length)*.72&&d<best){hit=c;best=d;}});
-  if(hit){targetId=hit.id;selectedCar=hit;$("patrolTargetTag").classList.remove("hidden");message("Veicolo selezionato: "+hit.model+" · "+hit.plate+". Premi SEGNALA ALT per chiedere l'accostamento.");draw();setHud();}
+  if(hit){targetId=hit.id;selectedCar=hit;if(scenario)scenario={...scenario,vehicle:hit.model,model:hit.model,plate:hit.plate};$("patrolTargetTag").textContent=hit.model+" · "+hit.plate;$("patrolTargetTag").classList.remove("hidden");message("Veicolo selezionato. Premi SEGNALA ALT.");draw();setHud();}
  }
  async function signalStop(){
   const target=cars.find(c=>c.id===targetId);if(!target||!["patrol","signal"].includes(phase))return;
@@ -1980,17 +2027,20 @@ sessionRestorePromise=(async()=>{try{
   if(!session||phase!=="stopped")return;$("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=true);
   try{const result=await api("finish",{session_id:session,chosen_action:action});const correct=!!result.correct,reward=Number(result.exp_awarded)||0;if(result.progress){progress={...progress,...result.progress};try{render();}catch(e){console.warn("EXP refresh",e);}}
    const report={distance:Math.round(travel),overspeed:Math.round(overspeed),hard:hardBrakes,avoids:collisionAvoids};
-   $("trafficResult").classList.remove("hidden");$("trafficResult").innerHTML="<strong>"+(correct?"Controllo corretto":"Valutazione non corretta")+"</strong><p>"+result.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"EXP registrata sul profilo.":"Nessuna EXP assegnata.")+"</p><div class='traffic-drive-report'><b>RAPPORTO DI SERVIZIO</b><span>Percorso: "+report.distance+" m</span><span>Eccesso velocità: "+report.overspeed+" s</span><span>Frenate: "+report.hard+"</span><span>Interventi anticollisione: "+report.avoids+"</span></div><button id='trafficNext' class='primary' type='button'>NUOVO TURNO</button>";
+   $("trafficResult").classList.remove("hidden");$("trafficResult").innerHTML="<strong>"+(correct?"INTERVENTO CONCLUSO":"ESITO NON CORRETTO")+"</strong><p>"+result.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"EXP aggiunta al profilo.":"Nessuna EXP assegnata.")+"</p><button id='trafficNext' class='primary' type='button'>RIPRENDI PATTUGLIA</button>";
    $("trafficInspection").classList.add("hidden");$("trafficNext").addEventListener("click",()=>{reset();start();});session=null;scenario=null;phase="ready";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficSignal").disabled=true;$("trafficStop").disabled=true;setHud();
   }catch(e){$("trafficInspection").querySelectorAll("button").forEach(b=>b.disabled=false);$("trafficResult").classList.remove("hidden");$("trafficResult").textContent=e.message;}
  }
- function reset(){cancelAnimationFrame(raf);session=null;scenario=null;phase="ready";speed=0;playerLane=3;laneVisual=3;cars=[];targetId=null;accel=false;brake=false;paused=false;lights=false;siren=false;$("patrolTargetTag").classList.add("hidden");$("trafficPause").textContent="PAUSA";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");draw();setHud();message("Tocca INIZIA TURNO per partire dall'area di servizio.");}
+ function reset(){cancelAnimationFrame(raf);session=null;scenario=null;phase="ready";speed=0;playerLane=3;laneVisual=3;cars=[];targetId=null;accel=false;brake=false;paused=false;lights=false;siren=false;accumulator=0;avoidCooldown=0;$("patrolTargetTag").classList.add("hidden");$("trafficPause").textContent="PAUSA";$("trafficStart").disabled=false;$("trafficStart").textContent="INIZIA TURNO";$("trafficInspection").classList.add("hidden");$("trafficResult").classList.add("hidden");draw();setHud();message("Tocca INIZIA TURNO per partire dall'area di servizio.");}
  function pause(){if(!session||phase==="stopped")return;paused=!paused;accel=false;brake=false;$("trafficPause").textContent=paused?"RIPRENDI":"PAUSA";if(paused)cancelAnimationFrame(raf);else run();setHud();}
  function bind(){
   document.querySelectorAll("#trafficControls [data-drive]").forEach(b=>{const k=b.dataset.drive;const down=e=>{e.preventDefault();if(!session||paused||phase==="stopped")return;if(k==="accelerate")accel=true;else if(k==="brake")brake=true;else{const n=playerLane+(k==="left"?-1:(phase==="pull"&&playerLane===2?2:1));if(laneChange(n)){draw();setHud();}}try{b.setPointerCapture(e.pointerId);}catch(_){}};
    const up=e=>{if(e)e.preventDefault();if(k==="accelerate")accel=false;if(k==="brake")brake=false;};b.addEventListener("pointerdown",down);["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,up));});
   window.addEventListener("pointerup",()=>{accel=false;brake=false;});canvas.addEventListener("pointerdown",selectVehicle);
   $("trafficStart").addEventListener("click",start);$("trafficSignal").addEventListener("click",signalStop);$("trafficStop").addEventListener("click",stop);$("trafficPause").addEventListener("click",pause);
+  window.addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();if(e.repeat||!session||paused||phase==="stopped")return;if(e.key==="ArrowUp"||e.key.toLowerCase()==="w"||e.key===" ")accel=true;else if(e.key==="ArrowDown"||e.key.toLowerCase()==="s")brake=true;else if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a"){if(laneChange(playerLane-1))setHud();}else if(e.key==="ArrowRight"||e.key.toLowerCase()==="d"){const n=phase==="pull"&&playerLane===2?4:playerLane+1;if(laneChange(n))setHud();}});
+  window.addEventListener("keyup",e=>{if(["ArrowUp"," ","w","W"].includes(e.key))accel=false;if(["ArrowDown","s","S"].includes(e.key))brake=false;});
+  window.addEventListener("blur",()=>{accel=false;brake=false;});
   $("trafficLights").addEventListener("click",()=>{lights=!lights;$("trafficLights").setAttribute("aria-pressed",String(lights));draw();});$("trafficSiren").addEventListener("click",()=>{siren=!siren;$("trafficSiren").setAttribute("aria-pressed",String(siren));});
   $("trafficInspection").addEventListener("click",e=>{const c=e.target.closest("[data-inspect]");if(c){inspect(c.dataset.inspect,c);return;}const b=e.target.closest("[data-traffic-action]");if(b)decide(b.dataset.trafficAction);});
   document.addEventListener("visibilitychange",()=>{if(document.hidden){accel=false;brake=false;if(session&&!paused)pause();}});
