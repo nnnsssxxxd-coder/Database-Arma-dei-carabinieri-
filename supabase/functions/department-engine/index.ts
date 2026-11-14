@@ -261,7 +261,7 @@ Deno.serve(async (req: Request) => {
         if (insertError.code === "23505") {
           const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
           if (concurrent) {
-            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids);
+            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids).eq("service_branch",branch);
             if (!concurrentError && concurrentRows) {
               const concurrentById = new Map(concurrentRows.map(q => [q.id,q]));
               const concurrentQuestions = concurrent.question_ids.map((id: string) => concurrentById.get(id)).filter(Boolean);
