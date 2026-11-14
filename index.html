@@ -1864,7 +1864,7 @@ sessionRestorePromise=(async()=>{try{
  function sirenAudio(on){
   if(!on){try{if(sirenGain&&audioCtx)sirenGain.gain.setTargetAtTime(0,audioCtx.currentTime,.06);if(sirenOsc){sirenOsc.stop(audioCtx.currentTime+.22);sirenOsc=null;}if(sirenLfo){sirenLfo.stop(audioCtx.currentTime+.22);sirenLfo=null;}}catch(_){}return;}
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-  try{if(!audioCtx)audioCtx=new AC();audioCtx.resume();if(sirenOsc)return;
+  try{if(!audioCtx)audioCtx=new AC();audioCtx.resume().catch(()=>{});if(sirenOsc)return;
    sirenOsc=audioCtx.createOscillator();sirenLfo=audioCtx.createOscillator();const depth=audioCtx.createGain();sirenGain=audioCtx.createGain();
    sirenOsc.type="sawtooth";sirenOsc.frequency.value=760;sirenLfo.frequency.value=.72;depth.gain.value=360;sirenGain.gain.value=.035;
    sirenLfo.connect(depth);depth.connect(sirenOsc.frequency);sirenOsc.connect(sirenGain);sirenGain.connect(audioCtx.destination);sirenOsc.start();sirenLfo.start();
@@ -1943,6 +1943,15 @@ sessionRestorePromise=(async()=>{try{
    if(rear.y-front.y<minGap){rear.y=front.y+minGap;rear.speed=Math.min(rear.speed,front.speed);}
   }
  }
+ function resolvePlayerSpacing(){
+  const minimum=(94+76)/2+SCALE*3;
+  for(const c of cars){
+   if(Math.abs(c.lanePos-laneVisual)>=.46)continue;
+   const delta=c.y-PLAYER_Y;
+   if(delta>0&&delta<minimum){c.y=PLAYER_Y+minimum;c.speed=Math.min(c.speed,speed);}
+   else if(delta<0&&-delta<minimum)c.y=PLAYER_Y-minimum;
+  }
+ }
  function playerSafeSpeed(dt){
   avoidCooldown=Math.max(0,avoidCooldown-dt);
   const front=cars.filter(c=>Math.abs(c.lanePos-laneVisual)<.42&&c.y<PLAYER_Y).sort((a,b)=>b.y-a.y)[0];
@@ -1997,7 +2006,7 @@ sessionRestorePromise=(async()=>{try{
   if(speed>130)overspeed+=dt;
   travel+=speed*dt/3.6;offset+=speed*dt*1.4;
   if(phase==="merge"&&playerLane<=2&&Math.abs(laneVisual-playerLane)<.12){phase="patrol";message("Immissione completata. Seleziona un veicolo sulla carreggiata.");}
-  updateTraffic(dt);playerSafeSpeed(dt);
+  updateTraffic(dt);resolvePlayerSpacing();playerSafeSpeed(dt);
   if(phase==="pull"){const target=cars.find(c=>c.id===targetId);if(target?.pulled)message("Veicolo in corsia di emergenza. Raggiungilo e fermati a distanza di sicurezza.");}
  }
  function loop(t){
