@@ -60,7 +60,7 @@ Deno.serve(async(req:Request)=>{
   if(body.action==="start") {
     await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
-    if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
+    if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,explanation:privateExplanation,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
     if(openSession) {
       const existing=scenarios.find(item=>item.id===openSession.scenario_id);
@@ -74,7 +74,7 @@ Deno.serve(async(req:Request)=>{
       if(error.code==="23505") return reply(req,{error:"Hai già un controllo aperto. Completa il controllo in corso oppure attendi la sua scadenza."},409);
       throw error;
     }
-    const {action:correctAction,clues:privateClues,...publicScenario}=scenario;
+    const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
     return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:publicScenario,service_branch:branch},201);
   }
   if(body.action==="inspect") {
@@ -101,8 +101,10 @@ Deno.serve(async(req:Request)=>{
       p_session_id:sessionId,p_user_id:user.id,p_service_branch:branch,p_chosen_action:chosen
     });
     if(error) return reply(req,{error:error.message||"Impossibile registrare il controllo."},400);
+    const {data:finishedSession}=await db.from("traffic_control_sessions").select("scenario_id").eq("id",sessionId).eq("user_id",user.id).maybeSingle();
+    const explanation=scenarios.find(item=>item.id===finishedSession?.scenario_id)?.explanation??"";
     const {data:progressRow}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
-    return reply(req,{...data,progress:progressRow?.payload??null});
+    return reply(req,{...data,explanation,progress:progressRow?.payload??null});
   }
   return reply(req,{error:"Azione non riconosciuta"},400);
  } catch(error) {
