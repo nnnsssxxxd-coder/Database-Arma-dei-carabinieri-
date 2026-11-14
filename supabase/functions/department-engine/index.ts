@@ -149,7 +149,7 @@ Deno.serve(async (req: Request) => {
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
         return reply(req,{is_commander:false,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
-      const {data:members,error:membersError}=await db.from("department_memberships").select("user_id,rank,exp").eq("department_id",membership.department_id).order("rank",{ascending:false});
+      const {data:members,error:membersError}=await db.from("department_memberships").select("user_id,rank,exp").eq("department_id",membership.department_id).eq("service_branch",branch).order("rank",{ascending:false});
       if(membersError)return reply(req,{error:"Impossibile leggere il personale del reparto."},500);
       const ids=(members??[]).map((m:any)=>m.user_id);
       const {data:profiles,error:profilesError}=ids.length?await db.from("profiles").select("id,display_name,username").in("id",ids):{data:[],error:null};
