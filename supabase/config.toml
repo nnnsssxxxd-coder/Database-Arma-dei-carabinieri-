@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.username-login]
 verify_jwt = false
+
+[functions.traffic-control-engine]
+verify_jwt = false
