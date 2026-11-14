@@ -1887,7 +1887,7 @@ sessionRestorePromise=(async()=>{try{
    const correct=!!result.correct;const reward=Number(result.exp_awarded)||0;
    if(result.progress){progress={...progress,...result.progress};try{render();}catch(e){console.warn("Aggiornamento EXP:",e);}}
    el("trafficResult").classList.remove("hidden");
-   el("trafficResult").innerHTML="<strong>"+(correct?"Controllo corretto":"Valutazione non corretta")+"</strong><p>"+scenario.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"La decisione è stata registrata sul profilo.":"Nessuna EXP assegnata: controlla gli indizi e riprova con un nuovo scenario.")+"</p><button id='trafficNext' type='button' class='primary'>Prossimo controllo</button>";
+   el("trafficResult").innerHTML="<strong>"+(correct?"Controllo corretto":"Valutazione non corretta")+"</strong><p>"+result.explanation+"</p><div class='exp-earned'>+"+reward+" EXP</div><p>"+(correct?"La decisione è stata registrata sul profilo.":"Nessuna EXP assegnata: controlla gli indizi e riprova con un nuovo scenario.")+"</p><button id='trafficNext' type='button' class='primary'>Prossimo controllo</button>";
    el("trafficInspection").classList.add("hidden");el("trafficStart").disabled=false;el("trafficStart").textContent="Nuovo controllo";el("trafficMissionTitle").textContent=correct?"Controllo completato":"Controllo da migliorare";setMessage("Servizio concluso. Puoi avviare un nuovo controllo.");
    el("trafficNext").addEventListener("click",()=>{el("trafficResult").classList.add("hidden");start();});
    session=null;scenario=null;updateHud();
