@@ -1923,7 +1923,7 @@ sessionRestorePromise=(async()=>{try{
    c.speed=clamp(c.speed+acceleration*3.6*dt,0,c.desired);
    c.y+=(speed-c.speed)*SCALE*dt;
    if(c.pull&&c.lane===4){
-    c.lanePos+=(4-c.lanePos)*Math.min(1,dt*1.45);
+    c.lanePos+=(4-c.lanePos)*Math.min(1,dt*.8);
     if(c.lanePos>3.94&&c.speed<5)c.pulled=true;
    }else{
     if(c!==target&&!c.pull&&time>c.nextChange&&Math.random()<.025){
@@ -1931,7 +1931,7 @@ sessionRestorePromise=(async()=>{try{
      if(opts.length)c.lane=opts[Math.floor(Math.random()*opts.length)];
      c.nextChange=time+rand(5,12);
     }
-    c.lanePos+=(c.lane-c.lanePos)*Math.min(1,dt*1.35);
+    c.lanePos+=(c.lane-c.lanePos)*Math.min(1,dt*.8);
    }
    if(!c.pull&&(c.y>H+130||c.y<-700)){
     const newLane=Math.floor(rand(0,3));let spawn=c.y>H+130?-rand(260,620):H+rand(260,620),tries=0;
@@ -1997,15 +1997,16 @@ sessionRestorePromise=(async()=>{try{
   // Vehicles
   cars.slice().sort((a,b)=>a.y-b.y).forEach(c=>{const cx=laneX(c.lanePos);drawCar(cx,c.y,c.w,c.length,c.color,false,c.id===targetId);if(c.id===targetId){ctx.fillStyle="#ffe28a";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("ALT",cx,c.y-c.length/2-12);}});
   // Patrol vehicle and subtle lane indicator
-  laneVisual+=(playerLane-laneVisual)*.2;const px=laneX(laneVisual);drawCar(px,PLAYER_Y,53,94,selectedBranch==="finanza"?"#b7b5a8":"#172d40",true,false);
+  const px=laneX(laneVisual);drawCar(px,PLAYER_Y,53,94,selectedBranch==="finanza"?"#b7b5a8":"#172d40",true,false);
   if(lights&&siren){ctx.fillStyle="#f5e3a0";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.fillText("SIRENA ATTIVA",px,PLAYER_Y+65);}
   ctx.fillStyle="#ffffff";ctx.font="bold 11px Arial";ctx.textAlign="left";ctx.fillText("A1 · AUTOSTRADA",20,28);
  }
  function stepSimulation(dt){
   time+=dt;const old=speed;
-  if(accel)speed=Math.min(145,speed+22*dt);
-  if(brake)speed=Math.max(0,speed-42*dt);
-  if(!accel&&!brake)speed=Math.max(0,speed-1.6*dt);
+  if(accel)speed=Math.min(145,speed+12*dt);
+  if(brake)speed=Math.max(0,speed-30*dt);
+  if(!accel&&!brake)speed=Math.max(0,speed-.8*dt);
+  laneVisual+=(playerLane-laneVisual)*Math.min(1,dt*1.8);
   if(brake&&!brakeCounted){hardBrakes++;brakeCounted=true;}if(!brake)brakeCounted=false;
   if(speed>130)overspeed+=dt;
   travel+=speed*dt/3.6;offset+=speed*dt*1.4;
