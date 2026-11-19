@@ -120,5 +120,9 @@ jobs:
             if(html.includes(id)) throw new Error('Removed UI control returned: '+id);
           }
           if(/const allowed=\[[^\]]*"traffic"/.test(html)) throw new Error('Removed traffic page still appears in navigation allow-list');
-          console.log('PASS CORS, query error handling, department branch schema and removed controls');
+          const progressRepair=fs.readFileSync('supabase/migrations/20261119210000_harden_department_branch_columns.sql','utf8');
+          for(const token of ['INSERT INTO public.progress','ON CONFLICT(user_id,service_branch) DO NOTHING','jsonb_set(','m.initial_rank']){
+            if(!progressRepair.includes(token)) throw new Error('Missing progression repair safeguard: '+token);
+          }
+          console.log('PASS CORS, query error handling, department branch schema, progression repair and removed controls');
           NODE
