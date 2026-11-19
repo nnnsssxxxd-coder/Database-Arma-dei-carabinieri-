@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-const origins=new Set(["https://localhost","capacitor://localhost","http://localhost","http://localhost:8100","https://localhost:8100"]);
+const origins=new Set(["https://localhost","capacitor://localhost","http://localhost","http://localhost:8100","https://localhost:8100","https://nnnsssxxxd-coder.github.io"]);
 function hs(req:Request){const o=req.headers.get("Origin")??"";return {"Access-Control-Allow-Origin":origins.has(o)?o:"null","Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function out(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:hs(req)});}
 const validBranch=(b:string)=>b==="carabinieri"||b==="finanza";
@@ -12,12 +12,12 @@ Deno.serve(async(req:Request)=>{
  try{
   const auth=req.headers.get("Authorization")??"",caller=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return out(req,{error:"Sessione non valida."},401);
-  const {data:actor}=await db.from("command_general_admins").select("username,active,created_by").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
+  const {data:actor,error:actorError}=await db.from("command_general_admins").select("username,active,created_by").eq("user_id",user.id).maybeSingle();if(actorError)return out(req,{error:"Impossibile verificare i permessi del Comando Generale."},500);if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
   if(actor.created_by===null){
    const {data:currentRanks,error:re}=await db.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",user.id).eq("active",true);
    if(re)throw re;
    const {data:progressRows,error:ge}=await db.from("progress").select("service_branch,payload").eq("user_id",user.id);if(ge)throw ge;
-   const rankFor=(m)=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
+   const rankFor=(m:{initial_rank:number;service_branch:string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
    const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
    if(!stillEligible){
     const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;

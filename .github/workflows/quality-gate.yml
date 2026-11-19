@@ -17,6 +17,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Supabase Edge Functions
+        run: |
+          deno check --no-config --no-lock \
+            supabase/functions/game-engine/index.ts \
+            supabase/functions/admin-create-user/index.ts \
+            supabase/functions/admin-user-action/index.ts \
+            supabase/functions/quiz-engine/index.ts \
+            supabase/functions/ministry-admin-action/index.ts \
+            supabase/functions/command-general-action/index.ts \
+            supabase/functions/department-engine/index.ts \
+            supabase/functions/audit-event/index.ts \
+            supabase/functions/username-login/index.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
@@ -92,3 +107,37 @@ jobs:
             grep -q "from(\"progress\").delete" "$file"
           done
           echo "PASS server-side account provisioning, progression initialization, validation and rollback guards"
+
+      - name: Validate branch isolation, backend error handling and removed controls
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const admin=fs.readFileSync('supabase/functions/admin-user-action/index.ts','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const branchMigration=fs.readFileSync('supabase/migrations/20261114165756_enable_finanza_department_career.sql','utf8');
+          const repairMigration=fs.readFileSync('supabase/migrations/20261119210000_harden_department_branch_columns.sql','utf8');
+          for(const [name,source] of [['game-engine',game],['admin-user-action',admin]]){
+            if(!source.includes('"https://nnnsssxxxd-coder.github.io"')) throw new Error(name+' is missing GitHub Pages CORS origin');
+          }
+          for(const path of ['supabase/functions/admin-create-user/index.ts','supabase/functions/ministry-admin-action/index.ts','supabase/functions/command-general-action/index.ts']){
+            if(!fs.readFileSync(path,'utf8').includes('https://nnnsssxxxd-coder.github.io')) throw new Error(path+' is missing GitHub Pages CORS origin');
+          }
+          for(const token of ['profileError','membershipError','progressError','rankError','expireError','openError','recentError']){
+            if(!quiz.includes(token)) throw new Error('quiz-engine missing checked database error: '+token);
+          }
+          const tables=['department_catalog','department_memberships','department_questions','department_quiz_attempts','department_commanders','department_exercises','department_exercise_questions','department_exercise_assignments','department_exercise_attempts','department_command_exam_attempts'];
+          for(const table of tables){
+            if(!branchMigration.includes("'"+table+"'")||!repairMigration.includes("'"+table+"'")) throw new Error('Missing branch migration for '+table);
+          }
+          for(const id of ['id="traffic"','id="trafficScene"','id="trafficStart"','id="musicYes"','id="musicNo"','id="musicPlayer"']){
+            if(html.includes(id)) throw new Error('Removed UI control returned: '+id);
+          }
+          if(/const allowed=\[[^\]]*"traffic"/.test(html)) throw new Error('Removed traffic page still appears in navigation allow-list');
+          const progressRepair=fs.readFileSync('supabase/migrations/20261119210000_harden_department_branch_columns.sql','utf8');
+          for(const token of ['INSERT INTO public.progress','ON CONFLICT(user_id,service_branch) DO NOTHING','jsonb_set(','m.initial_rank']){
+            if(!progressRepair.includes(token)) throw new Error('Missing progression repair safeguard: '+token);
+          }
+          console.log('PASS CORS, query error handling, department branch schema, progression repair and removed controls');
+          NODE

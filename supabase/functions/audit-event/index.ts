@@ -13,12 +13,14 @@ Deno.serve(async(req)=>{
  try{
   const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return reply(req,{error:"Non autenticato"},401);
-  const {data:profile}=await adminClient.from("profiles").select("username,active,deleted").eq("id",user.id).maybeSingle();
+  const {data:profile,error:profileError}=await adminClient.from("profiles").select("username,active,deleted").eq("id",user.id).maybeSingle();
+  if(profileError)return reply(req,{error:"Impossibile verificare il profilo."},500);
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account sospeso"},403);
   const body=await req.json();if(!allowed.has(body.event))return reply(req,{error:"Evento non consentito"},400);
   const service_branch=String(body.service_branch??"");
   if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Corpo non valido"},400);
-  const {data:membership}=await adminClient.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();
+  const {data:membership,error:membershipError}=await adminClient.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();
+  if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
   if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo"},403);
   const event=String(body.event);let details:Record<string,unknown>={};
   if(event==="page_view")details={page:String(body.page??"").slice(0,24)};
