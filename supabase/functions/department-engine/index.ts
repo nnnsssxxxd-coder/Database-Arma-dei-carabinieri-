@@ -117,13 +117,14 @@ Deno.serve(async (req: Request) => {
         attempt=null;
       }
       if(!attempt){
-        const {data:created,error:createError}=await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id,service_branch:branch}).select("id,started_at").single();
+        const {data:created,error:createError}=await db.from("department_command_exam_attempts").insert({department_id:membership.department_id,user_id:user.id,service_branch:branch}).select("id,started_at,passed").single();
         if(createError){
           const {data:concurrent,error:concurrentError}=await db.from("department_command_exam_attempts").select("id,started_at,passed").eq("department_id",membership.department_id).eq("service_branch",branch).eq("user_id",user.id).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
           if(concurrentError||!concurrent)return reply(req,{error:"Impossibile avviare la prova di comando."},500);
           attempt=concurrent;
-        }else attempt=created;
+        }else if(created)attempt=created;else return reply(req,{error:"Impossibile creare la prova di comando."},500);
       }
+      if(!attempt)return reply(req,{error:"Prova di comando non disponibile."},500);
       return reply(req,{attempt_id:attempt.id,questions:commandExam.map(({prompt,options})=>({prompt,options})),expires_at:new Date(new Date(attempt.started_at).getTime()+30*60*1000).toISOString(),resumed:!!open&&attempt.id===open.id});
     }
     if (action === "command_exam_submit") {
