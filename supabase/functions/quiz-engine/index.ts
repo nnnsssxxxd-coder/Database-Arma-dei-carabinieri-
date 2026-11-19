@@ -96,7 +96,7 @@ Deno.serve(async(req)=>{
     const byId=new Map(rows.map(q=>[q.id,q]));
     const questions=open.question_ids.map((id:string)=>byId.get(id)).filter(Boolean);
     if(questions.length!==4)return reply(req,{error:"Sessione quiz non più disponibile"},409);
-    if(category!=="Tutte le materie"&&questions.some(q=>q.category!==category))return reply(req,{error:"Hai già un quiz in corso. Completa quello aperto prima di iniziarne un altro."},409);
+    if(category!=="Tutte le materie"&&questions.some((q:{category:string})=>q.category!==category))return reply(req,{error:"Hai già un quiz in corso. Completa quello aperto prima di iniziarne un altro."},409);
     return reply(req,{attempt_id:open.id,questions,answers:Array.isArray(open.answers)?open.answers:[],expires_at:new Date(new Date(open.started_at).getTime()+SESSION_MS).toISOString(),resumed:true});
    }
    const {data:pool,error:poolError}=await questionPool(category,branch);
