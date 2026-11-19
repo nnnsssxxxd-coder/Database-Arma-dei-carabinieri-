@@ -56,8 +56,10 @@ Deno.serve(async (req: Request) => {
     const branch=String(body.service_branch??"");
     if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
     const { data: profile, error: profileError } = await db.from("profiles").select("active,deleted").eq("id", user.id).maybeSingle();
-    if (profileError || !profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
-    const {data:membershipAccess}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    if (profileError) return reply(req,{error:"Impossibile verificare il profilo."},500);
+    if (!profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
+    const {data:membershipAccess,error:membershipAccessError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    if(membershipAccessError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
     if(!membershipAccess)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
      const action = String(body.action ?? "");
     if (action === "catalog") {
@@ -74,7 +76,8 @@ Deno.serve(async (req: Request) => {
       if (personalRank < minimumRank) return reply(req,{ error: branch === "finanza" ? "La Carriera Reparto si sblocca dal grado di Vice Brigadiere." : "La Carriera Reparto si sblocca dal grado di Vicebrigadiere." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
-      if (departmentError || !department) return reply(req,{ error: "Reparto non valido" }, 400);
+      if (departmentError) return reply(req,{error:"Impossibile verificare il reparto."},500);
+      if (!department) return reply(req,{ error: "Reparto non valido" }, 400);
       const existing = await db.from("department_memberships").select("user_id").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (existing.error) return reply(req,{ error: "Impossibile verificare l'appartenenza" }, 500);
       if (existing.data) return reply(req,{ error: "Hai già scelto un reparto. La scelta è unica e non può essere modificata da questa sezione." }, 409);
@@ -127,7 +130,8 @@ Deno.serve(async (req: Request) => {
       const id=String(body.attempt_id??""); const answers=body.answers;
       if(!/^[0-9a-f-]{36}$/i.test(id)||!Array.isArray(answers)||answers.length!==6||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3)) return reply(req,{error:"Risposte non valide."},400);
       const {data:attempt,error}=await db.from("department_command_exam_attempts").select("*").eq("id",id).eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).maybeSingle();
-      if(error||!attempt||attempt.completed_at||new Date(attempt.started_at).getTime()<Date.now()-30*60*1000) return reply(req,{error:"Prova non valida o scaduta."},409);
+      if(error)return reply(req,{error:"Impossibile verificare la prova di comando."},500);
+      if(!attempt||attempt.completed_at||new Date(attempt.started_at).getTime()<Date.now()-30*60*1000) return reply(req,{error:"Prova non valida o scaduta."},409);
       if (!commandExamReady) return reply(req,{ error: "Requisiti del Test di comando non più soddisfatti." }, 403);
       const score=answers.reduce((n:number,a:number,i:number)=>n+(a===commandExam[i].correct_index?1:0),0),passed=score>=4;
       const {error:saveError}=await db.from("department_command_exam_attempts").update({answers,score,passed,completed_at:passed?null:new Date().toISOString()}).eq("id",id).eq("service_branch",branch).is("completed_at",null);
@@ -141,11 +145,14 @@ Deno.serve(async (req: Request) => {
       const {data:command,error:commandError}=await db.from("department_commanders").select("commander_user_id,vice_user_id,appointed_at").eq("department_id",membership.department_id).eq("service_branch",branch).maybeSingle();
       if(commandError)return reply(req,{error:"Impossibile leggere la catena di comando."},500);
       if(command?.commander_user_id!==user.id) {
-        const {data:assigned}=await db.from("department_exercise_assignments").select("id,exercise_id,assigned_at").eq("user_id",user.id).eq("service_branch",branch).order("assigned_at",{ascending:false});
+        const {data:assigned,error:assignedError}=await db.from("department_exercise_assignments").select("id,exercise_id,assigned_at").eq("user_id",user.id).eq("service_branch",branch).order("assigned_at",{ascending:false});
+        if(assignedError)return reply(req,{error:"Impossibile leggere i test assegnati."},500);
         const ids2=(assigned??[]).map((a:any)=>a.exercise_id);
-        const {data:exercises}=ids2.length?await db.from("department_exercises").select("id,title,created_at").in("id",ids2).eq("service_branch",branch):{data:[]};
+        const {data:exercises,error:exercisesError}=ids2.length?await db.from("department_exercises").select("id,title,created_at").in("id",ids2).eq("service_branch",branch):{data:[],error:null};
+        if(exercisesError)return reply(req,{error:"Impossibile leggere i test di reparto."},500);
         const exMap=new Map((exercises??[]).map((x:any)=>[x.id,x]));
-        const {data:attempts}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)).eq("service_branch",branch):{data:[]};
+        const {data:attempts,error:attemptsError}=assigned?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assigned.map((a:any)=>a.id)).eq("service_branch",branch):{data:[],error:null};
+        if(attemptsError)return reply(req,{error:"Impossibile leggere gli esiti dei test."},500);
         const atMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
         return reply(req,{is_commander:false,assigned:(assigned??[]).map((a:any)=>({id:a.id,...(exMap.get(a.exercise_id)||{}),result:atMap.get(a.id)||null}))});
       }
@@ -156,12 +163,15 @@ Deno.serve(async (req: Request) => {
       if(profilesError)return reply(req,{error:"Impossibile leggere i nominativi del reparto."},500);
       const names=new Map((profiles??[]).map((p:any)=>[p.id,p]));
       const roster=(members??[]).map((m:any)=>({user_id:m.user_id,rank:m.rank,exp:m.exp,name:names.get(m.user_id)?.display_name||names.get(m.user_id)?.username||"Utente"}));
-      const {data:exercises}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("service_branch",branch).eq("active",true).order("created_at",{ascending:false});
-      const exIds=(exercises??[]).map((x:any)=>x.id);
-      const {data:assignments}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds).eq("service_branch",branch):{data:[]};
-      const {data:attempts}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)).eq("service_branch",branch):{data:[]};
-      const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
-      const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
+      const {data:exercises,error:exercisesError}=await db.from("department_exercises").select("id,title,created_at").eq("department_id",membership.department_id).eq("service_branch",branch).eq("active",true).order("created_at",{ascending:false});
+       if(exercisesError)return reply(req,{error:"Impossibile leggere le esercitazioni."},500);
+       const exIds=(exercises??[]).map((x:any)=>x.id);
+       const {data:assignments,error:assignmentsError}=exIds.length?await db.from("department_exercise_assignments").select("id,exercise_id,user_id,assigned_at").in("exercise_id",exIds).eq("service_branch",branch):{data:[],error:null};
+       if(assignmentsError)return reply(req,{error:"Impossibile leggere le assegnazioni."},500);
+       const {data:attempts,error:attemptsError}=assignments?.length?await db.from("department_exercise_attempts").select("assignment_id,score,correct_answers,exp_awarded,completed_at").in("assignment_id",assignments.map((a:any)=>a.id)).eq("service_branch",branch):{data:[],error:null};
+       if(attemptsError)return reply(req,{error:"Impossibile leggere gli esiti delle esercitazioni."},500);
+       const attemptMap=new Map((attempts??[]).map((a:any)=>[a.assignment_id,a]));
+       const exerciseMap=new Map((exercises??[]).map((e:any)=>[e.id,e]));
       const results=(assignments??[]).map((a:any)=>({assignment_id:a.id,user_id:a.user_id,name:names.get(a.user_id)?.display_name||names.get(a.user_id)?.username||"Utente",title:exerciseMap.get(a.exercise_id)?.title||"Test di reparto",score:attemptMap.get(a.id)?.score??null,correct_answers:attemptMap.get(a.id)?.correct_answers??null,exp_awarded:attemptMap.get(a.id)?.exp_awarded??null,completed_at:attemptMap.get(a.id)?.completed_at??null}));
       return reply(req,{is_commander:true,commander:command,roster,results});
     }
