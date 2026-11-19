@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) return reply(req, { error: "Sessione non valida. Accedi di nuovo." }, 401);
 
     const { data: profile, error: profileError } = await admin.from("profiles")
-      .select("id,username,display_name,role,active,deleted,matricola")
+      .select("id,username,display_name,role,active,deleted,matricola,service_branch,initial_rank")
       .eq("id", user.id).maybeSingle();
     if (profileError) return reply(req, { error: "Impossibile leggere il profilo." }, 500);
     if (!profile || !profile.active || profile.deleted) return reply(req, { error: "Account sospeso o disattivato." }, 403);
