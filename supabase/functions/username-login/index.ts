@@ -46,7 +46,8 @@ Deno.serve(async (req: Request) => {
       .select("id, active, deleted")
       .ilike("username", username)
       .maybeSingle();
-    if (profileError || !profile || !profile.active || profile.deleted) {
+    if (profileError) return reply(req, { error: "Accesso temporaneamente non disponibile. Riprova." }, 500);
+    if (!profile || !profile.active || profile.deleted) {
       return reply(req, { error: "Username o password non corretti, oppure account non attivo." }, 401);
     }
     // La stessa identità può avere un'abilitazione distinta per ciascun Corpo.
@@ -57,7 +58,8 @@ Deno.serve(async (req: Request) => {
       .eq("service_branch", serviceBranch)
       .eq("active", true)
       .maybeSingle();
-    if (membershipError || !membership) {
+    if (membershipError) return reply(req, { error: "Accesso temporaneamente non disponibile. Riprova." }, 500);
+    if (!membership) {
       return reply(req, { error: "Username o password non corretti, oppure account non abilitato per questo Corpo." }, 401);
     }
 
