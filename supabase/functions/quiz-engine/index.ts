@@ -36,12 +36,14 @@ Deno.serve(async(req)=>{
  try{
   const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return reply(req,{error:"Sessione non valida"},401);
-  const {data:profile}=await db.from("profiles").select("active,deleted").eq("id",user.id).maybeSingle();
+  const {data:profile,error:profileError}=await db.from("profiles").select("active,deleted").eq("id",user.id).maybeSingle();
+  if(profileError)return reply(req,{error:"Impossibile verificare il profilo."},500);
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account non attivo"},403);
   const requestedBranch=String((await req.clone().json().catch(()=>({}))).service_branch??"");
   const branch=requestedBranch==="finanza"||requestedBranch==="carabinieri"?requestedBranch:null;
   if(!branch)return reply(req,{error:"Corpo selezionato non valido."},400);
-  const {data:membership}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+  const {data:membership,error:membershipError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+  if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
   if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
   const body=await req.json();
   const allowed=branch==="finanza"
@@ -51,10 +53,12 @@ Deno.serve(async(req)=>{
   if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida per il Corpo selezionato."},400);
   const maxRank=branch==="finanza"?24:23;
   if(body.action==="rank_exam_start"){
-   const {data:row}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
-   const {data:prof}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).single();
-   const payload=row?.payload||{},rank=Math.max(Number(payload.rank)||0,Number(prof?.initial_rank)||0),exp=Math.max(0,Number(payload.exp)||0);
-   const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
+   const {data:row,error:progressError}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+   const {data:prof,error:rankError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+   if(progressError||rankError)return reply(req,{error:"Impossibile verificare la progressione prima dell'esame."},500);
+   if(!prof)return reply(req,{error:"Appartenenza al Corpo non disponibile."},403);
+   const payload=row?.payload||{},rank=Math.max(Number(payload.rank)||0,Number(prof.initial_rank)||0),exp=Math.max(0,Number(payload.exp)||0);
+   const need=Math.round((250+rank*60+rank*rank*4)/10)*10;const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
    const bands=branch==="finanza"
@@ -80,11 +84,13 @@ Deno.serve(async(req)=>{
    return reply(req,status);
   }
   if(body.action==="start"){
-   await db.from("quiz_attempts").update({answers:[],score:0,exp_awarded:0,completed_at:new Date().toISOString()})
-    .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("started_at",new Date(Date.now()-SESSION_MS).toISOString());
-   const {data:open}=await db.from("quiz_attempts").select("id,question_ids,started_at,answers")
-    .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
-   if(open){
+   const {error:expireError}=await db.from("quiz_attempts").update({answers:[],score:0,exp_awarded:0,completed_at:new Date().toISOString()})
+     .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("started_at",new Date(Date.now()-SESSION_MS).toISOString());
+    if(expireError)return reply(req,{error:"Impossibile verificare le sessioni quiz precedenti."},500);
+    const {data:open,error:openError}=await db.from("quiz_attempts").select("id,question_ids,started_at,answers")
+     .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
+    if(openError)return reply(req,{error:"Impossibile recuperare la sessione quiz."},500);
+    if(open){
     const {data:rows,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").in("id",open.question_ids);
     if(error||!rows)return reply(req,{error:"Impossibile riprendere il quiz"},500);
     const byId=new Map(rows.map(q=>[q.id,q]));
@@ -100,8 +106,9 @@ Deno.serve(async(req)=>{
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
    if(status.available<4)return reply(req,{error:"Le domande recenti sono in ripristino",cooldown_until:status.cooldown_until,available:status.available});
    const since=new Date(Date.now()-WINDOW_MS).toISOString();
-   const {data:recent}=await db.from("quiz_attempts").select("question_ids").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since);
-   const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
+   const {data:recent,error:recentError}=await db.from("quiz_attempts").select("question_ids").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since);
+    if(recentError)return reply(req,{error:"Impossibile verificare le domande già svolte."},500);
+    const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
    const eligible=pool.filter(q=>!used.has(q.id));
    const shuffled=[...eligible];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,4);
    const {data:attempt,error:attemptError}=await db.from("quiz_attempts").insert({user_id:user.id,service_branch:branch,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
