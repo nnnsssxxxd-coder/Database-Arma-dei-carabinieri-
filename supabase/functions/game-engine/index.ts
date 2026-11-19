@@ -5,7 +5,8 @@ const allowedOrigins = new Set([
   "https://localhost",
   "http://localhost",
   "capacitor://localhost",
-  "ionic://localhost"
+  "ionic://localhost",
+  "https://nnnsssxxxd.github.io"
 ]);
 function cors(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
@@ -50,7 +51,8 @@ Deno.serve(async (req: Request) => {
     try { body = await req.json(); } catch { return reply(req, { error: "Richiesta non valida." }, 400); }
     const branch=String(body.service_branch??"");
     if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
-    const {data:membership}=await admin.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    const {data:membership,error:membershipError}=await admin.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+    if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
     if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
     profile.service_branch=branch;profile.initial_rank=membership.initial_rank;profile.role=membership.role;profile.matricola=membership.matricola||"";
 
