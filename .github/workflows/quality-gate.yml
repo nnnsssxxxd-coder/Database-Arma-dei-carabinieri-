@@ -28,7 +28,10 @@ jobs:
             supabase/functions/admin-user-action/index.ts \
             supabase/functions/quiz-engine/index.ts \
             supabase/functions/ministry-admin-action/index.ts \
-            supabase/functions/command-general-action/index.ts
+            supabase/functions/command-general-action/index.ts \
+            supabase/functions/department-engine/index.ts \
+            supabase/functions/audit-event/index.ts \
+            supabase/functions/username-login/index.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
