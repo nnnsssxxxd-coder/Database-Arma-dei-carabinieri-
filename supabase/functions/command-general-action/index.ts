@@ -12,7 +12,7 @@ Deno.serve(async(req:Request)=>{
  try{
   const auth=req.headers.get("Authorization")??"",caller=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return out(req,{error:"Sessione non valida."},401);
-  const {data:actor}=await db.from("command_general_admins").select("username,active,created_by").eq("user_id",user.id).maybeSingle();if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
+  const {data:actor,error:actorError}=await db.from("command_general_admins").select("username,active,created_by").eq("user_id",user.id).maybeSingle();if(actorError)return out(req,{error:"Impossibile verificare i permessi del Comando Generale."},500);if(!actor?.active)return out(req,{error:"Accesso al Comando Generale non autorizzato."},403);
   if(actor.created_by===null){
    const {data:currentRanks,error:re}=await db.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",user.id).eq("active",true);
    if(re)throw re;
