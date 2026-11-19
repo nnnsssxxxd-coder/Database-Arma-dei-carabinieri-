@@ -5,7 +5,8 @@ const ALLOWED_ORIGINS = new Set([
   "capacitor://localhost",
   "http://localhost",
   "http://localhost:8100",
-  "https://localhost:8100"
+  "https://localhost:8100",
+  "https://nnnsssxxxd.github.io"
 ]);
 function corsHeaders(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
@@ -32,15 +33,18 @@ Deno.serve(async(req)=>{
  try{
   const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
   const {data:{user}}=await caller.auth.getUser();if(!user)return reply(req,{error:"Sessione non valida"},401);
-  const {data:admin}=await db.from("profiles").select("role,active,deleted,username,service_branch").eq("id",user.id).maybeSingle();
+  const {data:admin,error:adminError}=await db.from("profiles").select("role,active,deleted,username,service_branch").eq("id",user.id).maybeSingle();
+  if(adminError)return reply(req,{error:"Impossibile verificare il profilo amministrativo."},500);
   if(!admin?.active||admin.deleted)return reply(req,{error:"Permesso negato"},403);
   const body=await req.json(),userId=String(body.user_id??""),action=String(body.action??""),branch=String(body.service_branch??"");
   if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo non valido"},400);
-  const {data:adminMembership}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+  const {data:adminMembership,error:adminMembershipError}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
+  if(adminMembershipError)return reply(req,{error:"Impossibile verificare i permessi per questo Corpo."},500);
   if(!adminMembership||!["admin","istruttore"].includes(adminMembership.role))return reply(req,{error:"Non puoi gestire account di questo Corpo."},403);
   if(!/^[0-9a-f-]{36}$/i.test(userId)||userId===user.id)return reply(req,{error:"Account non valido"},400);
-  const {data:target}=await db.from("profiles").select("username,role,service_branch").eq("id",userId).maybeSingle();
-  const {data:targetMembership}=await db.from("profile_memberships").select("role,active").eq("user_id",userId).eq("service_branch",branch).maybeSingle();
+  const {data:target,error:targetError}=await db.from("profiles").select("username,role,service_branch").eq("id",userId).maybeSingle();
+  const {data:targetMembership,error:targetMembershipError}=await db.from("profile_memberships").select("role,active").eq("user_id",userId).eq("service_branch",branch).maybeSingle();
+  if(targetError||targetMembershipError)return reply(req,{error:"Impossibile verificare l'account selezionato."},500);
   if(!target||!targetMembership||["admin","istruttore"].includes(targetMembership.role))return reply(req,{error:"Account non gestibile"},404);
   if(action==="reset_password"){
    const password=String(body.password??"");
