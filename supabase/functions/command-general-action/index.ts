@@ -17,7 +17,7 @@ Deno.serve(async(req:Request)=>{
    const {data:currentRanks,error:re}=await db.from("profile_memberships").select("service_branch,initial_rank").eq("user_id",user.id).eq("active",true);
    if(re)throw re;
    const {data:progressRows,error:ge}=await db.from("progress").select("service_branch,payload").eq("user_id",user.id);if(ge)throw ge;
-   const rankFor=(m)=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
+   const rankFor=(m:{initial_rank:number;service_branch:string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
    const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
    if(!stillEligible){
     const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;
