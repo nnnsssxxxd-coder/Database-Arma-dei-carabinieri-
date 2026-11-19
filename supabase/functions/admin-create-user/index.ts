@@ -35,7 +35,8 @@ Deno.serve(async(req)=>{
   const caller=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false}});
   const {data:{user}}=await caller.auth.getUser();
   if(!user)return reply(req,{error:"Sessione non valida"},401);
-  const {data:admin}=await db.from("profiles").select("username,role,active,deleted,service_branch").eq("id",user.id).maybeSingle();
+  const {data:admin,error:adminError}=await db.from("profiles").select("username,role,active,deleted,service_branch").eq("id",user.id).maybeSingle();
+  if(adminError)return reply(req,{error:"Impossibile verificare il profilo amministrativo."},500);
   if(!admin?.active||admin.deleted)return reply(req,{error:"Account non attivo"},403);
   const body=await req.json(),username=String(body.username??"").trim().toLowerCase(),display_name=String(body.display_name??"").trim(),password=String(body.password??""),service_branch=String(body.service_branch??"").trim().toLowerCase(),rankRaw=body.initial_rank;
   if(!/^[a-z0-9_-]{3,24}$/.test(username))return reply(req,{error:"Username non valido: usa 3-24 caratteri minuscoli, numeri, _ o -.",field:"username"},400);
