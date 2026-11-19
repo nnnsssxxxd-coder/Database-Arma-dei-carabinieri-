@@ -104,7 +104,10 @@ jobs:
           const branchMigration=fs.readFileSync('supabase/migrations/20261114165756_enable_finanza_department_career.sql','utf8');
           const repairMigration=fs.readFileSync('supabase/migrations/20261119210000_harden_department_branch_columns.sql','utf8');
           for(const [name,source] of [['game-engine',game],['admin-user-action',admin]]){
-            if(!source.includes('"https://nnnsssxxxd.github.io"')) throw new Error(name+' is missing GitHub Pages CORS origin');
+            if(!source.includes('"https://nnnsssxxxd-coder.github.io"')) throw new Error(name+' is missing GitHub Pages CORS origin');
+          }
+          for(const path of ['supabase/functions/admin-create-user/index.ts','supabase/functions/ministry-admin-action/index.ts','supabase/functions/command-general-action/index.ts']){
+            if(!fs.readFileSync(path,'utf8').includes('https://nnnsssxxxd-coder.github.io')) throw new Error(path+' is missing GitHub Pages CORS origin');
           }
           for(const token of ['profileError','membershipError','progressError','rankError','expireError','openError','recentError']){
             if(!quiz.includes(token)) throw new Error('quiz-engine missing checked database error: '+token);
