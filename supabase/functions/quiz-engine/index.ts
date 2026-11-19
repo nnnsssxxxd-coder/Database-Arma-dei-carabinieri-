@@ -58,7 +58,7 @@ Deno.serve(async(req)=>{
    if(progressError||rankError)return reply(req,{error:"Impossibile verificare la progressione prima dell'esame."},500);
    if(!prof)return reply(req,{error:"Appartenenza al Corpo non disponibile."},403);
    const payload=row?.payload||{},rank=Math.max(Number(payload.rank)||0,Number(prof.initial_rank)||0),exp=Math.max(0,Number(payload.exp)||0);
-   const need=Math.round((250+rank*60+rank*rank*4)/10)*10;const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
+   const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
    const bands=branch==="finanza"
