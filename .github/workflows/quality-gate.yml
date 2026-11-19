@@ -17,6 +17,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Supabase Edge Functions
+        run: |
+          deno check --no-config --no-lock \
+            supabase/functions/game-engine/index.ts \
+            supabase/functions/admin-create-user/index.ts \
+            supabase/functions/admin-user-action/index.ts \
+            supabase/functions/quiz-engine/index.ts \
+            supabase/functions/ministry-admin-action/index.ts \
+            supabase/functions/command-general-action/index.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
