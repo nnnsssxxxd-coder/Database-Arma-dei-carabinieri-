@@ -21,3 +21,32 @@ END $$;
 
 -- Repair migration for deployments where the Finanza career migration was already recorded.
 -- Safe to run repeatedly: existing branch values are preserved.
+
+-- Restore a missing progression row for any active membership and reconcile rank metadata.
+-- Existing EXP, total EXP, streaks and history are preserved.
+INSERT INTO public.progress(user_id,service_branch,payload,updated_at)
+SELECT m.user_id,m.service_branch,
+       jsonb_build_object('rank',m.initial_rank,'exp',0,'totalExp',0,'streak',0,'correct',0,'history','[]'::jsonb,'quizCount',0),
+       now()
+FROM public.profile_memberships m
+LEFT JOIN public.progress p
+  ON p.user_id=m.user_id AND p.service_branch=m.service_branch
+WHERE m.active AND p.user_id IS NULL
+ON CONFLICT(user_id,service_branch) DO NOTHING;
+
+UPDATE public.progress p
+SET payload=jsonb_set(
+      p.payload,
+      '{rank}',
+      to_jsonb(greatest(
+        CASE WHEN (p.payload->>'rank') ~ '^-?[0-9]+$' THEN (p.payload->>'rank')::integer ELSE 0 END,
+        m.initial_rank
+      )),
+      true
+    ),
+    updated_at=now()
+FROM public.profile_memberships m
+WHERE p.user_id=m.user_id
+  AND p.service_branch=m.service_branch
+  AND m.active
+  AND CASE WHEN (p.payload->>'rank') ~ '^-?[0-9]+$' THEN (p.payload->>'rank')::integer ELSE 0 END < m.initial_rank;
