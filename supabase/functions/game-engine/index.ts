@@ -6,7 +6,7 @@ const allowedOrigins = new Set([
   "http://localhost",
   "capacitor://localhost",
   "ionic://localhost",
-  "https://nnnsssxxxd.github.io"
+  "https://nnnsssxxxd-coder.github.io"
 ]);
 function cors(req: Request) {
   const origin = req.headers.get("Origin") ?? "";
