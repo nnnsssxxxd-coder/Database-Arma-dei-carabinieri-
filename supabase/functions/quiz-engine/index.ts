@@ -19,14 +19,14 @@ async function cooldownFor(userId:string,category:string,branch:"carabinieri"|"f
   .eq("user_id",userId).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since).order("completed_at",{ascending:true});
  if(error)return {error:true,available:0,cooldown_until:null};
  const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
- const available=pool.filter(q=>!used.has(q.id)).length;
+ const available=pool.filter((q:{id:string})=>!used.has(q.id)).length;
  if(available>=4)return {error:false,available,cooldown_until:null};
  const releaseTimes=[...new Set((recent||[]).map(a=>new Date(a.completed_at).getTime()+WINDOW_MS))].sort((a,b)=>a-b);
  let cooldown=null;
  for(const release of releaseTimes){
   const stillUsed=new Set<string>();
   for(const a of recent||[])if(new Date(a.completed_at).getTime()>release-WINDOW_MS)for(const id of a.question_ids||[])stillUsed.add(id);
-  if(pool.filter(q=>!stillUsed.has(q.id)).length>=4){cooldown=release;break;}
+  if(pool.filter((q:{id:string})=>!stillUsed.has(q.id)).length>=4){cooldown=release;break;}
  }
  return {error:false,available,cooldown_until:cooldown?new Date(cooldown).toISOString():null};
 }
@@ -109,7 +109,7 @@ Deno.serve(async(req)=>{
    const {data:recent,error:recentError}=await db.from("quiz_attempts").select("question_ids").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since);
     if(recentError)return reply(req,{error:"Impossibile verificare le domande già svolte."},500);
     const used=new Set<string>();for(const a of recent||[])for(const id of a.question_ids||[])used.add(id);
-   const eligible=pool.filter(q=>!used.has(q.id));
+   const eligible=pool.filter((q:{id:string})=>!used.has(q.id));
    const shuffled=[...eligible];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,4);
    const {data:attempt,error:attemptError}=await db.from("quiz_attempts").insert({user_id:user.id,service_branch:branch,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
    if(attemptError)return reply(req,{error:"Impossibile avviare il quiz"},500);
