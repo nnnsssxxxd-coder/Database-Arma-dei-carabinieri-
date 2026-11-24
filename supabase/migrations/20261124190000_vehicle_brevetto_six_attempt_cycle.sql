@@ -9,6 +9,12 @@ alter table public.department_vehicle_brevetto_attempts
   add constraint department_vehicle_brevetto_attempts_questions_check
   check (jsonb_typeof(questions)='array' and jsonb_array_length(questions)=8);
 
+alter table public.department_vehicle_brevetto_attempts
+  drop constraint if exists department_vehicle_brevetto_attempts_score_check;
+alter table public.department_vehicle_brevetto_attempts
+  add constraint department_vehicle_brevetto_attempts_score_check
+  check (score is null or (score >= 0 and score <= 8));
+
 -- The result score now ranges from zero to eight.
 alter table public.department_vehicle_brevetto_attempts
   drop constraint if exists department_vehicle_brevetto_attempts_score_check;
