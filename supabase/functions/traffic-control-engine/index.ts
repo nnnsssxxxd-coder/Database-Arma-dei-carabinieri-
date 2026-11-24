@@ -187,7 +187,7 @@ Deno.serve(async(req:Request)=>{
     if(!completed.includes(checkId)) completed.push(checkId);
     const {error:ue}=await db.from("traffic_control_sessions").update({checks_completed:completed}).eq("id",sessionId).eq("user_id",user.id);
     if(ue) throw ue;
-    return reply(req,{check_id:checkId,detail:scenario.clues[checkIndex],completed_checks:completed,all_checked:completed.length>=3});
+    const detail=scenario.clues[checkIndex]??"Verifica completata.";const lower=detail.toLowerCase();const uncertain=/da verificare|non ancora|possibile|parziale|incomplet|da acquisire|da confrontare|da approfondire|non definitivo/.test(lower);const negative=/mancant|non disponibile|non riesce a esibire|assente|scadut|non emesso|non attiv|non funzionante|ostru|non assicurato|non coincide/.test(lower);const status=uncertain?"warning":negative?"bad":"ok";return reply(req,{check_id:checkId,detail,status,completed_checks:completed,all_checked:completed.length>=3});
   }
   if(body.action==="finish") {
     const sessionId=String(body.session_id??"");
