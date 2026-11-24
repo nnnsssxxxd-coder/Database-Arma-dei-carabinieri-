@@ -98,6 +98,32 @@ Deno.serve(async (req: Request) => {
          const {data:selected,error:selectedError}=await db.from("department_vehicle_brevetti").select("vehicle_id,vehicle_name,vehicle_type").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(selectedError)return reply(req,{error:"Impossibile verificare il veicolo scelto."},500);
          if(!selected)return reply(req,{error:"Scegli prima il Brevetto veicolo speciale."},403);
+         // Fail closed: never serve a brevetto quiz from a partial or misclassified bank.
+         // The required bank is exactly 100 active, sourced, distinct questions per vehicle:
+         // 30 physics, 40 vehicle-specific technical, 30 applicable regulations.
+         const {data:bankRows,error:bankError}=await db.from("vehicle_brevetto_question_bank")
+           .select("id,category,prompt,source_url,explanation,options,correct_index")
+           .eq("vehicle_id",selected.vehicle_id).eq("active",true);
+         if(bankError)return reply(req,{error:"Impossibile verificare la banca dati del brevetto. Riprova più tardi."},503);
+         const bank=bankRows??[];
+         const bankCounts={physics:0,technical:0,regulations:0};
+         const seenPrompts=new Set<string>();
+         let invalidRows=0;
+         for(const q of bank){
+           if(q.category==="physics"||q.category==="technical"||q.category==="regulations")bankCounts[q.category]++;
+           const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it");
+           const options=Array.isArray(q.options)?q.options:[];
+           if(!prompt||seenPrompts.has(prompt)||!/^https:\/\//i.test(String(q.source_url??""))||
+             !String(q.explanation??"").trim()||options.length!==4||
+             !Number.isInteger(q.correct_index)||q.correct_index<0||q.correct_index>3)invalidRows++;
+           seenPrompts.add(prompt);
+         }
+         const bankValid=bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40&&
+           bankCounts.regulations===30&&seenPrompts.size===100&&invalidRows===0;
+         if(!bankValid)return reply(req,{
+           error:"Brevetto temporaneamente non disponibile: la banca deve contenere 100 domande verificate (30 fisica, 40 tecniche specifiche, 30 normative), tutte distinte e corredate da fonte e spiegazione.",
+           bank_total:bank.length,category_counts:bankCounts,duplicate_or_invalid_rows:invalidRows
+         },503);
          const {data:started,error:startError}=await db.rpc("start_vehicle_brevetto_attempt",{
            p_user_id:user.id,p_service_branch:branch,p_vehicle_id:selected.vehicle_id
          });
