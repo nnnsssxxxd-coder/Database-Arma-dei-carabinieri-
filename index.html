@@ -1291,7 +1291,7 @@ footer{padding:14px 8px 22px;font-size:10px}
 .patrol-check-grid p{min-height:42px}
 .patrol-decision-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:620px){.patrol-check-grid{grid-template-columns:1fr}.patrol-check-grid p{min-height:0}.patrol-decision-grid{grid-template-columns:1fr}}
-</style>
+ .patrol-vehicle-visual{display:flex;flex-direction:column;gap:5px;margin:12px 0}.patrol-vehicle-visual img{width:100%;max-height:180px;object-fit:contain;background:#080b0e;border:1px solid var(--line);border-radius:12px;padding:5px}.patrol-decision-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.patrol-decision-grid button{min-height:54px;white-space:normal}@media(max-width:600px){.patrol-decision-grid{grid-template-columns:1fr}}</style>
 </head><body><a class="skip-link" href="#home">Salta al contenuto principale</a>
 <header><div class="head"><div class="brand"><div class="crest" role="img" aria-label="Emblema grafico dell’area personale"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c-3 8-1 11-8 15 1-6-2-8-4-10-1 9-9 12-8 22 1 9 8 14 18 14 11 0 18-7 18-17 0-7-5-12-8-16 0 6-3 8-5 10 1-8-1-13-3-18z" fill="#c92336"/><path d="M21 34h24l-2 14-10 8-10-8z" fill="#d5d8dc" stroke="#171b20" stroke-width="2"/><path d="M20 38h26M23 44h20" stroke="#171b20" stroke-width="2"/><path d="M32 32v-5h5v5" fill="none" stroke="#171b20" stroke-width="3"/></svg></div><div><h1 id="brandTitle">DATABASE FORZE DELL’ORDINE</h1><p>AREA PERSONALE</p></div></div><div id="headUser" class="small muted"></div></div></header>
 <main class="wrap">
@@ -1377,7 +1377,7 @@ footer{padding:14px 8px 22px;font-size:10px}
  <div class="row between"><div><div class="eyebrow">SIMULAZIONE OPERATIVA</div><h2>Servizio di pattuglia</h2><p class="muted small">Scenari didattici fittizi. Verifica i dati, valuta le circostanze e scegli una decisione proporzionata.</p></div><span class="badge">CONTROLLO</span></div>
  <div class="notice2 patrol-intro"><strong>Procedura di controllo</strong><p class="small muted">Effettua le tre verifiche disponibili prima di decidere. Le risposte corrette assegnano EXP alla progressione del Corpo selezionato.</p><button id="patrolStart" class="primary" type="button">Inizia servizio</button><p id="patrolMessage" class="small muted" role="status" aria-live="polite"></p></div>
  <div id="patrolSession" class="notice2 patrol-session hidden">
-  <div class="row between"><strong id="patrolVehicle">Veicolo</strong><span id="patrolTimer" class="badge">10:00</span></div>
+  <div class="patrol-vehicle-visual"><img id="patrolVehicleImage" class="hidden" alt="Immagine del veicolo dello scenario"><span class="tiny muted">MEZZO DELLO SCENARIO</span></div><div class="row between"><strong id="patrolVehicle">Veicolo</strong><span id="patrolTimer" class="badge">10:00</span></div>
   <div class="row between"><span id="patrolPlate" class="tiny muted">Targa simulata</span><span id="patrolDriver" class="tiny muted">Conducente</span></div>
   <h3 id="patrolModel"></h3><p id="patrolSituation"></p>
   <p class="tiny muted">Dati e targhe sono inventati esclusivamente per la simulazione.</p>
@@ -1386,7 +1386,7 @@ footer{padding:14px 8px 22px;font-size:10px}
    <div><button type="button" data-patrol-check="vehicle">02 · Veicolo</button><p id="patrolDetail-vehicle" class="tiny muted">Verifica da effettuare</p></div>
    <div><button type="button" data-patrol-check="conduct">03 · Condotta</button><p id="patrolDetail-conduct" class="tiny muted">Verifica da effettuare</p></div>
   </div>
-  <div id="patrolDecisions" class="hidden"><h3>Decisione finale</h3><p class="small muted">Scegli soltanto sulla base degli elementi verificati.</p><div class="patrol-decision-grid"><button type="button" data-patrol-action="sanzione">Contestare la violazione</button><button type="button" data-patrol-action="nessuna_violazione">Nessuna violazione</button></div></div>
+  <div id="patrolDecisions" class="hidden"><h3>Decisione finale</h3><p class="small muted">Scegli soltanto sulla base degli elementi verificati.</p><div class="patrol-decision-grid"><button type="button" data-patrol-action="sanzione">A. Contestare la violazione</button><button type="button" data-patrol-action="nessuna_violazione">B. Nessuna violazione</button><button type="button" data-patrol-action="avviso">C. Avviso / approfondimento</button></div></div>
  </div>
  <div id="patrolResult" class="notice2 hidden" role="status" aria-live="polite"></div>
 </section>
@@ -1912,7 +1912,7 @@ function renderPatrolSession(){
  const sc=patrolSession.scenario||{};
  $("patrolVehicle").textContent=sc.vehicle||"Veicolo";$("patrolPlate").textContent=(selectedBranch==="finanza"?"Riferimento simulato: ":"Targa simulata: ")+(sc.plate||"—");
  $("patrolDriver").textContent=(selectedBranch==="finanza"?"Referente: ":"Conducente: ")+(sc.driver||"—");$("patrolModel").textContent=sc.model||"Controllo";
- $("patrolSituation").textContent=sc.situation||"";
+ $("patrolSituation").textContent=sc.situation||"";const photo=$("patrolVehicleImage");if(photo){photo.src=sc.vehicle_image_url||"";photo.alt="Immagine illustrativa: "+(sc.vehicle||"veicolo");photo.classList.toggle("hidden",!sc.vehicle_image_url);}
  ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(b)b.disabled=(patrolSession.checked||[]).includes(id);});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
