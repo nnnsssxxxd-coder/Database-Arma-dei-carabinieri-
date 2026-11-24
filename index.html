@@ -1768,7 +1768,7 @@ async function submitCommandExam(){
 }
 
 let vehicleBrevettoCatalog=[],vehicleBrevettoCooldownUntil=null,vehicleBrevettoAttemptsRemaining=6,vehicleBrevettoAttemptsCompleted=0;
-let vehicleBrevettoQuiz=null,vehicleBrevettoTimer=null;
+let vehicleBrevettoQuiz=null,vehicleBrevettoTimer=null,vehicleBrevettoCooldownTimer=null;
 function vehicleBrevettoStorageKey(){return "fdo_vehicle_brevetto:"+String(user?.id||profile?.username||"guest")+":"+String(selectedBranch||"");}
 function getVehicleBrevettoState(){try{return JSON.parse(localStorage.getItem(vehicleBrevettoStorageKey())||"{}");}catch(_){return {};}}
 function saveVehicleBrevettoState(state){try{localStorage.setItem(vehicleBrevettoStorageKey(),JSON.stringify(state));return true;}catch(_){return false;}}
@@ -1800,7 +1800,12 @@ function renderVehicleBrevettoUI(){
  $("vehicleBrevettoSubtitle").textContent="Veicolo selezionato: "+state.vehicle.name;
  $("vehicleBrevettoBadge").textContent=state.passed?"BREVETTO SUPERATO":"BREVETTO VEICOLO SPECIALE";
  const startButton=$("vehicleBrevettoStart");if(startButton)startButton.onclick=startVehicleBrevettoQuiz;
- if(vehicleBrevettoCooldownUntil){const left=new Date(vehicleBrevettoCooldownUntil).getTime()-Date.now();if(left>0){$("vehicleBrevettoError").textContent="Prossimo tentativo disponibile tra "+formatRemaining(left)+". Il recupero si aggiorna automaticamente.";if(startButton)startButton.disabled=true;}else{vehicleBrevettoCooldownUntil=null;if(startButton)startButton.disabled=false;}}
+ if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}
+ const updateVehicleBrevettoCooldown=()=>{const left=vehicleBrevettoCooldownUntil?new Date(vehicleBrevettoCooldownUntil).getTime()-Date.now():0;
+  if(left>0){$("vehicleBrevettoError").textContent="Prossimo tentativo disponibile tra "+formatRemaining(left)+".";if(startButton)startButton.disabled=true;}
+  else{vehicleBrevettoCooldownUntil=null;if(startButton)startButton.disabled=false;if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}$("vehicleBrevettoError").textContent="Puoi iniziare una nuova prova.";}
+ };
+ updateVehicleBrevettoCooldown();if(vehicleBrevettoCooldownUntil)vehicleBrevettoCooldownTimer=setInterval(updateVehicleBrevettoCooldown,1000);
 }
 async function syncVehicleBrevettoStatus(){
  if(!user||!selectedBranch)return;
@@ -1809,7 +1814,7 @@ async function syncVehicleBrevettoStatus(){
   if(error){if(error.status===403){renderVehicleBrevettoUI();return;}throw error;}
   vehicleBrevettoCatalog=Array.isArray(data?.catalog)?data.catalog:[];
   vehicleBrevettoCooldownUntil=data?.cooldown_until||null;vehicleBrevettoAttemptsRemaining=Math.max(0,Number(data?.attempts_remaining??6));vehicleBrevettoAttemptsCompleted=Math.max(0,Number(data?.attempts_completed??0));
-  if(data?.brevetto){const b=data.brevetto;saveVehicleBrevettoState({vehicle:{id:b.vehicle_id,name:b.vehicle_name,type:b.vehicle_type},selected_at:b.selected_at,attempts:0,passed:false});}
+  if(data?.brevetto){const b=data.brevetto,previous=getVehicleBrevettoState();saveVehicleBrevettoState({...previous,vehicle:{id:b.vehicle_id,name:b.vehicle_name,type:b.vehicle_type},selected_at:b.selected_at});}
   else{try{localStorage.removeItem(vehicleBrevettoStorageKey());}catch(_){}}
   renderVehicleBrevettoUI();
  }catch(e){console.warn("Stato brevetto non sincronizzato",e);const msg=$("vehicleBrevettoChoiceMessage");if(msg)msg.textContent="Catalogo non disponibile: controlla la connessione e riprova.";}
@@ -1838,15 +1843,19 @@ async function finishVehicleBrevettoQuiz(){
  if(vehicleBrevettoQuiz.answers.some(x=>!Number.isInteger(x))){$("vehicleBrevettoHint").textContent="Rispondi a tutte le domande.";return;}
  if(vehicleBrevettoTimer){clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;}
  const qs=vehicleBrevettoQuiz.questions,answers=vehicleBrevettoQuiz.answers,attemptId=vehicleBrevettoQuiz.id,submit=$("vehicleBrevettoNext");
+ let completed=false;
  submit.disabled=true;$("vehicleBrevettoHint").textContent="Verifica risposte e registrazione EXP nel grado personale…";
  try{
   const {data,error}=await db.functions.invoke("department-engine",{body:{service_branch:selectedBranch,action:"vehicle_brevetto_submit",attempt_id:attemptId,answers}});
   if(error||!data||!data.progress)throw new Error(data?.error||error?.message||"Risultato non registrato.");
+  completed=true;
   const score=Number(data.score)||0,state=getVehicleBrevettoState();state.attempts=(state.attempts||0)+1;state.passed=state.passed||!!data.passed;state.best_score=Math.max(state.best_score||0,score);saveVehicleBrevettoState(state);progress=data.progress;
   $("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");$("vehicleBrevettoResult").classList.remove("hidden");
   $("vehicleBrevettoResult").innerHTML='<div class="badge">'+(data.passed?"BREVETTO SUPERATO":"ESITO QUIZ")+'</div><div class="result">'+score+' / 8</div><p class="small muted">'+(data.passed?"Prova superata. ":"Prova completata. ")+'Hai ottenuto <strong>'+Number(data.exp_awarded||0)+' EXP nella progressione ordinaria del grado</strong>. EXP della carriera reparto invariati.</p><p class="small muted">Prove completate nel ciclo: '+Number(data.attempts_completed||0)+' / 6 · Tentativi rimasti: '+Number(data.attempts_remaining||0)+' / 6</p><div class="answer-review-list">'+qs.map((q,i)=>'<article class="notice2 answer-review '+(answers[i]===q[5]?"answer-correct":"answer-wrong")+'"><strong>Domanda '+(i+1)+'</strong><p>'+esc(q[0])+'</p><p class="small">Risposta corretta: '+esc(q[q[5]+1])+'</p><p class="tiny muted">'+esc(q[6]||"")+'</p><p class="tiny"><a href="'+esc(q[7]||"#")+'" target="_blank" rel="noopener noreferrer">Fonte</a></p></article>').join("")+'</div>';
   render();await syncVehicleBrevettoStatus();
- }catch(e){$("vehicleBrevettoHint").textContent=e?.message||"Risultato non registrato. Riprova.";submit.disabled=false;}finally{vehicleBrevettoQuiz=null;}
+ }catch(e){$("vehicleBrevettoHint").textContent=e?.message||"Risultato non registrato. Riprova.";submit.disabled=false;
+  if(vehicleBrevettoQuiz&&!vehicleBrevettoQuiz.expired){const tick=()=>{if(!vehicleBrevettoQuiz)return;const left=Math.max(0,vehicleBrevettoQuiz.expiresAt-Date.now());$("vehicleBrevettoTimer").textContent=formatRemaining(left);if(!left){vehicleBrevettoQuiz.expired=true;if(vehicleBrevettoTimer){clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;}$("vehicleBrevettoHint").textContent="Tempo scaduto. Avvia una nuova prova.";$("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");vehicleBrevettoQuiz=null;}};tick();if(vehicleBrevettoQuiz)vehicleBrevettoTimer=setInterval(tick,1000);}
+ }finally{if(completed)vehicleBrevettoQuiz=null;}
 }
 document.addEventListener("click",event=>{const option=event.target.closest("[data-vb-option]");if(option){chooseVehicleBrevettoAnswer(Number(option.dataset.vbOption));return;}if(event.target.closest("#vehicleBrevettoNext")){if(!vehicleBrevettoQuiz)return;if(vehicleBrevettoQuiz.answers[vehicleBrevettoQuiz.index]===null)return;if(vehicleBrevettoQuiz.index<7){vehicleBrevettoQuiz.index++;renderVehicleBrevettoQuestion();}else void finishVehicleBrevettoQuiz();}});
 async function joinDepartment(){const id=$("departmentChoice").value,d=departmentCatalog.find(x=>x.id===id);if(!d)return;if(!confirm("Confermi la scelta di "+d.name+"? Potrai scegliere un solo reparto e la scelta non sarà modificabile."))return;const btn=$("departmentJoinButton");btn.disabled=true;$("departmentJoinMsg").textContent="Registrazione della scelta…";try{const {data,error}=await db.functions.invoke("department-engine",{body:{service_branch:selectedBranch,action:"join",department_id:id}});if(error||!data?.membership)throw new Error(await functionError(error,data?.error||"Scelta non registrata"));departmentMembership=data.membership;renderDepartmentUI();renderVehicleBrevettoUI();$("departmentJoinMsg").textContent="Scelta registrata. Apertura della carriera…";showTab("departmentCareer");}catch(e){$("departmentJoinMsg").textContent=e?.message||"Impossibile registrare la scelta.";btn.disabled=false;}}
