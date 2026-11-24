@@ -33,7 +33,6 @@ jobs:
             supabase/functions/audit-event/index.ts \
             supabase/functions/username-login/index.ts \
             supabase/functions/command-general-login/index.ts \
-            supabase/functions/ministry-login/index.ts \
             supabase/functions/traffic-control-engine/index.ts
       - name: Validate manifest and application shell
         run: |
