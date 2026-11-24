@@ -191,6 +191,18 @@ jobs:
           console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
           NODE
 
+      - name: Validate complete quiz-bank explanations
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const migration=fs.readFileSync('supabase/migrations/20261124175304_complete_carabinieri_quiz_explanations.sql','utf8');
+          const ids=[...migration.matchAll(/when '[0-9a-f-]{36}' then/g)];
+          if(ids.length!==38)throw new Error('Expected 38 individually explained Carabinieri questions, found '+ids.length);
+          if(!migration.includes("where service_branch='carabinieri'"))throw new Error('Explanation migration must be scoped to Carabinieri');
+          const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          if(!engine.includes('if(error||!pool||pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete question bank');
+          console.log('PASS 38 missing explanations are supplied and rank exam bank guard remains enabled');
+          NODE
       - name: Validate maximum-grade command access parity
         run: |
           node <<'NODE'
