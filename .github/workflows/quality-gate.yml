@@ -283,7 +283,18 @@ jobs:
             if(!checks.includes(token))throw new Error('Patrol completion guard missing: '+token);
           }
           if(!html.includes('length<3'))throw new Error('Patrol UI must keep the final decision hidden until all checks are complete');
-          console.log('PASS: all three checks required server-side and 10 EXP granted only for correct decision');
+          const brevetto=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const cycle=fs.readFileSync('supabase/migrations/20261124190000_vehicle_brevetto_six_attempt_cycle.sql','utf8');
+          if(!brevetto.includes('const cooldownExpired=!!storedCooldown&&Date.parse(storedCooldown)<=Date.now()'))throw new Error('Expired brevetto cooldown must be presented as available in status');
+          if(!brevetto.includes('attempts_remaining:Math.max(0,6-completed)'))throw new Error('Brevetto status must return authoritative remaining attempts');
+          if(!html.includes('Quiz completati: "+vehicleBrevettoAttemptsCompleted+" / 6'))throw new Error('Brevetto progress counter missing');
+          if(html.includes('Ciclo ripristinato. Puoi iniziare una nuova prova.'))throw new Error('Remove repeated red cycle-reset message');
+          if(html.includes('#vehicleBrevettoAttempts{display:none!important}'))throw new Error('Brevetto attempts counter must be visible');
+          if(!html.includes('start.disabled=!!cooling||vehicleBrevettoAttemptsRemaining<=0'))throw new Error('Start button must remain disabled during cooldown');
+          if(!html.includes('const expiresAt=Date.parse(data.expires_at)')||!html.includes('if(!Number.isFinite(expiresAt)||expiresAt<=Date.now())'))throw new Error('Brevetto session timer must reject invalid/expired timestamps');
+          if(!cycle.includes('when completed_attempts+1>=6 then now()+interval \'12 hours\''))throw new Error('Sixth completed quiz must trigger the 12-hour cooldown');
+          console.log('PASS: brevetto 6-quiz counter, cooldown expiration, 12-hour timer, no stale reset message and session timer validation');
+                    console.log('PASS: all three checks required server-side and 10 EXP granted only for correct decision');
           NODE
       - name: Validate maximum-grade command access parity
         run: |
