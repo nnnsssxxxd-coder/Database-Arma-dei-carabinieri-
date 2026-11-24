@@ -39,7 +39,19 @@ const scenarios = [
  {id:"red-light",vehicle:"SUV nero",plate:"NC 972 HT",driver:"Stefano L.",model:"SUV",situation:"La pattuglia osserva il veicolo superare la linea di arresto e attraversare l'incrocio con semaforo rosso. La visuale è libera.",clues:["Semaforo rosso","Superamento linea di arresto","Condotta osservata direttamente"],action:"sanzione",explanation:"Il passaggio con semaforo rosso è una violazione da contestare secondo le procedure."},
  {id:"broken-tail-light",vehicle:"Station wagon blu",plate:"EZ 604 QP",driver:"Chiara R.",model:"Station wagon",situation:"Una luce posteriore è spenta. Il conducente è collaborativo e il controllo non evidenzia altre anomalie; la simulazione richiede un richiamo didattico.",clues:["Una luce non funzionante","Nessun'altra anomalia","Conducente collaborativo"],action:"avviso",explanation:"Nel caso didattico descritto è previsto un richiamo a ripristinare il dispositivo, senza aggiungere infrazioni non accertate."},
  {id:"emergency-help",vehicle:"Monovolume beige",plate:"BT 385 LA",driver:"Michele O.",model:"Monovolume",situation:"Una persona a bordo chiede assistenza perché non si sente bene. Il veicolo è in sosta sicura e non sono state rilevate infrazioni.",clues:["Richiesta di assistenza","Veicolo in sosta sicura","Nessuna violazione"],action:"nessuna_violazione",explanation:"La priorità è l'assistenza alla persona e l'eventuale attivazione dei soccorsi."}
+
 ];
+const finanzaScenarios = [
+ {id:"gdf-documento-commerciale",vehicle:"Negozio al dettaglio",plate:"ESERCIZIO GDF-01",driver:"Responsabile esercizio",model:"Verifica documentale",situation:"Durante un controllo, l'acquisto è stato pagato ma il documento commerciale non viene emesso. La circostanza è stata verificata e registrata nella simulazione.",clues:["Pagamento riscontrato","Documento commerciale non emesso","Circostanza verificata"],action:"sanzione",explanation:"La mancata emissione del documento commerciale, quando dovuto e accertata, richiede la contestazione secondo le procedure e la normativa applicabile."},
+ {id:"gdf-trasporto-regolare",vehicle:"Furgone merci",plate:"TRASPORTO GDF-02",driver:"Autista",model:"Controllo trasporto",situation:"La documentazione di trasporto è presente e coerente con la merce e con i dati del veicolo. Non emergono irregolarità.",clues:["Documenti disponibili","Dati coerenti con il carico","Nessuna anomalia accertata"],action:"nessuna_violazione",explanation:"La documentazione risulta coerente: non si contesta un illecito in assenza di elementi concreti."},
+ {id:"gdf-carburante",vehicle:"Autocisterna",plate:"CARBURANTE GDF-03",driver:"Conducente",model:"Verifica settore carburanti",situation:"La verifica documentale accerta una discordanza tra quantità dichiarata e quantità effettivamente documentata. La discrepanza è stata ricontrollata.",clues:["Quantità dichiarata acquisita","Documenti confrontati","Discordanza confermata"],action:"sanzione",explanation:"Una discrepanza documentale confermata richiede gli approfondimenti e gli atti previsti dalle procedure di competenza."},
+ {id:"gdf-marchio-sospetto",vehicle:"Furgone commerciale",plate:"MERCE GDF-04",driver:"Responsabile carico",model:"Tutela dei prodotti",situation:"Alcuni prodotti presentano un marchio visivamente sospetto, ma non è ancora disponibile una verifica tecnica che confermi la contraffazione.",clues:["Anomalia solo apparente","Nessuna conferma tecnica","Necessario approfondimento specialistico"],action:"nessuna_violazione",explanation:"Il solo sospetto visivo non basta a dichiarare accertata la contraffazione: occorre verificare e documentare prima di procedere."},
+ {id:"gdf-prezzi-regolari",vehicle:"Distributore carburanti",plate:"IMPIANTO GDF-05",driver:"Gestore impianto",model:"Trasparenza prezzi",situation:"I prezzi esposti sono coerenti con quelli applicati e con i dati acquisiti durante il controllo. Non risultano scostamenti.",clues:["Prezzi esposti leggibili","Prezzi applicati coerenti","Nessuna differenza rilevata"],action:"nessuna_violazione",explanation:"I dati risultano coerenti: non va contestata alcuna irregolarità non riscontrata."},
+ {id:"gdf-documento-mancante",vehicle:"Veicolo commerciale",plate:"DOCUMENTI GDF-06",driver:"Trasportatore",model:"Verifica documenti",situation:"Per la merce trasportata manca un documento richiesto nel caso simulato; l'assenza è stata verificata e non è stata fornita documentazione sostitutiva.",clues:["Documento richiesto individuato","Assenza verificata","Nessuna documentazione sostitutiva"],action:"sanzione",explanation:"Quando l'obbligo documentale è applicabile e l'assenza è accertata, si procede secondo le competenze e le procedure previste."},
+ {id:"gdf-registratore-regolare",vehicle:"Attività commerciale",plate:"CASSA GDF-07",driver:"Esercente",model:"Verifica corrispettivi",situation:"I dati del registratore telematico e i documenti commerciali esaminati risultano coerenti nel periodo controllato.",clues:["Dati acquisiti correttamente","Documenti confrontati","Nessuna discordanza"],action:"nessuna_violazione",explanation:"La verifica non evidenzia irregolarità: l'esito corretto è non contestare violazioni inesistenti."},
+ {id:"gdf-carico-discordante",vehicle:"Autocarro",plate:"CARICO GDF-08",driver:"Autista",model:"Controllo merci",situation:"La descrizione e la quantità della merce non corrispondono ai documenti esibiti. Il confronto è stato ripetuto e la discordanza permane.",clues:["Merce identificata","Documenti esaminati","Discordanza persistente e documentata"],action:"sanzione",explanation:"Una discordanza documentale confermata va gestita con gli accertamenti e gli atti previsti, senza formulare contestazioni ulteriori non provate."}
+];
+const scenariosByBranch = {carabinieri:scenarios,finanza:finanzaScenarios};
 async function getUser(req:Request) {
  const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
  const {data:{user}}=await caller.auth.getUser(); return user;
@@ -53,6 +65,7 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json();
   const branch=String(body.service_branch??"");
   if(!["carabinieri","finanza"].includes(branch)) return reply(req,{error:"Corpo non valido"},400);
+  const scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch];
   const {data:profile,error:pe}=await db.from("profiles").select("active,deleted").eq("id",user.id).maybeSingle();
   if(pe||!profile?.active||profile.deleted) return reply(req,{error:"Account non attivo"},403);
   const {data:membership,error:me}=await db.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
@@ -60,8 +73,8 @@ Deno.serve(async(req:Request)=>{
   if(body.action==="start") {
     await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
     const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
-    if(openSession){const existing=scenarios.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,explanation:privateExplanation,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
-    const scenario=scenarios[Math.floor(Math.random()*scenarios.length)];
+    if(openSession){const existing=scenarioPool.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,explanation:privateExplanation,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,scenario:publicExisting,service_branch:branch,resumed:true},200);}}
+    const scenario=scenarioPool[Math.floor(Math.random()*scenarioPool.length)];
     const {data:session,error}=await db.from("traffic_control_sessions").insert({
       user_id:user.id,service_branch:branch,scenario_id:scenario.id,correct_action:scenario.action
     }).select("id,expires_at").single();
@@ -80,7 +93,7 @@ Deno.serve(async(req:Request)=>{
     const {data:session,error:se}=await db.from("traffic_control_sessions").select("id,scenario_id,checks_completed,expires_at,completed_at").eq("id",sessionId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
     if(se||!session||session.completed_at) return reply(req,{error:"Sessione di controllo non valida"},404);
     if(new Date(session.expires_at).getTime()<Date.now()) return reply(req,{error:"Tempo del controllo scaduto. Avvia un nuovo servizio."},410);
-    const scenario=scenarios.find(item=>item.id===session.scenario_id);
+    const scenario=scenarioPool.find(item=>item.id===session.scenario_id);
     if(!scenario) return reply(req,{error:"Scenario non disponibile"},404);
     const completed=Array.isArray(session.checks_completed)?session.checks_completed:[];
     if(!completed.includes(checkId)) completed.push(checkId);
@@ -97,7 +110,7 @@ Deno.serve(async(req:Request)=>{
     });
     if(error) return reply(req,{error:error.message||"Impossibile registrare il controllo."},400);
     const {data:finishedSession}=await db.from("traffic_control_sessions").select("scenario_id").eq("id",sessionId).eq("user_id",user.id).maybeSingle();
-    const explanation=scenarios.find(item=>item.id===finishedSession?.scenario_id)?.explanation??"";
+    const explanation=scenarioPool.find(item=>item.id===finishedSession?.scenario_id)?.explanation??"";
     const {data:progressRow}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
     return reply(req,{...data,explanation,progress:progressRow?.payload??null});
   }
