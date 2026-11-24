@@ -197,7 +197,7 @@ jobs:
           }
           const monochrome=fs.readFileSync('app-icon-monochrome.svg','utf8');
           const iconConcurrency=fs.readFileSync('supabase/migrations/20261124230000_harden_vehicle_brevetto_start_concurrency.sql','utf8');
-          if(!build.includes('app-icon.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('ic_launcher_monochrome.png')||!build.includes('android:icon="@mipmap/ic_launcher"')||!build.includes('android:roundIcon="@mipmap/ic_launcher_round"')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Adaptive, monochrome and legacy launcher icons plus launchable activity must be verified');
+          if(!build.includes('app-icon.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('ic_launcher_monochrome.png')||!build.includes('android:icon="@mipmap/ic_launcher_legacy"')||!build.includes('android:roundIcon="@mipmap/ic_launcher_round_legacy"')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Adaptive, monochrome and legacy launcher icons plus launchable activity must be verified');
           if(!monochrome.includes('fill="#fff"')||!monochrome.includes('fill-rule="evenodd"'))throw new Error('The app icon source assets must retain a valid monochrome shield');
           if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
           if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
@@ -265,7 +265,7 @@ jobs:
           }
           if(/navigator\\.(userAgent|platform)|getHighEntropyValues|deviceMemory/.test(html))throw new Error('Adaptive profile must not fingerprint device model or hardware');
           if(!migration.includes('v_reward := case when v_correct then 10 else 0 end;'))throw new Error('Patrol must award EXP only on correct decisions');
-          if(!build.includes('android:icon="@mipmap/ic_launcher"'))throw new Error('Launcher activity/application icon assignment missing');
+          if(!build.includes('android:icon="@mipmap/ic_launcher_legacy"'))throw new Error('Launcher activity/application icon assignment missing');
           if(!build.includes('grep -E \'/ic_launcher_foreground\\.png$\''))throw new Error('APK verification must locate the packaged adaptive foreground independent of resource qualifier');
           console.log('PASS: privacy-safe responsive profile, correct-only patrol EXP and robust APK icon checks');
           NODE
