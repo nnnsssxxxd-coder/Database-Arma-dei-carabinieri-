@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
          if(!selected)return reply(req,{error:"Scegli prima il Brevetto veicolo speciale."},403);
          // Fail closed: never serve a brevetto quiz from a partial or misclassified bank.
          // The required bank is exactly 100 active, sourced, distinct questions per vehicle:
-         // 30 physics, 40 vehicle-specific technical, 30 applicable regulations.
+         // 30 physics, 40 technical questions relevant to the vehicle domain, 30 applicable regulations.
          const {data:bankRows,error:bankError}=await db.from("vehicle_brevetto_question_bank")
            .select("id,category,prompt,source_url,source_note,explanation,options,correct_index")
            .eq("vehicle_id",selected.vehicle_id).eq("active",true);
