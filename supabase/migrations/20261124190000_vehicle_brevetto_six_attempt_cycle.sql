@@ -69,7 +69,7 @@ begin
  select greatest(coalesce((payload->>'rank')::integer,0),coalesce(v_initial,0)) into v_rank
   from public.progress where user_id=p_user_id and service_branch=p_service_branch;
  v_rank:=coalesce(v_rank,v_initial,0);
- if v_rank < (case when p_service_branch='finanza' then 3 else 2 end) then
+ if v_rank < 2 then
   return jsonb_build_object('error','Il Quiz Brevetto non è ancora sbloccato.');
  end if;
  insert into public.vehicle_brevetto_cycles(user_id,service_branch,vehicle_id)
