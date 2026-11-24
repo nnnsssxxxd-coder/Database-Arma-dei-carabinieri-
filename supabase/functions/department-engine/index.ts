@@ -125,7 +125,7 @@ Deno.serve(async (req: Request) => {
          const bankValid=bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40&&
            bankCounts.regulations===30&&seenPrompts.size===100&&invalidRows===0;
          if(!bankValid)return reply(req,{
-           error:"Brevetto temporaneamente non disponibile: la banca deve contenere 100 domande verificate (30 fisica, 40 tecniche specifiche, 30 normative), tutte distinte e corredate da fonte e spiegazione.",
+           error:`Brevetto non ancora disponibile. Banca verificata: fisica ${bankCounts.physics}/30, tecniche ${bankCounts.technical}/40, normative ${bankCounts.regulations}/30. Servono 100 domande distinte con fonte e spiegazione.`,
            bank_total:bank.length,category_counts:bankCounts,duplicate_or_invalid_rows:invalidRows
          },503);
          const {data:started,error:startError}=await db.rpc("start_vehicle_brevetto_attempt",{
