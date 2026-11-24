@@ -8,6 +8,7 @@ on:
       - 'index.html'
       - 'manifest.webmanifest'
       - 'app-icon.svg'
+      - 'app-icon-foreground.svg'
       - 'service-worker.js'
       - 'package.json'
       - 'package-lock.json'
@@ -104,7 +105,8 @@ jobs:
           done
           # Adaptive launcher icon for Android 8+.
           mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/drawable-nodpi android/app/src/main/res/values
-          rsvg-convert -w 432 -h 432 app-icon.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          test -s app-icon-foreground.svg
+          rsvg-convert -w 432 -h 432 app-icon-foreground.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
           cat > android/app/src/main/res/values/ic_launcher_background.xml <<'EOF'
           <resources><color name="ic_launcher_background">#111820</color></resources>
           EOF
@@ -134,7 +136,9 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose "$APK"
-          "$AAPT" dump badging "$APK" | grep -F "package: name='it.databaseforzeordine.app'"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='it.databaseforzeordine.app'"
+          echo "$BADGING" | grep -F "application-icon-160:"
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
           sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
