@@ -8,6 +8,7 @@
     </linearGradient>
     <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
+  <g transform="translate(54 54) scale(0.75)">
   <circle cx="216" cy="216" r="185" fill="#101720" stroke="url(#red)" stroke-width="20"/>
   <circle cx="216" cy="216" r="163" fill="none" stroke="#aab7c6" stroke-width="4" opacity=".7"/>
   <path d="M216 65 331 111v108c0 77-45 137-115 176-70-39-115-99-115-176V111z" fill="url(#shield)" stroke="#edf2f7" stroke-width="13" stroke-linejoin="round"/>
@@ -15,4 +16,5 @@
   <path d="M112 182h208" stroke="#fff" stroke-width="7" opacity=".92"/>
   <path d="m216 184 17 34 38 6-27 26 6 38-34-18-34 18 6-38-27-26 38-6z" fill="#fff" stroke="#cbd5e1" stroke-width="3" stroke-linejoin="round" filter="url(#glow)"/>
   <path d="M151 323h130" stroke="#e52a43" stroke-width="10" stroke-linecap="round"/>
+  </g>
 </svg>
