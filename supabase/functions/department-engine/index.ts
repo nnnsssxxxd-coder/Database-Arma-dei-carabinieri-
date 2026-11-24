@@ -87,6 +87,34 @@ Deno.serve(async (req: Request) => {
     }
     const membership = await getMembership(user.id, branch);
     if (!membership) return reply(req,{ error: "Non hai ancora scelto un reparto." }, 403);
+    if (action === "vehicle_brevetto_status") {
+      const { data, error } = await db.from("department_vehicle_brevetti")
+        .select("department_id,vehicle_id,vehicle_name,vehicle_type,selected_at")
+        .eq("user_id", user.id).eq("service_branch", branch).maybeSingle();
+      if (error) return reply(req,{error:"Impossibile leggere il brevetto selezionato."},500);
+      if (data && data.department_id !== membership.department.id) return reply(req,{error:"Il brevetto registrato non corrisponde al reparto attivo."},409);
+      return reply(req,{brevetto:data ?? null});
+    }
+    if (action === "vehicle_brevetto_choose") {
+      const vehicleId=String(body.vehicle_id ?? "");
+      const vehicleName=String(body.vehicle_name ?? "").trim();
+      const vehicleType=String(body.vehicle_type ?? "");
+      if (!/^[a-z0-9_-]{2,64}$/.test(vehicleId) || !vehicleId.startsWith(membership.department.id) ||
+          vehicleName.length < 5 || vehicleName.length > 120 ||
+          !["4x4","suv","van","berlina","barca","moto"].includes(vehicleType)) {
+        return reply(req,{error:"Dati del brevetto non validi."},400);
+      }
+      const { data: existing, error: existingError } = await db.from("department_vehicle_brevetti")
+        .select("vehicle_id,vehicle_name,vehicle_type,department_id,selected_at")
+        .eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+      if (existingError) return reply(req,{error:"Impossibile verificare la scelta già registrata."},500);
+      if (existing) return reply(req,{error:"Hai già scelto un brevetto: la scelta è unica e non può essere modificata."},409);
+      const { data: saved, error: saveError } = await db.from("department_vehicle_brevetti")
+        .insert({user_id:user.id,service_branch:branch,department_id:membership.department.id,vehicle_id:vehicleId,vehicle_name:vehicleName,vehicle_type:vehicleType})
+        .select("department_id,vehicle_id,vehicle_name,vehicle_type,selected_at").single();
+      if (saveError) return reply(req,{error:saveError.code==="23505"?"Hai già scelto un brevetto: la scelta è unica e non può essere modificata.":"Impossibile registrare il brevetto."},saveError.code==="23505"?409:500);
+      return reply(req,{brevetto:saved},201);
+    }
     const isCommander = membership.is_commander === true;
     const commandExamReady = Number(membership.rank) === 6 && Number(membership.exp) >= 2100 && !isCommander;
 
