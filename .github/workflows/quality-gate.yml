@@ -343,3 +343,17 @@ jobs:
           }
           console.log('PASS: fail-closed 30/40/30 bank, duplicate/source checks, abandoned patrol counting and scene photo fallback');
           NODE
+      - name: Enforce professional and fact-qualified interface language
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const create=fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8');
+          if(/simulatore|simulazione/i.test(html))throw new Error('Avoid simulation terminology in the user interface');
+          for(const phrase of ['Applicazione indipendente','non documento ufficiale','Targa dimostrativa','non rappresentano interventi realmente avvenuti','10 EXP soltanto in caso di esito corretto']){
+            if(!html.includes(phrase))throw new Error('Required accuracy/disclaimer wording missing: '+phrase);
+          }
+          if(create.includes('@login.simulatore.invalid'))throw new Error('Legacy internal account alias must not use simulation terminology');
+          if(!create.includes('@account.databaseforzeordine.invalid'))throw new Error('Neutral internal account alias missing');
+          console.log('PASS: professional interface language, explicit non-official status and clearly qualified didactic data');
+          NODE
