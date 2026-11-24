@@ -226,25 +226,7 @@ jobs:
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher.xml'
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
           unzip -Z1 "$APK" | grep -E '/ic_launcher_foreground\.png$'
-          unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png          echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Database Forze Ordine' icon='res/mipmap-anydpi-v26/ic_launcher.xml'"
-          mkdir -p build-output
-          cp "$APK" build-output/Database-Forze-Ordine-debug.apk
-          sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
-          {
-            echo "Commit: ${GITHUB_SHA}"
-            echo "Build: ${GITHUB_RUN_NUMBER}"
-            echo "Type: debug APK (not a production-signed release)"
-            echo "Application ID: it.databaseforzeordine.app"
-          } > build-output/BUILD-INFO.txt
-
-      - name: Upload verified APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Database-Forze-Ordine-Android-debug
-          path: build-output/*
-          if-no-files-found: error
-          retention-days: 30
-
+          unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png$'
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher.png"
             unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher_round.png"
