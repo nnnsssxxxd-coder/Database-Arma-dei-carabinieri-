@@ -29,7 +29,7 @@ begin
  if a.completed_at is not null then raise exception 'Esame già consegnato' using errcode='23505'; end if;
  if a.started_at<now()-interval '20 minutes' then raise exception 'Esame scaduto' using errcode='22023'; end if;
  if a.service_branch='carabinieri' then v_max_rank:=23;
- elsif a.service_branch='finanza' then v_max_rank:=24;
+ elsif a.service_branch='finanza' then v_max_rank:=23;
  else raise exception 'Corpo non valido per l''esame' using errcode='22023';
  end if;
  select initial_rank into v_initial from public.profile_memberships
