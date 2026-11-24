@@ -2018,7 +2018,7 @@ function renderPatrolSession(){
   const allowedPhoto=/^https:\/\/(images\.unsplash\.com|upload\.wikimedia\.org|www\.aast\.edu|www\.ilrestodelcarlino\.it)\//i.test(photo);
   illustration.innerHTML=fallback+(allowedPhoto?'<img class="patrol-photo" src="'+esc(photo)+'" alt="Fotografia illustrativa dello scenario" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':"");
  }
- ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(b)b.disabled=(patrolSession.checked||[]).includes(id);});
+ ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=({documents:"01 · Documenti",vehicle:"02 · Veicolo",conduct:"03 · Condotta"})[id]+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
 async function startPatrolService(){
@@ -2040,7 +2040,7 @@ async function inspectPatrol(checkId){
  try{
   const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action:"inspect",service_branch:selectedBranch,session_id:patrolSession.id,check_id:checkId}});
   if(error||!data)throw new Error(data?.error||error?.message||"Verifica non disponibile.");
-  patrolSession.checked=data.completed_checks||patrolSession.checked||[];
+  patrolSession.checked=data.completed_checks||patrolSession.checked||[];patrolSession.checkStates={...(patrolSession.checkStates||{}),[checkId]:data.status||"ok"};
   $("patrolDetail-"+checkId).textContent=data.detail||"Verifica completata.";
   renderPatrolSession();
  }catch(e){btn.disabled=false;$("patrolMessage").textContent=e?.message||"Verifica non riuscita.";}
