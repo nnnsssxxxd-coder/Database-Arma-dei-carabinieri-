@@ -1620,9 +1620,12 @@ async function login(e){
    if(!/^[a-z0-9_-]{3,24}$/.test(name))throw new Error("Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.");
    const result=await db.functions.invoke("username-login",{body:{username:name,password,service_branch:selectedBranch}});
    if(result.error||!result.data?.session?.access_token||!result.data?.session?.refresh_token){
-    if(Number(result.error?.context?.status||result.error?.status)===429)throw new Error("Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.");
+    const status=Number(result.error?.context?.status||result.error?.status||0);
+    if(status===429)throw new Error("Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.");
     if(isTransientAuthError(result.error))throw new Error("Connessione temporaneamente non disponibile. Riprova tra poco.");
-    throw new Error("Nome utente o password non corretti. Verifica i dati e riprova.");
+    if(status>=500)throw new Error("Accesso temporaneamente non disponibile. Il server non ha completato la verifica. Riprova tra poco.");
+    if(status===401||status===403)throw new Error("Nome utente o password non corretti, oppure account non abilitato per il Corpo selezionato.");
+    throw new Error("Accesso non completato. Verifica il Corpo selezionato e riprova.");
    }
    loginStage="apertura sessione sicura";
    const session=await db.auth.setSession(result.data.session);
@@ -1656,7 +1659,7 @@ async function login(e){
   try{await db.auth.signOut({scope:"local"});}catch(signOutError){console.warn("Pulizia sessione dopo errore:",signOutError);}
   user=null;profile=null;departmentMembership=null;
   $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");
-  const safeMessages=["Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.","Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.","Connessione temporaneamente non disponibile. Riprova tra poco.","Email o password non corrette. Verifica i dati e riprova.","Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.","Nome utente o password non corretti. Verifica i dati e riprova.","Connessione instabile: riprova senza modificare la password.","Sessione non valida. Accedi di nuovo.","Accesso non completato: profilo autenticato non disponibile. Riprova.","Account sospeso o disattivato.","Account non abilitato per il Corpo selezionato. Contatta l’istruttore.","Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.","Account non configurato correttamente. Contatta l’istruttore.","Accesso temporaneamente non disponibile. Riprova."];
+  const safeMessages=["Troppi tentativi ravvicinati. Attendi qualche minuto e riprova.","Connessione temporaneamente non disponibile. La sessione salvata non è stata cancellata: riprova.","Connessione temporaneamente non disponibile. Riprova tra poco.","Email o password non corrette. Verifica i dati e riprova.","Nome utente non valido. Usa 3-24 caratteri: lettere, numeri, _ o -.","Nome utente o password non corretti. Verifica i dati e riprova.","Nome utente o password non corretti, oppure account non abilitato per il Corpo selezionato.","Accesso temporaneamente non disponibile. Il server non ha completato la verifica. Riprova tra poco.","Accesso non completato. Verifica il Corpo selezionato e riprova.","Connessione instabile: riprova senza modificare la password.","Sessione non valida. Accedi di nuovo.","Accesso non completato: profilo autenticato non disponibile. Riprova.","Account sospeso o disattivato.","Account non abilitato per il Corpo selezionato. Contatta l’istruttore.","Non è stato possibile verificare il profilo. Riprova o contatta l’istruttore.","Account non configurato correttamente. Contatta l’istruttore.","Accesso temporaneamente non disponibile. Riprova."];
   msg.textContent=safeMessages.includes(message)?message:"Accesso non completato durante: "+loginStage+". Aggiorna l’app e riprova; se persiste, comunica questa fase all’amministratore.";
   msg.className="small error";
  }finally{btn.disabled=false;loginInProgress=false;}
