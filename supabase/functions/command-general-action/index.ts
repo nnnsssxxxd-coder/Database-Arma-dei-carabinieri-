@@ -18,7 +18,7 @@ Deno.serve(async(req:Request)=>{
    if(re)throw re;
    const {data:progressRows,error:ge}=await db.from("progress").select("service_branch,payload").eq("user_id",user.id);if(ge)throw ge;
    const rankFor=(m:{initial_rank:number;service_branch:string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
-   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
+   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"||m.service_branch==="finanza")&&rankFor(m)===23);
    if(!stillEligible){
     const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;
     const {error:log}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event:"automatic_command_access_revoked",target_user_id:user.id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
