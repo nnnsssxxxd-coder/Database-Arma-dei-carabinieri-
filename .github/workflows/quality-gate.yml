@@ -211,11 +211,13 @@ jobs:
           const rules=fs.readFileSync('supabase/migrations/20261124190100_seed_vehicle_regulations_30.sql','utf8');
           const technical=fs.readFileSync('supabase/migrations/20261124190200_seed_vehicle_technical_40.sql','utf8');
           const engine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const balance=fs.readFileSync('supabase/migrations/20261124190300_balance_physics_answer_positions.sql','utf8');
           if((physics.match(/"prompt":/g)||[]).length!==44)throw new Error('Physics seed must contain 22 land and 22 naval source questions');
           if((rules.match(/"prompt":/g)||[]).length!==60)throw new Error('Regulations seed must contain 30 road and 30 COLREG questions');
           if((technical.match(/"prompt":/g)||[]).length!==80)throw new Error('Technical seed must contain 40 land and 40 naval system questions');
+          if(!balance.includes('array_position')||!balance.includes('md5('))throw new Error('Physics answer positions must be deterministically balanced');
           for(const vehicle of ['cc-subaru-crosstrek','cc-iveco-50c17-op','cc-defender-110','cc-jeep-wrangler','gdf-classe-monti','gdf-classe-di-bartolo','gdf-classe-bigliani-viii','gdf-bso-139']){
-            if(!physics.includes(vehicle)||!rules.includes(vehicle))throw new Error('Missing seed target '+vehicle);
+            if(!physics.includes(vehicle)||!rules.includes(vehicle)||!technical.includes(vehicle))throw new Error('Missing seed target '+vehicle);
           }
           if(!engine.includes('fisica ${bankCounts.physics}/30, tecniche ${bankCounts.technical}/40, normative ${bankCounts.regulations}/30'))throw new Error('Incomplete-bank progress message missing');
           const html=fs.readFileSync('index.html','utf8');
