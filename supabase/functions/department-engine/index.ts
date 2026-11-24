@@ -67,8 +67,8 @@ Deno.serve(async (req: Request) => {
        const rankRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
        if(rankRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
        const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankRow.data?.payload?.rank)||0);
-       const minimumRank=branch==="finanza"?2:2;
-       if(baseRank<minimumRank)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
+       const minimumRank=2;
+       const locked=baseRank<minimumRank;
        if(action==="vehicle_brevetto_status"){
          const [{data:catalog,error:catalogError},{data:chosen,error:chosenError}]=await Promise.all([
            db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain,description,source_url,sort_order").eq("service_branch",branch).eq("active",true).order("sort_order"),
@@ -79,8 +79,9 @@ Deno.serve(async (req: Request) => {
          if(cycleError)return reply(req,{error:"Impossibile caricare il ciclo del brevetto."},500);
          const completed=Number(cycle?.completed_attempts??0);
          const cooldownUntil=cycle?.cooldown_until??null;
-         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:Number(cycle?.cycle_number??1)});
+         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:Number(cycle?.cycle_number??1),locked,required_rank:minimumRank});
        }
+       if(locked)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_choose"){
          const vehicleId=String(body.vehicle_id??"");
          const {data:vehicle,error:vehicleError}=await db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain").eq("id",vehicleId).eq("service_branch",branch).eq("active",true).maybeSingle();
