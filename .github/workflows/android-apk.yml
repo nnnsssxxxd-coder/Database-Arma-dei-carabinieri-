@@ -97,15 +97,19 @@ jobs:
       - name: Sync web app
         run: npx cap sync android
 
-      - name: Apply verified launcher icon after Capacitor sync
+      - name: Apply adaptive and legacy launcher icons after Capacitor sync
         run: |
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
-          mkdir -p www
+          mkdir -p www android/app/src/main/res/drawable-nodpi android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/values
           rsvg-convert -w 192 -h 192 app-icon.svg -o www/app-icon-192.png
           rsvg-convert -w 512 -h 512 app-icon.svg -o www/app-icon-512.png
+          rsvg-convert -w 432 -h 432 app-icon-foreground.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          rsvg-convert -w 432 -h 432 app-icon-monochrome.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
           test -s www/app-icon-192.png
           test -s www/app-icon-512.png
+          test -s android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          test -s android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
           for spec in 'mdpi 48' 'hdpi 72' 'xhdpi 96' 'xxhdpi 144' 'xxxhdpi 192'; do
             set -- $spec
             density=$1
@@ -114,32 +118,43 @@ jobs:
             rsvg-convert -w "$size" -h "$size" app-icon.svg -o "android/app/src/main/res/mipmap-$density/ic_launcher.png"
             cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
           done
-          # Use complete opaque PNG launcher assets for broad launcher compatibility.
-          # Remove adaptive XML overrides so Motorola/Android launchers fall back to
-          # the density-specific PNG icons generated above.
-          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          cat > android/app/src/main/res/values/ic_launcher_background.xml <<'XML'
+          <resources>
+            <color name="ic_launcher_background">#080C12</color>
+          </resources>
+          XML
+          for name in ic_launcher ic_launcher_round; do
+            cat > "android/app/src/main/res/mipmap-anydpi-v26/$name.xml" <<'XML'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@color/ic_launcher_background" />
+            <foreground android:drawable="@drawable/ic_launcher_foreground" />
+            <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+          </adaptive-icon>
+          XML
+          done
           python3 - <<'PY'
           from pathlib import Path
           import re
           p=Path("android/app/src/main/AndroidManifest.xml")
           s=p.read_text()
-          match=re.search(r'<application\b[^>]*>', s)
+          match=re.search(r'<application\\b[^>]*>', s)
           if not match:
               raise SystemExit("Android application tag not found")
           tag=match.group(0)
           for attr in ("icon", "roundIcon", "label"):
-              tag=re.sub(r'\sandroid:'+attr+r'="[^"]*"', "", tag)
+              tag=re.sub(r'\\sandroid:'+attr+r'="[^"]*"', "", tag)
           tag=tag[:-1]+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Database Forze Ordine">'
           p.write_text(s[:match.start()]+tag+s[match.end():])
-          print("Launcher icon and app label assigned")
+          print("Adaptive, monochrome and legacy launcher icons assigned")
           PY
-          echo "Checking launcher icon resources and home-screen entry point"
-          test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            test -s "android/app/src/main/res/mipmap-$density/ic_launcher.png"
+            test -s "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
+          done
+          test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
-          test ! -e android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          test -s android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          test -s android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android/app/src/main/AndroidManifest.xml
       - name: Build debug APK
         working-directory: android
         timeout-minutes: 12
@@ -161,6 +176,10 @@ jobs:
           echo "$BADGING" | grep -F "application-icon-160:"
           echo "$BADGING" | grep -F "launchable-activity:"
           echo "$BADGING" | grep -F "application-label:'Database Forze Ordine'"
+          unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher.xml'
+          unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
+          unzip -l "$APK" | grep -F 'res/drawable-nodpi/ic_launcher_foreground.png'
+          unzip -l "$APK" | grep -F 'res/drawable-nodpi/ic_launcher_monochrome.png'
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
           sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
