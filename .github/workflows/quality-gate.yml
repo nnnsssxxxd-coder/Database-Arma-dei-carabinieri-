@@ -188,3 +188,24 @@ jobs:
 
           console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
           NODE
+
+      - name: Validate hardened patrol and brevetto safeguards
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const dept=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const patrol=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          const patrolMigration=fs.readFileSync('supabase/migrations/20261124235000_count_abandoned_patrol_sessions.sql','utf8');
+          for(const token of ['bankCounts.physics===30','bankCounts.technical===40','bankCounts.regulations===30','seenPrompts.size===100','source_note','duplicate_or_invalid_rows']){
+            if(!dept.includes(token))throw new Error('Brevetto bank validation missing: '+token);
+          }
+          for(const token of ['afterAbandon','completed_count??0)>=10','is("completed_at",null)']){
+            if(!patrol.includes(token))throw new Error('Patrol attempt guard missing: '+token);
+          }
+          if(patrolMigration.includes('new.chosen_action is not null'))throw new Error('Abandoned patrol sessions must consume an attempt');
+          for(const token of ['sc.vehicle_image_url','patrol-photo','onerror="this.remove()"']){
+            if(!html.includes(token))throw new Error('Patrol scene image fallback missing: '+token);
+          }
+          console.log('PASS: fail-closed 30/40/30 bank, duplicate/source checks, abandoned patrol counting and scene photo fallback');
+          NODE
