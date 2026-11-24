@@ -218,7 +218,7 @@ jobs:
             if(!physics.includes(vehicle)||!rules.includes(vehicle))throw new Error('Missing seed target '+vehicle);
           }
           if(!engine.includes('fisica ${bankCounts.physics}/30, tecniche ${bankCounts.technical}/40, normative ${bankCounts.regulations}/30'))throw new Error('Incomplete-bank progress message missing');
-          if(!engine.includes('bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40&&bankCounts.regulations===30'))throw new Error('Brevetto must remain blocked until exactly 30/40/30 questions are verified');
+          if(!/bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40&&\\s*bankCounts.regulations===30/.test(engine))throw new Error('Brevetto must remain blocked until exactly 30/40/30 questions are verified');
           console.log('PASS reproducible 30-question physics and 30-question regulation seed per vehicle, plus 40 technical questions, category progress and fail-closed guard');
           NODE
       - name: Validate maximum-grade command access parity
