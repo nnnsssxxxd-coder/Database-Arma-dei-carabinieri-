@@ -67,7 +67,7 @@ const VEHICLE_BREVETTO_QUESTIONS={
  ]
 };
 function shuffleQuestions(type:string){
- const source=VEHICLE_BREVETTO_QUESTIONS[type]||VEHICLE_BREVETTO_QUESTIONS.suv;
+ const source=VEHICLE_BREVETTO_QUESTIONS[type as keyof typeof VEHICLE_BREVETTO_QUESTIONS]||VEHICLE_BREVETTO_QUESTIONS.suv;
  const shuffled=[...source];
  for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
  return shuffled.slice(0,5);
