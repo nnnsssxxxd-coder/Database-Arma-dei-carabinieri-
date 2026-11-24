@@ -60,11 +60,11 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
-          const ids=[...html.matchAll(/\\bid=["']([^"']+)["']/g)].map(x=>x[1]);
+          const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
           const duplicates=[...new Set(ids.filter((id,i)=>ids.indexOf(id)!==i))];
           if(duplicates.length) throw new Error('Duplicate DOM IDs: '+duplicates.join(', '));
           const known=new Set(ids);
-          const refs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
+          const refs=[...html.matchAll(/\$\(["']([^"']+)["']\)/g)].map(x=>x[1]);
           const missing=[...new Set(refs.filter(id=>!known.has(id)))];
           if(missing.length) throw new Error('Missing DOM elements: '+missing.join(', '));
           if(html.includes('La sessione salvata non è stata cancellata')) throw new Error('Login recovery message contradicts the explicit prior-session cleanup');
