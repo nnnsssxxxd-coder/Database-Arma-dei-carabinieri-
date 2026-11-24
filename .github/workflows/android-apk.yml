@@ -150,6 +150,8 @@ jobs:
             mkdir -p "android/app/src/main/res/mipmap-$density"
             rsvg-convert -w "$size" -h "$size" app-icon.svg -o "android/app/src/main/res/mipmap-$density/ic_launcher.png"
             cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
+            cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_legacy.png"
+            cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_round_legacy.png"
           done
           cat > android/app/src/main/res/values/ic_launcher_background.xml <<'XML'
           <resources>
@@ -176,7 +178,7 @@ jobs:
           tag=match.group(0)
           for attr in ("icon", "roundIcon", "label"):
               tag=re.sub(r'\sandroid:'+attr+r'="[^"]*"', "", tag)
-          tag=tag[:-1]+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Database Forze Ordine">'
+          tag=tag[:-1]+' android:icon="@mipmap/ic_launcher_legacy" android:roundIcon="@mipmap/ic_launcher_round_legacy" android:label="Database Forze Ordine">'
           p.write_text(s[:match.start()]+tag+s[match.end():])
           activity=re.search(r'<activity\b[^>]*>', p.read_text())
           if not activity:
@@ -184,7 +186,7 @@ jobs:
           activity_tag=activity.group(0)
           activity_tag=re.sub(r'\sandroid:icon="[^"]*"', "", activity_tag)
           activity_tag=re.sub(r'\sandroid:label="[^"]*"', "", activity_tag)
-          activity_tag=activity_tag[:-1]+' android:icon="@mipmap/ic_launcher" android:label="Database Forze Ordine">'
+          activity_tag=activity_tag[:-1]+' android:icon="@mipmap/ic_launcher_legacy" android:label="Database Forze Ordine">'
           current=p.read_text()
           p.write_text(current[:activity.start()]+activity_tag+current[activity.end():])
           print("Adaptive, monochrome and legacy launcher icons assigned")
@@ -192,6 +194,8 @@ jobs:
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             test -s "android/app/src/main/res/mipmap-$density/ic_launcher.png"
             test -s "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
+            test -s "android/app/src/main/res/mipmap-$density/ic_launcher_legacy.png"
+            test -s "android/app/src/main/res/mipmap-$density/ic_launcher_round_legacy.png"
           done
           test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
@@ -200,8 +204,8 @@ jobs:
           grep -q '@color/ic_launcher_background' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           grep -q '@drawable/ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           grep -q '@drawable/ic_launcher_monochrome' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
-          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:icon="@mipmap/ic_launcher_legacy"' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round_legacy"' android/app/src/main/AndroidManifest.xml
       - name: Build debug APK
         working-directory: android
         timeout-minutes: 12
@@ -230,10 +234,12 @@ jobs:
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher.png$"
             unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher_round.png$"
+            unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher_legacy.png$"
+            unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher_round_legacy.png$"
           done
           unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_foreground.png'
           unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_monochrome.png'
-          echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Database Forze Ordine' icon='res/mipmap-anydpi-v26/ic_launcher.xml'"
+          echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Database Forze Ordine' icon='res/mipmap-mdpi-v4/ic_launcher_legacy.png'"
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
           sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
