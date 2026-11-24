@@ -207,6 +207,13 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
+            const match=html.match(new RegExp('const '+name+'=\\\\[([\\\\s\\\\S]*?)\\\\];'));
+            if(!match)throw new Error('Missing grade catalog '+name);
+            const labels=[...match[1].matchAll(/"[^"]+"/g)];
+            if(labels.length!==24)throw new Error(name+' must contain 24 grades, found '+labels.length);
+          }
           const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
           const action=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
           const ministry=fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8');
