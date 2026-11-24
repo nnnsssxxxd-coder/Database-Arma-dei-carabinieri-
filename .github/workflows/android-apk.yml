@@ -228,8 +228,8 @@ jobs:
           unzip -Z1 "$APK" | grep -E '/ic_launcher_foreground\.png$'
           unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png$'
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher.png"
-            unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher_round.png"
+            unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher.png$"
+            unzip -Z1 "$APK" | grep -E "res/mipmap-$density(-v4)?/ic_launcher_round.png$"
           done
           unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_foreground.png'
           unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_monochrome.png'
