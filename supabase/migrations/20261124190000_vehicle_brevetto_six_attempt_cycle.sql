@@ -106,7 +106,7 @@ begin
    and not (id=any(coalesce(v_cycle.used_question_ids,'{}'::uuid[])))
   order by random() limit 8
  ), ordered as (
-  select *,row_number() over () as ord from picked
+  select *,row_number() over (order by random()) as ord from picked
  )
  select array_agg(id order by ord),
   jsonb_agg(jsonb_build_array(prompt)||options||jsonb_build_array(correct_index,explanation,source_url) order by ord)
@@ -115,10 +115,6 @@ begin
   return jsonb_build_object('error','Domande nuove insufficienti per questa sessione. Contatta l’amministratore.',
    'available',coalesce(array_length(v_ids,1),0));
  end if;
- -- Consume selected questions at start so abandoned attempts cannot repeat them.
- update public.vehicle_brevetto_cycles
- set used_question_ids=array(select distinct qid from unnest(coalesce(used_question_ids,'{}'::uuid[])||v_ids) as qid),updated_at=now()
- where user_id=p_user_id and service_branch=p_service_branch;
  insert into public.department_vehicle_brevetto_attempts(user_id,service_branch,department_id,vehicle_id,questions,question_ids)
  values(p_user_id,p_service_branch,null,p_vehicle_id,v_questions,v_ids) returning * into v_attempt;
  return jsonb_build_object('attempt_id',v_attempt.id,'questions',v_questions,
