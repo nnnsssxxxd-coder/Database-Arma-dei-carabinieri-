@@ -180,7 +180,9 @@ jobs:
           for(const token of ['completed_attempts between 0 and 6',"interval '12 hours'","used_question_ids=array","jsonb_array_length(questions)=8","score <= 8"]){
             if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
           }
-          if(!build.includes('app-icon-foreground.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('application-icon-160:'))throw new Error('Android adaptive launcher icon is not verified');
+          const monochrome=fs.readFileSync('app-icon-monochrome.svg','utf8');
+          if(!build.includes('app-icon-foreground.svg')||!build.includes('app-icon-monochrome.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Android adaptive launcher icon and launchable activity must be verified');
+          if(!monochrome.includes('stroke="#fff"')||!build.includes('ic_launcher_monochrome'))throw new Error('Android themed launcher needs a dedicated monochrome icon');
           if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
           if(!html.includes('Controllo economico-finanziario')||!html.includes('Riferimento simulato: '))throw new Error('The Guardia di Finanza patrol UI must use its own terminology');
 
