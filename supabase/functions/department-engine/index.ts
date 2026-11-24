@@ -25,8 +25,8 @@ const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
 const DEPT_RANKS_BY_BRANCH = {
-  carabinieri: ["Operatore", "Operatore scelto", "Capo squadra", "Vice comandante di squadra", "Comandante di squadra", "Ufficiale di compagnia", "Vice comandante di reparto", "Comandante di reparto"],
-  finanza: ["Operatore specialista", "Operatore qualificato", "Capo pattuglia", "Vice responsabile di nucleo", "Responsabile di nucleo", "Ufficiale responsabile", "Vice comandante di reparto", "Comandante di reparto"]
+  carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
+  finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
 async function getUser(req: Request) {
@@ -269,7 +269,7 @@ Deno.serve(async (req: Request) => {
        }
        if(!attempt)return reply(req,{error:"Impossibile avviare l’esercitazione."},500);
       const {data:assigner}=exercise.assigned_by?await db.from("profiles").select("display_name,username").eq("id",exercise.assigned_by).maybeSingle():{data:null};
-      return reply(req,{attempt_id:attempt.id,title:exercise.title,assigned_by:{name:assigner?.display_name||assigner?.username||"Comandante di reparto",role:"Comandante di reparto"},questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
+      return reply(req,{attempt_id:attempt.id,title:exercise.title,assigned_by:{name:assigner?.display_name||assigner?.username||"Responsabile di reparto",role:"Responsabile di reparto"},questions,answers:attempt.answers??[],expires_at:new Date(new Date(attempt.started_at).getTime()+45*60*1000).toISOString()});
     }
     if (action === "exercise_submit") {
       if(isCommander) return reply(req,{error:"Il comandante non può svolgere test assegnati."},403);
