@@ -111,13 +111,24 @@ Deno.serve(async(req:Request)=>{
   if(pe||!profile?.active||profile.deleted) return reply(req,{error:"Account non attivo"},403);
   const {data:membership,error:me}=await db.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
   if(me||!membership) return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
+  if(body.action==="status") {
+    const {data:cycle,error}=await db.from("traffic_control_cycles").select("completed_count,cooldown_until").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(error)throw error;
+    return reply(req,{completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0)),cooldown_until:cycle?.cooldown_until??null});
+  }
   if(body.action==="start") {
-    await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
+    const {data:cycle,error:cycleError}=await db.from("traffic_control_cycles").select("completed_count,cooldown_until").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(cycleError)throw cycleError;
+    if(cycle?.cooldown_until && new Date(cycle.cooldown_until).getTime()>Date.now()) return reply(req,{error:"Hai completato le 10 prove. Il servizio sarà nuovamente disponibile tra 24 ore.",cooldown_until:cycle.cooldown_until,completed_count:10,remaining:0},429);
+    if(cycle?.cooldown_until && new Date(cycle.cooldown_until).getTime()<=Date.now()){
+      const {error:resetError}=await db.from("traffic_control_cycles").update({completed_count:0,cooldown_until:null,updated_at:new Date().toISOString()}).eq("user_id",user.id).eq("service_branch",branch);
+      if(resetError)throw resetError;
+    }
     const {data:openSession,error:openError}=await db.from("traffic_control_sessions").select("id").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
     if(openError)throw openError;
     // Una nuova apertura sostituisce il controllo rimasto in sospeso: non riproporre la stessa scena dopo aver riaperto l'app.
     if(openSession){const {error:abandonError}=await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("id",openSession.id).eq("user_id",user.id);if(abandonError)throw abandonError;}
-    const {data:recentSessions,error:recentError}=await db.from("traffic_control_sessions").select("scenario_id").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).order("started_at",{ascending:false}).limit(5);
+    const {data:recentSessions,error:recentError}=await db.from("traffic_control_sessions").select("scenario_id").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).order("started_at",{ascending:false}).limit(10);
     if(recentError)throw recentError;
     const recentIds=new Set((recentSessions??[]).map(row=>row.scenario_id));
     const freshPool=scenarioPool.filter(item=>!recentIds.has(item.id));
@@ -133,7 +144,7 @@ Deno.serve(async(req:Request)=>{
     const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
     const vehicleText=[scenario.vehicle,scenario.model].join(" ");
     const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[scenario.scene_type??""] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
-    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage},service_branch:branch},201);
+    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
   }
   if(body.action==="inspect") {
     const sessionId=String(body.session_id??"");
@@ -162,7 +173,9 @@ Deno.serve(async(req:Request)=>{
     const {data:finishedSession}=await db.from("traffic_control_sessions").select("scenario_id").eq("id",sessionId).eq("user_id",user.id).maybeSingle();
     const explanation=scenarioPool.find(item=>item.id===finishedSession?.scenario_id)?.explanation??"";
     const {data:progressRow}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
-    return reply(req,{...data,explanation,progress:progressRow?.payload??null});
+    const {data:cycle,error:cycleError}=await db.from("traffic_control_cycles").select("completed_count,cooldown_until").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(cycleError)throw cycleError;
+    return reply(req,{...data,explanation,progress:progressRow?.payload??null,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0)),cooldown_until:cycle?.cooldown_until??null});
   }
   return reply(req,{error:"Azione non riconosciuta"},400);
  } catch(error) {
