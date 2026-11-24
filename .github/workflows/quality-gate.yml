@@ -55,6 +55,21 @@ jobs:
           if(!n) throw new Error('No inline application scripts were checked');
           console.log('Checked '+n+' inline script(s)');
           NODE
+      - name: Validate DOM references and login recovery messages
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const ids=[...html.matchAll(/\\bid=["']([^"']+)["']/g)].map(x=>x[1]);
+          const duplicates=[...new Set(ids.filter((id,i)=>ids.indexOf(id)!==i))];
+          if(duplicates.length) throw new Error('Duplicate DOM IDs: '+duplicates.join(', '));
+          const known=new Set(ids);
+          const refs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
+          const missing=[...new Set(refs.filter(id=>!known.has(id)))];
+          if(missing.length) throw new Error('Missing DOM elements: '+missing.join(', '));
+          if(html.includes('La sessione salvata non è stata cancellata')) throw new Error('Login recovery message contradicts the explicit prior-session cleanup');
+          console.log('PASS '+ids.length+' unique DOM IDs and '+new Set(refs).size+' direct ID references');
+          NODE
       - name: Check branch isolation guards
         run: |
           node <<'NODE'
