@@ -176,18 +176,53 @@ Deno.serve(async(req:Request)=>{
   if(body.action==="inspect") {
     const sessionId=String(body.session_id??"");
     const checkId=String(body.check_id??"");
-    const checkIndex={documents:0,vehicle:1,conduct:2}[checkId];
-    if(!/^[0-9a-f-]{36}$/i.test(sessionId)||checkIndex===undefined) return reply(req,{error:"Verifica non valida"},400);
-    const {data:session,error:se}=await db.from("traffic_control_sessions").select("id,scenario_id,checks_completed,expires_at,completed_at").eq("id",sessionId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(!/^[0-9a-f-]{36}$/i.test(sessionId)||!["license","reports","inspection"].includes(checkId))
+      return reply(req,{error:"Verifica non valida"},400);
+    const {data:session,error:se}=await db.from("traffic_control_sessions")
+      .select("id,scenario_id,checks_completed,expires_at,completed_at")
+      .eq("id",sessionId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
     if(se||!session||session.completed_at) return reply(req,{error:"Sessione di controllo non valida"},404);
-    if(new Date(session.expires_at).getTime()<Date.now()) return reply(req,{error:"Tempo del controllo scaduto. Avvia un nuovo servizio."},410);
+    if(new Date(session.expires_at).getTime()<Date.now())
+      return reply(req,{error:"Tempo del controllo scaduto. Avvia un nuovo servizio."},410);
     const scenario=scenarioPool.find(item=>item.id===session.scenario_id);
     if(!scenario) return reply(req,{error:"Scenario non disponibile"},404);
     const completed=Array.isArray(session.checks_completed)?session.checks_completed:[];
     if(!completed.includes(checkId)) completed.push(checkId);
-    const {error:ue}=await db.from("traffic_control_sessions").update({checks_completed:completed}).eq("id",sessionId).eq("user_id",user.id);
+    const {error:ue}=await db.from("traffic_control_sessions").update({checks_completed:completed})
+      .eq("id",sessionId).eq("user_id",user.id);
     if(ue) throw ue;
-    const detail=scenario.clues[checkIndex]??"Verifica completata.";const lower=detail.toLowerCase();const uncertain=/da verificare|non ancora|possibile|parziale|incomplet|da acquisire|da confrontare|da approfondire|non definitivo/.test(lower);const negative=/mancant|non disponibile|non riesce a esibire|non esibit|non reperibil|assente|scadut|non emesso|non attiv|non funzionante|ostru|non assicurato|non coincide/.test(lower);const status=uncertain?"warning":negative?"bad":"ok";return reply(req,{check_id:checkId,detail,status,completed_checks:completed,all_checked:completed.length>=3});
+
+    const evidence=[String(scenario.situation??""),...(scenario.clues??[])].join(" ");
+    let detail="",status="ok";
+    if(checkId==="license"){
+      if(/senza patente|patente[^.]{0,45}(scadut|revocat|sospes|ritirat|non valida|assent)|patente non valida/i.test(evidence)){
+        detail="Patente non regolare: nella simulazione risulta un'anomalia da verificare prima di consentire la ripartenza.";
+        status="bad";
+      } else if(/patente[^.]{0,45}(non esibit|non disponibile|da verificare|non reperibil)|documento[^.]{0,35}(non disponibile|non esibit)/i.test(evidence)){
+        detail="Patente non ancora verificata: occorre acquisire il documento e completare il riscontro.";
+        status="warning";
+      } else {
+        detail="Patente verificata nella simulazione: valida e coerente con il veicolo.";
+      }
+    } else if(checkId==="reports"){
+      if(/segnalazion|furto|ricercat|alert|precedent|denuncia|corrispondenza sospett/i.test(evidence)){
+        detail="È presente un riferimento a una segnalazione recente o a una corrispondenza da approfondire. Verificare i dati con la banca dati simulata.";
+        status=/confermat|risulta rubat|segnalazione attiva/i.test(evidence)?"bad":"warning";
+      } else {
+        detail="Nessuna segnalazione recente risulta nella banca dati della simulazione.";
+      }
+    } else {
+      if(/arma|esplosiv|oggetto pericolos|sostanza stupefacent|materiale pericolos|carico non assicurato|oggetti instabili|rischio per gli altri utenti/i.test(evidence)){
+        detail="Controllo veicolo: rilevata una condizione o un elemento potenzialmente pericoloso. Mettere in sicurezza e approfondire il controllo.";
+        status="bad";
+      } else if(/sospett|anomalia[^.]{0,45}(carico|vano|sigillo)|non coincide|discordanza/i.test(evidence)){
+        detail="Controllo veicolo: anomalia da approfondire. Al momento non è confermata la presenza di un oggetto pericoloso.";
+        status="warning";
+      } else {
+        detail="Controllo veicolo completato: nessun oggetto pericoloso rilevato nella simulazione.";
+      }
+    }
+    return reply(req,{check_id:checkId,detail,status,completed_checks:completed,all_checked:completed.length>=3});
   }
   if(body.action==="finish") {
     const sessionId=String(body.session_id??"");
@@ -201,8 +236,9 @@ Deno.serve(async(req:Request)=>{
     const explanation=scenarioPool.find(item=>item.id===finishedSession?.scenario_id)?.explanation??"";
     const {data:progressRow}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
     const {data:cycle,error:cycleError}=await db.from("traffic_control_cycles").select("completed_count,cooldown_until").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
-    if(cycleError)throw cycleError;
-    return reply(req,{...data,explanation,progress:progressRow?.payload??null,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0)),cooldown_until:cycle?.cooldown_until??null});
+    return reply(req,{...data,explanation,progress:progressRow?.payload??data.progress??null,
+      completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0)),
+      cooldown_until:cycle?.cooldown_until??null,cycle_summary_available:!cycleError});
   }
   return reply(req,{error:"Azione non riconosciuta"},400);
  } catch(error) {
