@@ -287,6 +287,7 @@ jobs:
           const cycle=fs.readFileSync('supabase/migrations/20261124190000_vehicle_brevetto_six_attempt_cycle.sql','utf8');
           if(!brevetto.includes('const cooldownExpired=!!storedCooldown&&Date.parse(storedCooldown)<=Date.now()'))throw new Error('Expired brevetto cooldown must be presented as available in status');
           if(!brevetto.includes('attempts_remaining:Math.max(0,6-completed)'))throw new Error('Brevetto status must return authoritative remaining attempts');
+          if(!brevetto.includes('const status=started.cooldown_until?200:'))throw new Error('Cooldown response must preserve its body so the client can render the 12-hour timer');
           if(!html.includes('Quiz completati: "+vehicleBrevettoAttemptsCompleted+" / 6'))throw new Error('Brevetto progress counter missing');
           if(html.includes('Ciclo ripristinato. Puoi iniziare una nuova prova.'))throw new Error('Remove repeated red cycle-reset message');
           if(html.includes('#vehicleBrevettoAttempts{display:none!important}'))throw new Error('Brevetto attempts counter must be visible');
