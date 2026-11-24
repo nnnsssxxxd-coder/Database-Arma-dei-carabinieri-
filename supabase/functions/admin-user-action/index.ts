@@ -59,6 +59,10 @@ Deno.serve(async(req)=>{
   }else{
    const {error}=await db.from("profile_memberships").update({active:action==="reactivate"}).eq("user_id",userId).eq("service_branch",branch);if(error)throw error;
   }
+  const {count:activeMembershipCount,error:membershipCountError}=await db.from("profile_memberships").select("user_id",{count:"exact",head:true}).eq("user_id",userId).eq("active",true);
+  if(membershipCountError)throw membershipCountError;
+  const {error:profileStatusError}=await db.from("profiles").update({active:(activeMembershipCount??0)>0}).eq("id",userId);
+  if(profileStatusError)throw profileStatusError;
   const event=action==="suspend"?"account_suspended":action==="reactivate"?"account_reactivated":"account_removed";
   const {error:auditError}=await db.from("audit_logs").insert({actor_id:user.id,actor_username:admin.username,event,service_branch:branch,details:{username:target.username,service_branch:branch}});
   if(auditError)console.error("audit user action",auditError.message);
