@@ -55,7 +55,7 @@ jobs:
       - name: Prepare app web assets
         run: |
           mkdir -p www
-          cp index.html manifest.webmanifest app-icon.svg app-hero.svg service-worker.js www/
+          cp index.html manifest.webmanifest app-icon.svg app-icon-foreground.svg app-icon-monochrome.svg app-hero.svg service-worker.js www/
           test -s www/index.html
           test -s www/manifest.webmanifest
           test -s www/service-worker.js
@@ -102,7 +102,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
           mkdir -p www
+          rsvg-convert -w 192 -h 192 app-icon.svg -o www/app-icon-192.png
           rsvg-convert -w 512 -h 512 app-icon.svg -o www/app-icon-512.png
+          test -s www/app-icon-192.png
+          test -s www/app-icon-512.png
           for spec in 'mdpi 48' 'hdpi 72' 'xhdpi 96' 'xxhdpi 144' 'xxxhdpi 192'; do
             set -- $spec
             density=$1
