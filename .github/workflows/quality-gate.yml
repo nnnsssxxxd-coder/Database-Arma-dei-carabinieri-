@@ -256,7 +256,7 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
           const migration=fs.readFileSync('supabase/migrations/20261124235000_reward_patrol_exp_only_when_correct.sql','utf8');
-          const declared=[...html.matchAll(/(?:async\\s+)?function\\s+([A-Za-z_$][\\w$]*)\\s*\\(/g)].map(match=>match[1]);
+          const declared=[...html.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(match=>match[1]);
           const duplicates=declared.filter((name,index)=>declared.indexOf(name)!==index);
           if(duplicates.length)throw new Error('Duplicate function declarations in app: '+[...new Set(duplicates)].join(', '));
           const build=fs.readFileSync('.github/workflows/android-apk.yml','utf8');
