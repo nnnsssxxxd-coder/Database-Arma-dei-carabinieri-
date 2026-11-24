@@ -48,7 +48,7 @@ Deno.serve(async(req)=>{
   if(!Number.isInteger(initial_rank)||initial_rank<0||initial_rank>maxRank)return reply(req,{error:"Grado non valido per il Corpo selezionato (indice 0-"+maxRank+").",field:"initial_rank"},400);
   const {data:creatorMembership,error:cm}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();if(cm)throw cm;if(!creatorMembership||!["istruttore","admin"].includes(creatorMembership.role))return reply(req,{error:"La creazione è riservata agli amministratori e agli istruttori attivi del Corpo selezionato."},403);
   const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return reply(req,{error:"Username già utilizzato."},409);
-  const email=username+"@login.simulatore.invalid";
+  const email=username+"@account.databaseforzeordine.invalid";
   const {data:created,error:createError}=await db.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username,display_name}});
   if(createError||!created?.user){const duplicate=/already|exists|registered/i.test(createError?.message??"");return reply(req,{error:duplicate?"Username già utilizzato.":(createError?.message??"Creazione account non riuscita.")},duplicate?409:400);}
   const uid=created.user.id;
