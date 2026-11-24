@@ -151,6 +151,7 @@ jobs:
           const html=fs.readFileSync('index.html','utf8');
           const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
           const brevetto=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const traffic=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
           const migration=fs.readFileSync('supabase/migrations/20261124190000_vehicle_brevetto_six_attempt_cycle.sql','utf8');
           const build=fs.readFileSync('.github/workflows/android-apk.yml','utf8');
           function ranks(name){
@@ -172,6 +173,9 @@ jobs:
             if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
           }
           if(!build.includes('app-icon-foreground.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('application-icon-160:'))throw new Error('Android adaptive launcher icon is not verified');
+          if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
+          if(!html.includes('Controllo economico-finanziario')||!html.includes('Riferimento simulato: '))throw new Error('The Guardia di Finanza patrol UI must use its own terminology');
+
           console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and adaptive APK icon');
           const dollarArgs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
           if(dollarArgs.some(x=>x.startsWith('.')||x.startsWith('#')||x.startsWith('['))) throw new Error('The ID helper $() must not receive CSS selectors; use querySelector instead');
