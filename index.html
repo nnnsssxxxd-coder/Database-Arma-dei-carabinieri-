@@ -1012,8 +1012,9 @@ html[data-service="carabinieri"] .traffic-branch-chip{border-color:#7a9bb7;color
 #vehicleBrevettoQuizSetup>p{font-size:1rem;line-height:1.55}
 #vehicleBrevettoIllustration{margin:18px 0 20px;min-height:150px;background:#0c1720}
 #vehicleBrevettoIllustration svg{filter:drop-shadow(0 8px 18px #0006)}
-#patrolIllustration{background:#0c1720;min-height:180px}
+#patrolIllustration{background:#0c1720;min-height:180px;position:relative}
 #patrolIllustration svg{filter:drop-shadow(0 8px 18px #0007)}
+#patrolIllustration .patrol-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
 #patrolSituation{padding:14px 15px;border:1px solid #344b59;border-radius:14px;background:linear-gradient(145deg,#162531,#0b1219)}
 #patrolResult{border:1px solid #536a77;border-radius:16px;background:linear-gradient(145deg,#152531,#0b1219);padding:16px}
 .vehicle-fact-sheet{margin-top:12px;padding:14px;border:1px solid #526b7a;border-radius:14px;background:linear-gradient(145deg,#142531,#0b131a)}.vehicle-fact-sheet .eyebrow{font-size:.72rem;letter-spacing:.09em;color:var(--gold2);font-weight:800}.vehicle-fact-sheet strong{display:block;margin:7px 0}.vehicle-fact-sheet ul{margin:8px 0 12px;padding-left:20px}.vehicle-fact-sheet li{margin:6px 0;line-height:1.45}.vehicle-fact-sheet a{font-size:.82rem;color:var(--gold2);text-decoration:underline}
@@ -1983,7 +1984,13 @@ function renderPatrolSession(){
  const sc=patrolSession.scenario||{};
  $("patrolVehicle").textContent=sc.vehicle||"Veicolo";$("patrolPlate").textContent=(selectedBranch==="finanza"?"Riferimento simulato: ":"Targa simulata: ")+(sc.plate||"—");
  $("patrolDriver").textContent=(selectedBranch==="finanza"?"Referente: ":"Conducente: ")+(sc.driver||"—");$("patrolModel").textContent=sc.model||"Controllo";
- $("patrolSituation").textContent=sc.situation||"";const illustration=$("patrolIllustration");if(illustration){const scene=patrolSceneType(sc);illustration.innerHTML=svgScene(scene,"SCENA OPERATIVA",sc.model||"Controllo simulato",sc.situation||"");}
+ $("patrolSituation").textContent=sc.situation||"";const illustration=$("patrolIllustration");if(illustration){
+  const scene=patrolSceneType(sc);
+  const fallback=svgScene(scene,"SCENA OPERATIVA",sc.model||"Controllo simulato",sc.situation||"");
+  const photo=String(sc.vehicle_image_url||"");
+  const allowedPhoto=/^https:\/\/(images\.unsplash\.com|upload\.wikimedia\.org|www\.aast\.edu|www\.ilrestodelcarlino\.it)\//i.test(photo);
+  illustration.innerHTML=fallback+(allowedPhoto?'<img class="patrol-photo" src="'+esc(photo)+'" alt="Fotografia illustrativa dello scenario" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':"");
+ }
  ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(b)b.disabled=(patrolSession.checked||[]).includes(id);});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
