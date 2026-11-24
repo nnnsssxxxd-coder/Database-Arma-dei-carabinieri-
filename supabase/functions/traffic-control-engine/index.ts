@@ -136,7 +136,25 @@ Deno.serve(async(req:Request)=>{
     const {data:openSession,error:openError}=await db.from("traffic_control_sessions").select("id").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
     if(openError)throw openError;
     // Una nuova apertura sostituisce il controllo rimasto in sospeso: non riproporre la stessa scena dopo aver riaperto l'app.
-    if(openSession){const {error:abandonError}=await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("id",openSession.id).eq("user_id",user.id);if(abandonError)throw abandonError;}
+    if(openSession){
+      const {error:abandonError}=await db.from("traffic_control_sessions")
+        .update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0})
+        .eq("id",openSession.id).eq("user_id",user.id).is("completed_at",null);
+      if(abandonError)throw abandonError;
+      // Closing an unfinished session increments the cycle through the DB trigger.
+      // Re-read the authoritative counter before creating another session.
+      const {data:afterAbandon,error:afterAbandonError}=await db.from("traffic_control_cycles")
+        .select("completed_count,cooldown_until")
+        .eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+      if(afterAbandonError)throw afterAbandonError;
+      if(Number(afterAbandon?.completed_count??0)>=10||
+        (afterAbandon?.cooldown_until&&new Date(afterAbandon.cooldown_until).getTime()>Date.now())){
+        return reply(req,{
+          error:"Hai completato le 10 prove. Il servizio sarà nuovamente disponibile tra 24 ore.",
+          cooldown_until:afterAbandon?.cooldown_until??null,completed_count:10,remaining:0
+        },429);
+      }
+    }
     const {data:recentSessions,error:recentError}=await db.from("traffic_control_sessions").select("scenario_id").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).order("started_at",{ascending:false}).limit(10);
     if(recentError)throw recentError;
     const recentIds=new Set((recentSessions??[]).map(row=>row.scenario_id));
