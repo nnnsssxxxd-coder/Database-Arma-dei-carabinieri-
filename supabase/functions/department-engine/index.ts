@@ -131,7 +131,13 @@ Deno.serve(async (req: Request) => {
     }
     const membership = await getMembership(user.id, branch);
     if (!membership) return reply(req,{ error: "Non hai ancora scelto un reparto." }, 403);
+    const rankGateRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+    if(rankGateRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
+    const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankGateRow.data?.payload?.rank)||0);
+    const brevettoMinimumRank=branch==="finanza"?3:2;
+    const brevettoEligible=baseRank>=brevettoMinimumRank;
     if (action === "vehicle_brevetto_status") {
+      if(!brevettoEligible)return reply(req,{brevetto:null,locked:true,required_rank:brevettoMinimumRank},403);
       const { data, error } = await db.from("department_vehicle_brevetti")
         .select("department_id,vehicle_id,vehicle_name,vehicle_type,selected_at")
         .eq("user_id", user.id).eq("service_branch", branch).maybeSingle();
@@ -140,6 +146,7 @@ Deno.serve(async (req: Request) => {
       return reply(req,{brevetto:data ?? null});
     }
     if (action === "vehicle_brevetto_choose") {
+      if(!brevettoEligible)return reply(req,{error:"La scelta del brevetto si sblocca dal grado di Appuntato."},403);
       const vehicleId=String(body.vehicle_id ?? "");
       const vehicleName=String(body.vehicle_name ?? "").trim();
       const vehicleType=String(body.vehicle_type ?? "");
@@ -161,6 +168,7 @@ Deno.serve(async (req: Request) => {
       return reply(req,{brevetto:saved},201);
     }
     if (action === "vehicle_brevetto_start") {
+      if(!brevettoEligible)return reply(req,{error:"Il Quiz Brevetto si sblocca dal grado di Appuntato."},403);
       const {data: selected,error:selectedError}=await db.from("department_vehicle_brevetti")
         .select("department_id,vehicle_id,vehicle_type").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
       if(selectedError)return reply(req,{error:"Impossibile verificare il brevetto selezionato."},500);
@@ -185,7 +193,7 @@ Deno.serve(async (req: Request) => {
         return reply(req,{error:"Risposte del brevetto non valide."},400);
       const {data,error:resultError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
       if(resultError){const message=resultError.message||"";const code=message.includes("già consegnato")?409:message.includes("scaduta")?410:400;return reply(req,{error:message.includes("già consegnato")?"Questo Quiz Brevetto è già stato consegnato.":message.includes("scaduta")?"Il tempo del Quiz Brevetto è scaduto.":"Impossibile registrare il risultato del brevetto."},code);}
-      return reply(req,{...data,membership:await getMembership(user.id,branch)});
+      return reply(req,data);
     }
     const isCommander = membership.is_commander === true;
     const commandExamReady = Number(membership.rank) === 6 && Number(membership.exp) >= 2100 && !isCommander;
