@@ -145,6 +145,14 @@ jobs:
               tag=re.sub(r'\sandroid:'+attr+r'="[^"]*"', "", tag)
           tag=tag[:-1]+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Database Forze Ordine">'
           p.write_text(s[:match.start()]+tag+s[match.end():])
+          activity=re.search(r'<activity\b[^>]*>', p.read_text())
+          if not activity:
+              raise SystemExit("Android launcher activity not found")
+          activity_tag=activity.group(0)
+          activity_tag=re.sub(r'\sandroid:icon="[^"]*"', "", activity_tag)
+          activity_tag=activity_tag[:-1]+' android:icon="@mipmap/ic_launcher">'
+          current=p.read_text()
+          p.write_text(current[:activity.start()]+activity_tag+current[activity.end():])
           print("Adaptive, monochrome and legacy launcher icons assigned")
           PY
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
@@ -178,8 +186,9 @@ jobs:
           echo "$BADGING" | grep -F "application-label:'Database Forze Ordine'"
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher.xml'
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
-          unzip -l "$APK" | grep -F 'res/drawable-nodpi/ic_launcher_foreground.png'
-          unzip -l "$APK" | grep -F 'res/drawable-nodpi/ic_launcher_monochrome.png'
+          unzip -Z1 "$APK" | grep -E '/ic_launcher_foreground\.png$'
+          unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png$'
+          echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Forze Ordine' icon='res/mipmap-anydpi-v26/ic_launcher.xml'"
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
           sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
