@@ -16,6 +16,13 @@ alter table public.department_vehicle_brevetto_attempts
   add constraint department_vehicle_brevetto_attempts_score_check
   check (score is null or (score >= 0 and score <= 8));
 
+-- Catalog entries use land/naval domains; retain legacy aliases for older rows.
+alter table public.department_vehicle_brevetti
+  drop constraint if exists department_vehicle_brevetti_vehicle_type_check;
+alter table public.department_vehicle_brevetti
+  add constraint department_vehicle_brevetti_vehicle_type_check
+  check (vehicle_type = any(array['4x4','suv','van','berlina','barca','moto','land','naval']::text[]));
+
 create table if not exists public.vehicle_brevetto_cycles (
   user_id uuid not null,
   service_branch text not null check (service_branch in ('carabinieri','finanza')),
