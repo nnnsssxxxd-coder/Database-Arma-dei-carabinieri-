@@ -144,11 +144,36 @@ Deno.serve(async (req: Request) => {
          const attemptId=String(body.attempt_id??""),answers=body.answers;
          if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==8||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3))return reply(req,{error:"Il quiz richiede 8 risposte valide."},400);
          const {data,error:submitError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
-         if(submitError){const message=String(submitError.message||"");const code=message.includes("già consegnato")?409:message.includes("scaduta")?410:400;return reply(req,{error:message.includes("già consegnato")?"Quiz già consegnato.":message.includes("scaduta")?"Tempo del quiz scaduto.":"Impossibile registrare il risultato del brevetto."},code);}
-         const {data:cycle,error:cycleError}=await db.from("vehicle_brevetto_cycles").select("completed_attempts,cooldown_until,cycle_number").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
-         if(cycleError)return reply(req,{error:"Risultato salvato, ma impossibile leggere il riepilogo del ciclo."},500);
+         let result=data;
+         if(submitError){
+           // Recover a committed result after a lost HTTP response; never award twice.
+           if(submitError.code==="23505"){
+             const {data:prior,error:priorError}=await db.from("department_vehicle_brevetto_attempts")
+               .select("answers,score,exp_awarded,completed_at")
+               .eq("id",attemptId).eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+             if(!priorError&&prior?.completed_at&&JSON.stringify(prior.answers)===JSON.stringify(answers)){
+               const {data:progressRow}=await db.from("progress").select("payload")
+                 .eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+               result={score:Number(prior.score)||0,total:8,passed:Number(prior.score)>=6,
+                 exp_awarded:Number(prior.exp_awarded)||0,progress:progressRow?.payload??null,
+                 already_completed:true};
+             } else {
+               return reply(req,{error:"Questo tentativo è già stato consegnato con risposte diverse."},409);
+             }
+           } else {
+             const message=String(submitError.message||"");
+             const code=message.includes("scaduta")?410:message.includes("non trovato")?404:400;
+             return reply(req,{error:message.includes("scaduta")?"Tempo del quiz scaduto.":message.includes("non trovato")?"Sessione brevetto non trovata.":"Impossibile registrare il risultato del brevetto.",detail:message,code:submitError.code??null},code);
+           }
+         }
+         if(!result)return reply(req,{error:"Il database non ha restituito l'esito del brevetto."},502);
+         const {data:cycle,error:cycleError}=await db.from("vehicle_brevetto_cycles")
+           .select("completed_attempts,cooldown_until,cycle_number")
+           .eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          const completed=Number(cycle?.completed_attempts??0);
-         return reply(req,{...data,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cooldown_until:cycle?.cooldown_until??null,cycle_number:Number(cycle?.cycle_number??1)});
+         return reply(req,{...result,attempts_completed:completed,
+           attempts_remaining:Math.max(0,6-completed),cooldown_until:cycle?.cooldown_until??null,
+           cycle_number:Number(cycle?.cycle_number??1),cycle_summary_available:!cycleError});
        }
      }
     if (action === "catalog") {
