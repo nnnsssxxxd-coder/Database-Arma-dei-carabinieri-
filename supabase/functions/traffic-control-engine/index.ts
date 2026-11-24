@@ -72,8 +72,10 @@ Deno.serve(async(req:Request)=>{
   if(me||!membership) return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
   if(body.action==="start") {
     await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).lt("expires_at",new Date().toISOString());
-    const {data:openSession}=await db.from("traffic_control_sessions").select("id,scenario_id,expires_at,checks_completed").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
-    if(openSession){const existing=scenarioPool.find(item=>item.id===openSession.scenario_id);if(existing){const {action:existingAnswer,clues:privateClues,explanation:privateExplanation,...publicExisting}=existing;return reply(req,{session_id:openSession.id,expires_at:openSession.expires_at,checks_completed:openSession.checks_completed??[],scenario:publicExisting,service_branch:branch,resumed:true},200);}}
+    const {data:openSession,error:openError}=await db.from("traffic_control_sessions").select("id").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
+    if(openError)throw openError;
+    // Una nuova apertura sostituisce il controllo rimasto in sospeso: non riproporre la stessa scena dopo aver riaperto l'app.
+    if(openSession){const {error:abandonError}=await db.from("traffic_control_sessions").update({completed_at:new Date().toISOString(),is_correct:false,exp_awarded:0}).eq("id",openSession.id).eq("user_id",user.id);if(abandonError)throw abandonError;}
     const {data:recentSessions,error:recentError}=await db.from("traffic_control_sessions").select("scenario_id").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).order("started_at",{ascending:false}).limit(5);
     if(recentError)throw recentError;
     const recentIds=new Set((recentSessions??[]).map(row=>row.scenario_id));
