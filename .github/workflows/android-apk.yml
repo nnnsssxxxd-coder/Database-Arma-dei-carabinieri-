@@ -97,6 +97,21 @@ jobs:
       - name: Sync web app
         run: npx cap sync android
 
+      - name: Validate launcher icon source assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for name in ("app-icon.svg", "app-icon-foreground.svg", "app-icon-monochrome.svg"):
+              path = Path(name)
+              if not path.is_file() or path.stat().st_size < 100:
+                  raise SystemExit(f"Launcher icon source missing or empty: {name}")
+              root = ET.parse(path).getroot()
+              if root.tag.split("}")[-1] != "svg" or not root.attrib.get("viewBox"):
+                  raise SystemExit(f"Invalid SVG launcher source: {name}")
+              print(f"Validated {name}: {root.attrib.get('viewBox')}")
+          PY
+
       - name: Apply adaptive and legacy launcher icons after Capacitor sync
         run: |
           sudo apt-get update
@@ -110,6 +125,24 @@ jobs:
           test -s www/app-icon-512.png
           test -s android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
           test -s android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          checks = {
+              "www/app-icon-192.png": (192, 192),
+              "www/app-icon-512.png": (512, 512),
+              "android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png": (432, 432),
+              "android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png": (432, 432),
+          }
+          for filename, expected in checks.items():
+              data = Path(filename).read_bytes()
+              if data[:8] != bytes([137, 80, 78, 71, 13, 10, 26, 10]):
+                  raise SystemExit(f"Not a valid PNG: {filename}")
+              width, height = struct.unpack(">II", data[16:24])
+              if (width, height) != expected or len(data) < 1000:
+                  raise SystemExit(f"Invalid icon image: {filename} ({width}x{height})")
+              print(f"Verified {filename}: {width}x{height}")
+          PY
           for spec in 'mdpi 48' 'hdpi 72' 'xhdpi 96' 'xxhdpi 144' 'xxxhdpi 192'; do
             set -- $spec
             density=$1
@@ -162,6 +195,11 @@ jobs:
           done
           test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           test -s android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          grep -q '@drawable/ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          grep -q '@drawable/ic_launcher_monochrome' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          grep -q '@color/ic_launcher_background' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          grep -q '@drawable/ic_launcher_foreground' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          grep -q '@drawable/ic_launcher_monochrome' android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
           grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android/app/src/main/AndroidManifest.xml
       - name: Build debug APK
@@ -188,7 +226,31 @@ jobs:
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher.xml'
           unzip -l "$APK" | grep -F 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
           unzip -Z1 "$APK" | grep -E '/ic_launcher_foreground\.png$'
-          unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png$'
+          unzip -Z1 "$APK" | grep -E '/ic_launcher_monochrome\.png          echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Database Forze Ordine' icon='res/mipmap-anydpi-v26/ic_launcher.xml'"
+          mkdir -p build-output
+          cp "$APK" build-output/Database-Forze-Ordine-debug.apk
+          sha256sum build-output/Database-Forze-Ordine-debug.apk | tee build-output/SHA256SUMS.txt
+          {
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Build: ${GITHUB_RUN_NUMBER}"
+            echo "Type: debug APK (not a production-signed release)"
+            echo "Application ID: it.databaseforzeordine.app"
+          } > build-output/BUILD-INFO.txt
+
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Database-Forze-Ordine-Android-debug
+          path: build-output/*
+          if-no-files-found: error
+          retention-days: 30
+
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher.png"
+            unzip -Z1 "$APK" | grep -F "res/mipmap-$density/ic_launcher_round.png"
+          done
+          unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_foreground.png'
+          unzip -Z1 "$APK" | grep -F 'res/drawable-nodpi-v4/ic_launcher_monochrome.png'
           echo "$BADGING" | grep -F "launchable-activity: name='it.databaseforzeordine.app.MainActivity'  label='Database Forze Ordine' icon='res/mipmap-anydpi-v26/ic_launcher.xml'"
           mkdir -p build-output
           cp "$APK" build-output/Database-Forze-Ordine-debug.apk
