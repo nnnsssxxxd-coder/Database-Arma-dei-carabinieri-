@@ -114,23 +114,10 @@ jobs:
             rsvg-convert -w "$size" -h "$size" app-icon.svg -o "android/app/src/main/res/mipmap-$density/ic_launcher.png"
             cp "android/app/src/main/res/mipmap-$density/ic_launcher.png" "android/app/src/main/res/mipmap-$density/ic_launcher_round.png"
           done
-          # Adaptive launcher icon for Android 8+.
-          mkdir -p android/app/src/main/res/mipmap-anydpi-v26 android/app/src/main/res/drawable-nodpi android/app/src/main/res/values
-          test -s app-icon-foreground.svg
-          test -s app-icon-monochrome.svg
-          rsvg-convert -w 432 -h 432 app-icon-foreground.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
-          rsvg-convert -w 432 -h 432 app-icon-monochrome.svg -o android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
-          cat > android/app/src/main/res/values/ic_launcher_background.xml <<'EOF'
-          <resources><color name="ic_launcher_background">#111820</color></resources>
-          EOF
-          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-            <background android:drawable="@color/ic_launcher_background" />
-            <foreground android:drawable="@drawable/ic_launcher_foreground" />
-            <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
-          </adaptive-icon>
-          EOF
-          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          # Use complete opaque PNG launcher assets for broad launcher compatibility.
+          # Remove adaptive XML overrides so Motorola/Android launchers fall back to
+          # the density-specific PNG icons generated above.
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -148,9 +135,11 @@ jobs:
           PY
           echo "Checking launcher icon resources and home-screen entry point"
           test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          test -s android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
-          test -s android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
           grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
+          test ! -e android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -s android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          test -s android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
       - name: Build debug APK
         working-directory: android
         timeout-minutes: 12
