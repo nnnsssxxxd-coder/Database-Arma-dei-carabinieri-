@@ -29,6 +29,50 @@ const DEPT_RANKS_BY_BRANCH = {
   finanza: ["Operatore specialista", "Operatore qualificato", "Capo pattuglia", "Vice responsabile di nucleo", "Responsabile di nucleo", "Ufficiale responsabile", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
+const VEHICLE_BREVETTO_QUESTIONS={
+ "4x4":[
+  ["Prima di affrontare un percorso sconnesso in una simulazione, cosa va controllato?","Pressione e stato degli pneumatici, carico e condizioni del percorso","Solo il colore del veicolo","Solo il livello del carburante","La radio del passeggero",0,"Pneumatici, carico e percorso influenzano stabilità e aderenza."],
+  ["Quando si usa una modalità di trazione specifica prevista dal costruttore?","Solo secondo manuale e condizioni del fondo","Sempre su asfalto asciutto","Mai, anche quando il manuale la prevede","A veicolo in movimento senza verifiche",0,"Le modalità di trazione vanno selezionate secondo manuale e fondo."],
+  ["Su fondo a bassa aderenza, quale comportamento è più sicuro?","Comandi progressivi e velocità adeguata","Sterzate brusche","Frenate improvvise ripetute","Accelerazioni massime",0,"Comandi progressivi riducono la perdita di aderenza."],
+  ["Se compare una spia rossa di anomalia durante la marcia, cosa si fa?","Fermarsi in sicurezza e seguire il manuale","Ignorarla fino al termine","Aumentare la velocità","Disattivare il quadro strumenti",0,"Una spia rossa richiede arresto sicuro e verifica."],
+  ["Come va distribuito il carico nel vano?","Basso, stabile e senza superare i limiti indicati","Tutto sul tetto senza fissaggi","Solo su un lato","Libero di muoversi",0,"Un carico basso e fissato limita gli spostamenti e preserva la stabilità."]
+ ],
+ "suv":[
+  ["Qual è il controllo preliminare essenziale prima del servizio?","Pneumatici, luci, freni, fluidi e documentazione del mezzo","Solo la pulizia esterna","Solo il sistema audio","Solo il colore della carrozzeria",0,"Il controllo pre-uso comprende i principali sistemi di sicurezza e la documentazione."],
+  ["Come si affronta una curva con un SUV carico?","Velocità moderata e traiettoria regolare","Sterzata brusca all'ultimo","Frenata forte a metà curva","Accelerazione improvvisa",0,"Baricentro e carico richiedono guida fluida e velocità prudente."],
+  ["Cosa aumenta il rischio di ribaltamento?","Baricentro alto, velocità e manovre brusche","Pneumatici corretti","Carico fissato in basso","Velocità adeguata",0,"SUV e veicoli alti risentono maggiormente delle manovre brusche."],
+  ["In caso di aquaplaning, qual è la reazione corretta?","Rilasciare gradualmente l'acceleratore ed evitare manovre brusche","Sterzare rapidamente","Frenare con forza","Accelerare a fondo",0,"La perdita di contatto richiede calma e riduzione progressiva degli input."],
+  ["Come si verifica la corretta pressione degli pneumatici?","A freddo, secondo i valori del costruttore","A occhio dopo un lungo viaggio","Usando sempre il valore massimo sul fianco","Non si controlla",0,"I valori corretti sono quelli prescritti dal costruttore per carico e uso."]
+ ],
+ "van":[
+  ["Qual è la principale differenza di guida di un veicolo alto e lungo?","Ingombri, altezza e raggio di sterzata maggiori","Frenata sempre più breve","Nessun punto cieco","Consumo sempre nullo",0,"Dimensioni e punti ciechi richiedono margini e controlli maggiori."],
+  ["Come si deve fissare il materiale trasportato?","Con sistemi di ritenuta idonei, rispettando portata e distribuzione","Con oggetti appoggiati liberamente","Solo con il portellone chiuso","Sul sedile senza cinture",0,"Il carico deve essere trattenuto per evitare spostamenti."],
+  ["Prima di entrare in un parcheggio coperto, cosa si verifica?","Altezza massima consentita rispetto al veicolo","Solo la larghezza delle corsie","Solo il numero dei posti","La temperatura interna",0,"L'altezza del veicolo può superare il limite del varco."],
+  ["Perché serve aumentare la distanza di sicurezza a pieno carico?","Massa e inerzia possono allungare gli spazi di arresto","Il veicolo frena sempre meglio","Il carico riduce l'inerzia","La distanza non cambia",0,"Una massa maggiore può aumentare lo spazio necessario per fermarsi."],
+  ["Quale controllo riguarda le porte posteriori prima della partenza?","Chiusura e bloccaggio verificati","Apertura completa durante la marcia","Rimozione delle sicure","Nessun controllo",0,"Le chiusure devono essere verificate prima di muovere il veicolo."]
+ ],
+ "berlina":[
+  ["Quale elemento va controllato prima di partire?","Freni, pneumatici, luci e specchi","Solo il navigatore","Solo il livello del liquido lavavetri","Solo la radio",0,"I controlli essenziali riguardano sicurezza e visibilità."],
+  ["Come si mantiene una guida efficiente e sicura?","Accelerazioni e frenate progressive","Accelerazioni e frenate continue","Marcia costante ad alta velocità","Cambio corsia senza segnalare",0,"La guida fluida migliora controllo ed efficienza."],
+  ["Cosa si fa se un pneumatico presenta un danno visibile?","Non si parte e si richiede verifica/sostituzione","Si aumenta la pressione oltre il limite","Si continua lentamente per molti chilometri","Si copre il danno",0,"Un danno strutturale può causare perdita di controllo."],
+  ["Quando si usano gli indicatori di direzione?","Prima di ogni svolta o cambio corsia, con anticipo","Solo di notte","Solo quando c'è traffico","Mai se la strada è libera",0,"La segnalazione anticipata rende prevedibili le manovre."],
+  ["Qual è il comportamento corretto in caso di stanchezza?","Interrompere il viaggio in luogo sicuro e riposare","Aprire il finestrino e continuare","Aumentare il volume della radio","Guidare più velocemente",0,"La stanchezza compromette attenzione e tempi di reazione."]
+ ],
+ "barca":[
+  ["Prima di lasciare l'ormeggio, quale controllo è prioritario?","Dotazioni di sicurezza, meteo, comunicazioni e condizioni dell'unità","Solo il colore dello scafo","Solo il livello della musica","Nessun controllo se il tragitto è breve",0,"La partenza richiede controlli di sicurezza e valutazione delle condizioni."],
+  ["Cosa indica la capacità massima di persone a bordo?","Un limite da non superare secondo targhetta e documenti","Un valore facoltativo","Il numero di persone che possono stare sul ponte","Il numero dei giubbotti decorativi",0,"Portata e persone ammesse sono limiti di sicurezza."],
+  ["Come si affronta un cambiamento improvviso del meteo?","Rivalutare la navigazione e seguire le procedure di sicurezza","Ignorarlo","Aumentare la velocità senza valutazioni","Spegnere le comunicazioni",0,"La sicurezza impone di rivalutare condizioni e rotta."],
+  ["Quando devono essere indossati i dispositivi individuali di galleggiamento?","Secondo condizioni, procedure e indicazioni di sicurezza","Solo quando si è già in acqua","Mai vicino alla costa","Solo per i passeggeri",0,"Le dotazioni individuali vanno usate secondo procedure e rischio."],
+  ["Se il motore segnala surriscaldamento, cosa si fa?","Ridurre il rischio, mettere l'unità in condizione sicura e verificare secondo manuale","Continuare a pieno regime","Disattivare l'allarme","Aprire il vano motore mentre è in marcia",0,"Il surriscaldamento richiede gestione prudente e verifica tecnica."]
+ ]
+};
+function shuffleQuestions(type:string){
+ const source=VEHICLE_BREVETTO_QUESTIONS[type]||VEHICLE_BREVETTO_QUESTIONS.suv;
+ const shuffled=[...source];
+ for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+ return shuffled.slice(0,5);
+}
+
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
@@ -113,7 +157,35 @@ Deno.serve(async (req: Request) => {
         .insert({user_id:user.id,service_branch:branch,department_id:membership.department.id,vehicle_id:vehicleId,vehicle_name:vehicleName,vehicle_type:vehicleType})
         .select("department_id,vehicle_id,vehicle_name,vehicle_type,selected_at").single();
       if (saveError) return reply(req,{error:saveError.code==="23505"?"Hai già scelto un brevetto: la scelta è unica e non può essere modificata.":"Impossibile registrare il brevetto."},saveError.code==="23505"?409:500);
+
       return reply(req,{brevetto:saved},201);
+    }
+    if (action === "vehicle_brevetto_start") {
+      const {data: selected,error:selectedError}=await db.from("department_vehicle_brevetti")
+        .select("department_id,vehicle_id,vehicle_type").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+      if(selectedError)return reply(req,{error:"Impossibile verificare il brevetto selezionato."},500);
+      if(!selected||selected.department_id!==membership.department.id)return reply(req,{error:"Seleziona prima il brevetto del reparto."},403);
+      const {data:open,error:openError}=await db.from("department_vehicle_brevetto_attempts")
+        .select("id,questions,started_at").eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null)
+        .order("started_at",{ascending:false}).limit(1).maybeSingle();
+      if(openError)return reply(req,{error:"Impossibile verificare il tentativo precedente."},500);
+      if(open&&new Date(open.started_at).getTime()>=Date.now()-10*60*1000)
+        return reply(req,{attempt_id:open.id,questions:open.questions,expires_at:new Date(new Date(open.started_at).getTime()+10*60*1000).toISOString(),resumed:true});
+      if(open){const {error}=await db.from("department_vehicle_brevetto_attempts").update({completed_at:new Date().toISOString()}).eq("id",open.id).is("completed_at",null);if(error)return reply(req,{error:"Impossibile chiudere la sessione scaduta."},500);}
+      const questions=shuffleQuestions(selected.vehicle_type);
+      const {data:attempt,error:insertError}=await db.from("department_vehicle_brevetto_attempts")
+        .insert({user_id:user.id,service_branch:branch,department_id:membership.department.id,vehicle_id:selected.vehicle_id,questions})
+        .select("id,started_at").single();
+      if(insertError)return reply(req,{error:insertError.code==="23505"?"Hai già un Quiz Brevetto aperto. Rientra nella prova precedente.":"Impossibile avviare il Quiz Brevetto."},insertError.code==="23505"?409:500);
+      return reply(req,{attempt_id:attempt.id,questions,expires_at:new Date(new Date(attempt.started_at).getTime()+10*60*1000).toISOString(),resumed:false});
+    }
+    if (action === "vehicle_brevetto_submit") {
+      const attemptId=String(body.attempt_id??""),answers=body.answers;
+      if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==5||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3))
+        return reply(req,{error:"Risposte del brevetto non valide."},400);
+      const {data,resultError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
+      if(resultError){const message=resultError.message||"";const code=message.includes("già consegnato")?409:message.includes("scaduta")?410:400;return reply(req,{error:message.includes("già consegnato")?"Questo Quiz Brevetto è già stato consegnato.":message.includes("scaduta")?"Il tempo del Quiz Brevetto è scaduto.":"Impossibile registrare il risultato del brevetto."},code);}
+      return reply(req,{...data,membership:await getMembership(user.id,branch)});
     }
     const isCommander = membership.is_commander === true;
     const commandExamReady = Number(membership.rank) === 6 && Number(membership.exp) >= 2100 && !isCommander;
