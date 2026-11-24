@@ -1804,7 +1804,7 @@ async function submitCommandExam(){
  }catch(e){$("commandExamMessage").textContent=e?.message||"Invio non riuscito.";}finally{b.disabled=false;}
 }
 
-let vehicleBrevettoCatalog=[],vehicleBrevettoCooldownUntil=null,vehicleBrevettoAttemptsRemaining=6,vehicleBrevettoAttemptsCompleted=0;
+let vehicleBrevettoCatalog=[],vehicleBrevettoLocked=false,vehicleBrevettoCooldownUntil=null,vehicleBrevettoAttemptsRemaining=6,vehicleBrevettoAttemptsCompleted=0;
 let vehicleBrevettoQuiz=null,vehicleBrevettoTimer=null,vehicleBrevettoCooldownTimer=null;
 function vehicleBrevettoStorageKey(){return "fdo_vehicle_brevetto:"+String(user?.id||profile?.username||"guest")+":"+String(selectedBranch||"");}
 function getVehicleBrevettoState(){try{return JSON.parse(localStorage.getItem(vehicleBrevettoStorageKey())||"{}");}catch(_){return {};}}
@@ -1812,9 +1812,16 @@ function saveVehicleBrevettoState(state){try{localStorage.setItem(vehicleBrevett
 function renderVehicleBrevettoUI(){
  const choicePanel=$("vehicleBrevettoChoicePanel"),quizPanel=$("vehicleBrevettoQuizPanel");
  if(!choicePanel||!quizPanel)return;
- const baseRank=Math.max(Number(progress?.rank)||0,Number(profile?.initial_rank)||0),minimum=selectedBranch==="finanza"?2:2;
- if(!user||baseRank<minimum){choicePanel.classList.add("hidden");quizPanel.classList.add("hidden");return;}
+ const baseRank=Math.max(Number(progress?.rank)||0,Number(profile?.initial_rank)||0),minimum=2;
+ if(!user){choicePanel.classList.add("hidden");quizPanel.classList.add("hidden");return;}
  const state=getVehicleBrevettoState(),select=$("vehicleBrevettoChoice"),chosen=$("vehicleBrevettoChosen");
+ if(vehicleBrevettoLocked||baseRank<minimum){
+  choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");
+  if(select){select.innerHTML='<option value="">Catalogo veicoli speciali</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.display_name)+'</option>').join("");select.disabled=true;}
+  const confirmButton=$("vehicleBrevettoConfirm");if(confirmButton)confirmButton.disabled=true;
+  const message=$("vehicleBrevettoChoiceMessage");if(message)message.textContent="Brevetto visibile ma bloccato: disponibile dal grado di Appuntato. Il catalogo dei mezzi del Corpo è consultabile qui sotto.";
+  return;
+ }
  if(!state.vehicle){
   choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");
   if(select){select.innerHTML='<option value="">Seleziona un veicolo speciale</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.display_name)+'</option>').join("");}
@@ -1850,6 +1857,7 @@ async function syncVehicleBrevettoStatus(){
   const {data,error}=await db.functions.invoke("department-engine",{body:{service_branch:selectedBranch,action:"vehicle_brevetto_status"}});
   if(error){if(error.status===403){renderVehicleBrevettoUI();return;}throw error;}
   vehicleBrevettoCatalog=Array.isArray(data?.catalog)?data.catalog:[];
+  vehicleBrevettoLocked=!!data?.locked;
   vehicleBrevettoCooldownUntil=data?.cooldown_until||null;vehicleBrevettoAttemptsRemaining=Math.max(0,Number(data?.attempts_remaining??6));vehicleBrevettoAttemptsCompleted=Math.max(0,Number(data?.attempts_completed??0));
   if(data?.brevetto){const b=data.brevetto,previous=getVehicleBrevettoState();saveVehicleBrevettoState({...previous,vehicle:{id:b.vehicle_id,name:b.vehicle_name,type:b.vehicle_type},selected_at:b.selected_at});}
   else{try{localStorage.removeItem(vehicleBrevettoStorageKey());}catch(_){}}
@@ -1913,7 +1921,7 @@ async function startPatrolService(){
  try{
   const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action:"start",service_branch:selectedBranch}});
   if(error||!data?.session_id||!data?.scenario)throw new Error(data?.error||error?.message||"Impossibile avviare il servizio.");
-  patrolSession={id:data.session_id,expiresAt:new Date(data.expires_at).getTime(),scenario:data.scenario,checked:[],branch:selectedBranch};
+  patrolSession={id:data.session_id,expiresAt:new Date(data.expires_at).getTime(),scenario:data.scenario,checked:Array.isArray(data.checks_completed)?data.checks_completed:[],branch:selectedBranch};
   $("patrolResult").classList.add("hidden");$("patrolMessage").textContent=data.resumed?"Controllo precedente ripreso.":"Servizio avviato.";
   renderPatrolSession();if(patrolTimer)clearInterval(patrolTimer);
   const tick=()=>{if(!patrolSession)return;const left=Math.max(0,patrolSession.expiresAt-Date.now());$("patrolTimer").textContent=formatRemaining(left);if(!left){clearInterval(patrolTimer);patrolTimer=null;$("patrolMessage").textContent="Tempo del controllo scaduto. Avvia un nuovo servizio.";}};
