@@ -2,6 +2,13 @@
 alter table public.department_vehicle_brevetto_attempts
   add column if not exists question_ids uuid[] not null default '{}'::uuid[];
 
+-- The active brevetto flow always presents eight questions, not the legacy five.
+alter table public.department_vehicle_brevetto_attempts
+  drop constraint if exists department_vehicle_brevetto_attempts_questions_check;
+alter table public.department_vehicle_brevetto_attempts
+  add constraint department_vehicle_brevetto_attempts_questions_check
+  check (jsonb_typeof(questions)='array' and jsonb_array_length(questions)=8);
+
 create table if not exists public.vehicle_brevetto_cycles (
   user_id uuid not null,
   service_branch text not null check (service_branch in ('carabinieri','finanza')),
