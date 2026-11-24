@@ -97,6 +97,12 @@ jobs:
           if(!instructor.includes('["istruttore","admin"].includes(creatorMembership.role)'))throw new Error('Authorized administrator role missing from provisioning guard');
           if(!ministry.includes('display.length<2'))throw new Error('Command administrator name validation is inconsistent');
           console.log('PASS consistent account-name validation and role authorization');
+          const action=fs.readFileSync('supabase/functions/admin-user-action/index.ts','utf8');
+          const statusMigration=fs.readFileSync('supabase/migrations/20261124190400_deactivate_profiles_without_active_memberships.sql','utf8');
+          if(!action.includes('activeMembershipCount')||!action.includes('update({active:(activeMembershipCount??0)>0})'))throw new Error('Profile active state must follow remaining active Corps memberships');
+          if(!statusMigration.includes('not exists(')||!statusMigration.includes('m.active=true'))throw new Error('Profiles without active memberships must be disabled without deleting history');
+          console.log('PASS profile activation is synchronized with active branch memberships');
+
           const migration=fs.readFileSync('supabase/migrations/20261109212000_prevent_rank_exam_beyond_maximum.sql','utf8');
           for(const required of ['if v_rank>=v_max_rank','v_max_rank:=23','v_max_rank:=23','Esame già consegnato','a.started_at<now()-interval \'20 minutes\'']){
             if(!migration.includes(required))throw new Error('Missing rank-exam safeguard: '+required);
