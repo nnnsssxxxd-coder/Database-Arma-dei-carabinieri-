@@ -138,7 +138,10 @@ Deno.serve(async (req: Request) => {
          });
          if(startError)return reply(req,{error:"Impossibile avviare il tentativo del brevetto."},500);
          if(started?.error){
-           const status=started.cooldown_until?429:(String(started.error).includes("non ancora sbloccato")?403:409);
+           // Cooldown is an expected quiz state, not a transport failure:
+           // return HTTP 200 so the client can read cooldown_until and render
+           // the live 12-hour countdown instead of losing the response body.
+           const status=started.cooldown_until?200:(String(started.error).includes("non ancora sbloccato")?403:409);
            return reply(req,started,status);
          }
          if(!started?.attempt_id||!Array.isArray(started.questions)||started.questions.length!==8)
