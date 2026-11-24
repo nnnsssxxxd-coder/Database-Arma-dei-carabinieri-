@@ -44,7 +44,7 @@ Deno.serve(async(req)=>{
   if(password.length<12||password.length>72)return reply(req,{error:"Password iniziale non valida: servono 12-72 caratteri.",field:"password"},400);
   if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Seleziona un Corpo valido.",field:"service_branch"},400);
   if(rankRaw===undefined||rankRaw===null||String(rankRaw).trim()==="")return reply(req,{error:"Seleziona il grado iniziale.",field:"initial_rank"},400);
-  const initial_rank=Number(rankRaw),maxRank=service_branch==="finanza"?24:23;
+  const initial_rank=Number(rankRaw),maxRank=service_branch==="finanza"?23:23;
   if(!Number.isInteger(initial_rank)||initial_rank<0||initial_rank>maxRank)return reply(req,{error:"Grado non valido per il Corpo selezionato (indice 0-"+maxRank+").",field:"initial_rank"},400);
   const {data:creatorMembership,error:cm}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();if(cm)throw cm;if(!creatorMembership||!["istruttore","admin"].includes(creatorMembership.role))return reply(req,{error:"La creazione è riservata agli amministratori e agli istruttori attivi del Corpo selezionato."},403);
   const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return reply(req,{error:"Username già utilizzato."},409);
