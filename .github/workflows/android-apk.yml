@@ -65,10 +65,10 @@ jobs:
           from pathlib import Path
           import re
           html=Path("index.html").read_text()
-          scripts=re.findall(r'<script\\b([^>]*)>([\\s\\S]*?)</script>', html, re.I)
+          scripts=re.findall(r'<script\b([^>]*)>([\s\S]*?)</script>', html, re.I)
           count=0
           for attrs, body in scripts:
-              if re.search(r'\\bsrc\\s*=', attrs) or not body.strip():
+              if re.search(r'\bsrc\s*=', attrs) or not body.strip():
                   continue
               count += 1
               Path(f"/tmp/inline-{count}.js").write_text(body)
@@ -130,12 +130,12 @@ jobs:
           import re
           p=Path("android/app/src/main/AndroidManifest.xml")
           s=p.read_text()
-          match=re.search(r'<application\\b[^>]*>', s)
+          match=re.search(r'<application\b[^>]*>', s)
           if not match:
               raise SystemExit("Android application tag not found")
           tag=match.group(0)
           for attr in ("icon", "roundIcon", "label"):
-              tag=re.sub(r'\\sandroid:'+attr+r'="[^"]*"', "", tag)
+              tag=re.sub(r'\sandroid:'+attr+r'="[^"]*"', "", tag)
           tag=tag[:-1]+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Forze Ordine">'
           p.write_text(s[:match.start()]+tag+s[match.end():])
           print("Launcher icon and app label assigned")
