@@ -77,9 +77,14 @@ Deno.serve(async (req: Request) => {
          if(catalogError||chosenError)return reply(req,{error:"Impossibile caricare catalogo o scelta brevetto."},500);
          const {data:cycle,error:cycleError}=await db.from("vehicle_brevetto_cycles").select("completed_attempts,cooldown_until,cycle_number").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(cycleError)return reply(req,{error:"Impossibile caricare il ciclo del brevetto."},500);
-         const completed=Number(cycle?.completed_attempts??0);
-         const cooldownUntil=cycle?.cooldown_until??null;
-         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:Number(cycle?.cycle_number??1),locked,required_rank:minimumRank});
+         const storedCooldown=cycle?.cooldown_until??null;
+         const cooldownExpired=!!storedCooldown&&Date.parse(storedCooldown)<=Date.now();
+         // A cooldown that has elapsed is already available to the client.
+         // The start RPC performs the authoritative, locked cycle reset.
+         const completed=cooldownExpired?0:Number(cycle?.completed_attempts??0);
+         const cooldownUntil=cooldownExpired?null:storedCooldown;
+         const cycleNumber=Number(cycle?.cycle_number??1)+(cooldownExpired?1:0);
+         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
        }
        if(locked)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_choose"){
