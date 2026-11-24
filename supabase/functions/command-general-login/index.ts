@@ -14,7 +14,7 @@ async function resolveCommandAccess(username:string){
    if(ce)throw ce;
    const {data:progressRows,error:ge}=await admin.from("progress").select("service_branch,payload").eq("user_id",existing.user_id);if(ge)throw ge;
    const rankFor=(m: {initial_rank?: number; service_branch: string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
-   const stillEligible=(current??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
+   const stillEligible=(current??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===23));
    if(!stillEligible){
     const {error:off}=await admin.from("command_general_admins").update({active:false}).eq("user_id",existing.user_id);if(off)throw off;
     const {error:log}=await admin.from("command_general_audit").insert({actor_id:existing.user_id,actor_username:existing.username,event:"automatic_command_access_revoked",target_user_id:existing.user_id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
@@ -28,17 +28,17 @@ async function resolveCommandAccess(username:string){
  if(!profile||!profile.active||profile.deleted)return null;
  const {data:memberships,error:me}=await admin.from("profile_memberships").select("service_branch,initial_rank,active").eq("user_id",profile.id).eq("active",true);
  if(me)throw me;
- // Indici massimi del catalogo gradi del simulatore: Carabinieri 23, Guardia di Finanza 24.
+ // Indici massimi del catalogo gradi del simulatore: Carabinieri 23, Guardia di Finanza 23.
  const {data:progressRows,error:ge}=await admin.from("progress").select("service_branch,payload").eq("user_id",profile.id);if(ge)throw ge;
  const rankFor=(m: {initial_rank?: number; service_branch: string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
- const eligible=(memberships??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
+ const eligible=(memberships??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===23));
  if(!eligible)return null;
  const {data:authUser,error:ue}=await admin.auth.admin.getUserById(profile.id);
  if(ue||!authUser?.user?.email)throw ue??new Error("Account Auth senza email associata.");
  const row={user_id:profile.id,username:profile.username,display_name:profile.display_name,auth_email:authUser.user.email,active:true,must_change_password:false,created_by:null};
  const {data:created,error:ce}=await admin.from("command_general_admins").insert(row).select("user_id,auth_email,display_name,active,must_change_password,username,created_by").single();
  if(ce)throw ce;
- const {error:ae2}=await admin.from("command_general_audit").insert({actor_id:profile.id,actor_username:profile.username,event:"automatic_command_access_granted",target_user_id:profile.id,details:{reason:"highest_rank_reached",eligibility:"active highest-rank membership",service_branches:(memberships??[]).filter(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===24)).map(m=>m.service_branch)}});
+ const {error:ae2}=await admin.from("command_general_audit").insert({actor_id:profile.id,actor_username:profile.username,event:"automatic_command_access_granted",target_user_id:profile.id,details:{reason:"highest_rank_reached",eligibility:"active highest-rank membership",service_branches:(memberships??[]).filter(m=>(m.service_branch==="carabinieri"&&Number(m.initial_rank)===23)||(m.service_branch==="finanza"&&Number(m.initial_rank)===23)).map(m=>m.service_branch)}});
  if(ae2){await admin.from("command_general_admins").delete().eq("user_id",profile.id);throw ae2;}
  return created;
 }
