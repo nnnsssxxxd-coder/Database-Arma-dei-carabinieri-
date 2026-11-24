@@ -196,8 +196,10 @@ jobs:
             if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
           }
           const monochrome=fs.readFileSync('app-icon-monochrome.svg','utf8');
-          if(!build.includes('app-icon.svg')||!build.includes('rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('android:icon="@mipmap/ic_launcher"')||!build.includes('ic_launcher.png')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Density-specific PNG launcher icon and launchable activity must be verified');
+          const iconConcurrency=fs.readFileSync('supabase/migrations/20261124230000_harden_vehicle_brevetto_start_concurrency.sql','utf8');
+          if(!build.includes('app-icon.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('ic_launcher_monochrome.png')||!build.includes('android:icon="@mipmap/ic_launcher"')||!build.includes('android:roundIcon="@mipmap/ic_launcher_round"')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Adaptive, monochrome and legacy launcher icons plus launchable activity must be verified');
           if(!monochrome.includes('fill="#fff"')||!monochrome.includes('fill-rule="evenodd"'))throw new Error('The app icon source assets must retain a valid monochrome shield');
+          if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
           if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
           if(!html.includes('Controllo economico-finanziario')||!html.includes('Riferimento simulato: '))throw new Error('The Guardia di Finanza patrol UI must use its own terminology');
 
