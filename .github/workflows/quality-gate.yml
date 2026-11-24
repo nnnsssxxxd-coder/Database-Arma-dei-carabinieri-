@@ -33,6 +33,8 @@ jobs:
             supabase/functions/audit-event/index.ts \
             supabase/functions/username-login/index.ts \
             supabase/functions/command-general-login/index.ts \
+            supabase/functions/ministry-login/index.ts \
+            supabase/functions/site/index.ts \
             supabase/functions/traffic-control-engine/index.ts
       - name: Validate manifest and application shell
         run: |
@@ -189,6 +191,24 @@ jobs:
           console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
           NODE
 
+      - name: Validate maximum-grade command access parity
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
+          const action=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
+          const ministry=fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8');
+          const create=fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const [name,source] of [['command login',login],['command action',action],['ministry',ministry],['account creation',create],['quiz engine',quiz]]){
+            if(!source.includes('23'))throw new Error(name+' is missing the maximum rank index');
+          }
+          if(/service_branch\s*===\s*"finanza"[^\n]{0,100}===\s*24/.test(login))throw new Error('Finanza maximum rank must be index 23, not 24');
+          if(!login.includes('m.service_branch==="finanza"&&rankFor(m)===23'))throw new Error('Finanza automatic Comando Generale eligibility is not aligned to its 24-grade catalog');
+          if(!login.includes('Number(m.initial_rank)===23'))throw new Error('Finanza initial-rank eligibility audit is not aligned');
+          if(!ministry.includes('b==="carabinieri"?23:23')||!create.includes('service_branch==="finanza"?23:23'))throw new Error('Account administration maximum rank differs from the database constraints');
+          console.log('PASS both 24-grade ladders use zero-based maximum index 23 across login, command, ministry, provisioning and exams');
+          NODE
       - name: Validate hardened patrol and brevetto safeguards
         run: |
           node <<'NODE'
