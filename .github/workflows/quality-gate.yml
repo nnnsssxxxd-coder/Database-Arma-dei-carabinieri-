@@ -173,4 +173,9 @@ jobs:
           }
           if(!build.includes('app-icon-foreground.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('application-icon-160:'))throw new Error('Android adaptive launcher icon is not verified');
           console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and adaptive APK icon');
+          if(/\\$\\(["'][.#[]/.test(html)) throw new Error('The ID helper $() must not receive CSS selectors; use querySelector instead');
+          if(!html.includes('rank>=9?"ISPETTORE":rank>=5?"SOVRINTENDENTE"')) throw new Error('Personnel role categories must distinguish inspectors and warrant officers');
+          if(!html.includes('x.type==="vehicle_brevetto"?8')) throw new Error('Progress chart must use eight as the brevetto denominator');
+          if(!html.includes('selectedBranch==="finanza"?"#d4af37":"#d71930"')) throw new Error('Rank graphic accents must follow the selected service branch');
+          console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
           NODE
