@@ -1898,17 +1898,35 @@ function renderVehicleBrevettoUI(){
   return;
  }
  choicePanel.classList.add("hidden");quizPanel.classList.remove("hidden");
- const attemptsLabel=$("vehicleBrevettoAttempts");if(attemptsLabel){attemptsLabel.textContent="";attemptsLabel.classList.add("hidden");}
+ const attemptsLabel=$("vehicleBrevettoAttempts");
+ if(attemptsLabel){
+  attemptsLabel.textContent=vehicleBrevettoCooldownUntil
+   ?"Ciclo completato: 6 / 6 quiz"
+   :"Quiz completati: "+vehicleBrevettoAttemptsCompleted+" / 6 · disponibili: "+vehicleBrevettoAttemptsRemaining+" / 6";
+  attemptsLabel.classList.remove("hidden");
+ }
  if(chosen){chosen.classList.remove("hidden");chosen.innerHTML='<div class="badge">MEZZO SELEZIONATO</div><h4>'+esc(state.vehicle.name)+'</h4>'+renderVehicleBrevettoProfile(state.vehicle);}
  $("vehicleBrevettoSubtitle").textContent="Esame tecnico dedicato al mezzo selezionato: caratteristiche, componenti, impiego, sicurezza e principi fisici.";
  $("vehicleBrevettoBadge").textContent=state.passed?"BREVETTO SUPERATO":"BREVETTO VEICOLO SPECIALE";
  const startButton=$("vehicleBrevettoStart");if(startButton)startButton.onclick=startVehicleBrevettoQuiz;
  if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}
- const updateVehicleBrevettoCooldown=()=>{const left=vehicleBrevettoCooldownUntil?new Date(vehicleBrevettoCooldownUntil).getTime()-Date.now():0;
-  if(left>0){$("vehicleBrevettoError").textContent="Prossimo tentativo disponibile tra "+formatRemaining(left)+".";if(startButton)startButton.disabled=true;}
-  else{vehicleBrevettoCooldownUntil=null;vehicleBrevettoAttemptsRemaining=6;vehicleBrevettoAttemptsCompleted=0;const label=$("vehicleBrevettoAttempts");if(label)label.textContent="Tentativi rimasti in questo ciclo: 6 / 6";if(startButton)startButton.disabled=false;if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}$("vehicleBrevettoError").textContent="Ciclo ripristinato. Puoi iniziare una nuova prova.";}
+ const updateVehicleBrevettoCooldown=()=>{
+  const left=vehicleBrevettoCooldownUntil?Date.parse(vehicleBrevettoCooldownUntil)-Date.now():0;
+  if(left>0){
+   $("vehicleBrevettoError").textContent="Hai completato 6 quiz. Nuovi tentativi tra "+formatRemaining(left)+".";
+   if(startButton)startButton.disabled=true;
+   if(attemptsLabel){attemptsLabel.textContent="Ciclo completato: 6 / 6 quiz · attesa di 12 ore";attemptsLabel.classList.remove("hidden");}
+  }else{
+   const wasCoolingDown=!!vehicleBrevettoCooldownUntil;
+   vehicleBrevettoCooldownUntil=null;
+   if(startButton)startButton.disabled=vehicleBrevettoAttemptsRemaining<=0;
+   if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}
+   $("vehicleBrevettoError").textContent="";
+   if(wasCoolingDown)void syncVehicleBrevettoStatus();
+  }
  };
- updateVehicleBrevettoCooldown();if(vehicleBrevettoCooldownUntil)vehicleBrevettoCooldownTimer=setInterval(updateVehicleBrevettoCooldown,1000);
+ updateVehicleBrevettoCooldown();
+ if(vehicleBrevettoCooldownUntil)vehicleBrevettoCooldownTimer=setInterval(updateVehicleBrevettoCooldown,1000);
 }
 async function syncVehicleBrevettoStatus(){
  if(!user||!selectedBranch)return;
@@ -1933,12 +1951,18 @@ async function startVehicleBrevettoQuiz(){
    throw new Error(data?.error||error?.message||"Il quiz richiede una banca verificata completa di 100 domande.");
   }
   vehicleBrevettoAttemptsRemaining=Math.max(0,Number(data.attempts_remaining??vehicleBrevettoAttemptsRemaining));vehicleBrevettoAttemptsCompleted=Math.max(0,Number(data.attempts_completed??vehicleBrevettoAttemptsCompleted));
-  vehicleBrevettoQuiz={id:data.attempt_id,questions:data.questions,answers:Array(8).fill(null),index:0,expiresAt:new Date(data.expires_at).getTime(),expired:false};
+  const expiresAt=Date.parse(data.expires_at);
+  if(!Number.isFinite(expiresAt)||expiresAt<=Date.now())throw new Error("La sessione del brevetto è già scaduta. Avvia una nuova prova.");
+  if(data.questions.some(q=>!Array.isArray(q)||q.length<8))throw new Error("Il server ha restituito domande incomplete. Nessun tentativo è stato avviato.");
+  vehicleBrevettoQuiz={id:data.attempt_id,questions:data.questions,answers:Array(8).fill(null),index:0,expiresAt,expired:false};
   $("vehicleBrevettoQuizSetup").classList.add("hidden");$("vehicleBrevettoQuizPlay").classList.remove("hidden");$("vehicleBrevettoResult").classList.add("hidden");$("vehicleBrevettoError").textContent="";
   renderVehicleBrevettoQuestion();if(vehicleBrevettoTimer)clearInterval(vehicleBrevettoTimer);
   const tick=()=>{if(!vehicleBrevettoQuiz)return;const left=Math.max(0,vehicleBrevettoQuiz.expiresAt-Date.now());$("vehicleBrevettoTimer").textContent=formatRemaining(left);if(!left){vehicleBrevettoQuiz.expired=true;clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;$("vehicleBrevettoHint").textContent="Tempo scaduto. Il tentativo non è valido.";$("vehicleBrevettoNext").disabled=true;document.querySelectorAll("#vehicleBrevettoAnswers button").forEach(b=>b.disabled=true);$("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");$("vehicleBrevettoError").textContent="Tempo scaduto: avvia una nuova prova.";vehicleBrevettoQuiz=null;}};
   tick();vehicleBrevettoTimer=setInterval(tick,1000);
- }catch(e){$("vehicleBrevettoError").textContent=e?.message||"Impossibile avviare la prova.";}finally{start.disabled=false;}
+ }catch(e){$("vehicleBrevettoError").textContent=e?.message||"Impossibile avviare la prova.";}finally{
+  const cooling=vehicleBrevettoCooldownUntil&&Date.parse(vehicleBrevettoCooldownUntil)>Date.now();
+  start.disabled=!!cooling||vehicleBrevettoAttemptsRemaining<=0;
+ }
 }
 function renderVehicleBrevettoQuestion(){if(!vehicleBrevettoQuiz)return;const q=vehicleBrevettoQuiz.questions[vehicleBrevettoQuiz.index];const illustration=$("vehicleBrevettoIllustration");if(illustration)illustration.innerHTML=brevettoSceneSvg(q);$("vehicleBrevettoCounter").textContent="DOMANDA "+(vehicleBrevettoQuiz.index+1)+" / 8";$("vehicleBrevettoProgress").style.width=(vehicleBrevettoQuiz.index/8*100)+"%";$("vehicleBrevettoQuestion").textContent=q[0];$("vehicleBrevettoAnswers").innerHTML=q.slice(1,5).map((v,i)=>'<button type="button" data-vb-option="'+i+'">'+String.fromCharCode(65+i)+". "+esc(v)+'</button>').join("");const source=$("vehicleBrevettoSource");const sourceUrl=String(q[7]??"");if(source&&sourceUrl.toLowerCase().startsWith("https://")){source.href=sourceUrl;source.hidden=false;source.textContent="Fonte consultata · apri il riferimento";}else if(source){source.hidden=true;source.removeAttribute("href");}$("vehicleBrevettoHint").textContent="Seleziona una risposta."; $("vehicleBrevettoNext").textContent=vehicleBrevettoQuiz.index===7?"Concludi quiz":"Conferma";$("vehicleBrevettoNext").disabled=true;}
 function chooseVehicleBrevettoAnswer(i){if(!vehicleBrevettoQuiz||vehicleBrevettoQuiz.expired||Date.now()>=vehicleBrevettoQuiz.expiresAt)return;vehicleBrevettoQuiz.answers[vehicleBrevettoQuiz.index]=i;document.querySelectorAll("[data-vb-option]").forEach(b=>b.classList.toggle("selected",Number(b.dataset.vbOption)===i));$("vehicleBrevettoNext").disabled=false;$("vehicleBrevettoHint").textContent="Risposta selezionata.";}
