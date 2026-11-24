@@ -89,7 +89,10 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
-      - name: Generate Android launcher icons
+      - name: Sync web app
+        run: npx cap sync android
+
+      - name: Apply verified launcher icon after Capacitor sync
         run: |
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
@@ -114,13 +117,25 @@ jobs:
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
             <background android:drawable="@color/ic_launcher_background" />
             <foreground android:drawable="@drawable/ic_launcher_foreground" />
+            <monochrome android:drawable="@drawable/ic_launcher_foreground" />
           </adaptive-icon>
           EOF
           cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-
-      - name: Sync web app
-        run: npx cap sync android
-
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          s=p.read_text()
+          s,n=re.subn(r'<application\\b([^>]*)>', lambda m: '<application'+re.sub(r'\\sandroid:(?:icon|roundIcon|label)="[^"]*"','',m.group(1))+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Forze Ordine">', s, count=1)
+          if n != 1: raise SystemExit("Unable to set launcher icon and label in AndroidManifest")
+          p.write_text(s)
+          print("Launcher icon explicitly assigned to app manifest")
+          PY
+          echo "Checking launcher icon resources"
+          test -s android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          test -s android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+          grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
