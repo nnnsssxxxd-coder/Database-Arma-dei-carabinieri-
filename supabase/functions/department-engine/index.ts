@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
       const attemptId=String(body.attempt_id??""),answers=body.answers;
       if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==5||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3))
         return reply(req,{error:"Risposte del brevetto non valide."},400);
-      const {data,resultError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
+      const {data,error:resultError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
       if(resultError){const message=resultError.message||"";const code=message.includes("già consegnato")?409:message.includes("scaduta")?410:400;return reply(req,{error:message.includes("già consegnato")?"Questo Quiz Brevetto è già stato consegnato.":message.includes("scaduta")?"Il tempo del Quiz Brevetto è scaduto.":"Impossibile registrare il risultato del brevetto."},code);}
       return reply(req,{...data,membership:await getMembership(user.id,branch)});
     }
