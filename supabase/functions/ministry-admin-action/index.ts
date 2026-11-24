@@ -5,7 +5,7 @@ const origins=new Set(["https://localhost","capacitor://localhost","http://local
 function hs(req:Request){const o=req.headers.get("Origin")??"";return {"Access-Control-Allow-Origin":origins.has(o)?o:"null","Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function out(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:hs(req)});}
 const validBranch=(b:string)=>b==="carabinieri"||b==="finanza";
-const maxRank=(b:string)=>b==="carabinieri"?23:24;
+const maxRank=(b:string)=>b==="carabinieri"?23:23;
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:hs(req)});
  if(req.method!=="POST")return out(req,{error:"Metodo non consentito"},405);
