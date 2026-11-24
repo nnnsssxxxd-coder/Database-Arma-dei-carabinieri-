@@ -137,12 +137,12 @@ jobs:
           import re
           p=Path("android/app/src/main/AndroidManifest.xml")
           s=p.read_text()
-          match=re.search(r'<application\\b[^>]*>', s)
+          match=re.search(r'<application\b[^>]*>', s)
           if not match:
               raise SystemExit("Android application tag not found")
           tag=match.group(0)
           for attr in ("icon", "roundIcon", "label"):
-              tag=re.sub(r'\\sandroid:'+attr+r'="[^"]*"', "", tag)
+              tag=re.sub(r'\sandroid:'+attr+r'="[^"]*"', "", tag)
           tag=tag[:-1]+' android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="Database Forze Ordine">'
           p.write_text(s[:match.start()]+tag+s[match.end():])
           print("Adaptive, monochrome and legacy launcher icons assigned")
