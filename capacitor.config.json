@@ -1,6 +1,6 @@
 {
   "appId": "it.databaseforzeordine.app",
-  "appName": "Forze Ordine",
+  "appName": "Database Forze Ordine",
   "webDir": "www",
   "server": {
     "androidScheme": "https"
