@@ -110,7 +110,9 @@ Deno.serve(async (req: Request) => {
          const seenPrompts=new Set<string>();
          let invalidRows=0;
          for(const q of bank){
-           if(q.category==="physics"||q.category==="technical"||q.category==="regulations")bankCounts[q.category]++;
+           const category=String(q.category??"");
+           if(category==="physics"||category==="technical"||category==="regulations")
+             bankCounts[category as keyof typeof bankCounts]++;
            const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it");
            const options=Array.isArray(q.options)?q.options:[];
            if(!prompt||seenPrompts.has(prompt)||!/^https:\/\//i.test(String(q.source_url??""))||
