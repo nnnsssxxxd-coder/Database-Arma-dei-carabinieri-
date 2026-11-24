@@ -196,7 +196,7 @@ jobs:
           const dept=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const patrol=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
           const html=fs.readFileSync('index.html','utf8');
-          const patrolMigration=fs.readFileSync('supabase/migrations/20261124235000_count_abandoned_patrol_sessions.sql','utf8');
+          const patrolMigration=fs.readFileSync('supabase/migrations/20261124173251_count_abandoned_patrol_sessions.sql','utf8');
           for(const token of ['bankCounts.physics===30','bankCounts.technical===40','bankCounts.regulations===30','seenPrompts.size===100','source_note','duplicate_or_invalid_rows']){
             if(!dept.includes(token))throw new Error('Brevetto bank validation missing: '+token);
           }
