@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
          // The required bank is exactly 100 active, sourced, distinct questions per vehicle:
          // 30 physics, 40 vehicle-specific technical, 30 applicable regulations.
          const {data:bankRows,error:bankError}=await db.from("vehicle_brevetto_question_bank")
-           .select("id,category,prompt,source_url,explanation,options,correct_index")
+           .select("id,category,prompt,source_url,source_note,explanation,options,correct_index")
            .eq("vehicle_id",selected.vehicle_id).eq("active",true);
          if(bankError)return reply(req,{error:"Impossibile verificare la banca dati del brevetto. Riprova più tardi."},503);
          const bank=bankRows??[];
@@ -116,6 +116,8 @@ Deno.serve(async (req: Request) => {
            const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it");
            const options=Array.isArray(q.options)?q.options:[];
            if(!prompt||seenPrompts.has(prompt)||!/^https:\/\//i.test(String(q.source_url??""))||
+             !String(q.source_note??"").trim()||
+             String(q.source_note).trim()==="Domanda basata su fonte normativa o istituzionale; formulazione alternativa."||
              !String(q.explanation??"").trim()||options.length!==4||
              !Number.isInteger(q.correct_index)||q.correct_index<0||q.correct_index>3)invalidRows++;
            seenPrompts.add(prompt);
