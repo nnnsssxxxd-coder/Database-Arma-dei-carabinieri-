@@ -1943,16 +1943,24 @@ async function startVehicleBrevettoQuiz(){
 function renderVehicleBrevettoQuestion(){if(!vehicleBrevettoQuiz)return;const q=vehicleBrevettoQuiz.questions[vehicleBrevettoQuiz.index];const illustration=$("vehicleBrevettoIllustration");if(illustration)illustration.innerHTML=brevettoSceneSvg(q);$("vehicleBrevettoCounter").textContent="DOMANDA "+(vehicleBrevettoQuiz.index+1)+" / 8";$("vehicleBrevettoProgress").style.width=(vehicleBrevettoQuiz.index/8*100)+"%";$("vehicleBrevettoQuestion").textContent=q[0];$("vehicleBrevettoAnswers").innerHTML=q.slice(1,5).map((v,i)=>'<button type="button" data-vb-option="'+i+'">'+String.fromCharCode(65+i)+". "+esc(v)+'</button>').join("");const source=$("vehicleBrevettoSource");const sourceUrl=String(q[7]??"");if(source&&sourceUrl.toLowerCase().startsWith("https://")){source.href=sourceUrl;source.hidden=false;source.textContent="Fonte consultata · apri il riferimento";}else if(source){source.hidden=true;source.removeAttribute("href");}$("vehicleBrevettoHint").textContent="Seleziona una risposta."; $("vehicleBrevettoNext").textContent=vehicleBrevettoQuiz.index===7?"Concludi quiz":"Conferma";$("vehicleBrevettoNext").disabled=true;}
 function chooseVehicleBrevettoAnswer(i){if(!vehicleBrevettoQuiz||vehicleBrevettoQuiz.expired||Date.now()>=vehicleBrevettoQuiz.expiresAt)return;vehicleBrevettoQuiz.answers[vehicleBrevettoQuiz.index]=i;document.querySelectorAll("[data-vb-option]").forEach(b=>b.classList.toggle("selected",Number(b.dataset.vbOption)===i));$("vehicleBrevettoNext").disabled=false;$("vehicleBrevettoHint").textContent="Risposta selezionata.";}
 async function finishVehicleBrevettoQuiz(){
- if(!vehicleBrevettoQuiz)return;
- if(vehicleBrevettoQuiz.expired||Date.now()>=vehicleBrevettoQuiz.expiresAt){$("vehicleBrevettoHint").textContent="Tempo scaduto. Il tentativo non è valido.";return;}
- if(vehicleBrevettoQuiz.answers.some(x=>!Number.isInteger(x))){$("vehicleBrevettoHint").textContent="Rispondi a tutte le domande.";return;}
+ const quiz=vehicleBrevettoQuiz;
+ if(!quiz||quiz.expired)return;
+ if(quiz.submitting)return;
+ if(Date.now()>=quiz.expiresAt){$("vehicleBrevettoHint").textContent="Tempo scaduto. Il tentativo non è valido.";return;}
+ if(quiz.answers.length!==8||quiz.answers.some(x=>!Number.isInteger(x)||x<0||x>3)){
+  $("vehicleBrevettoHint").textContent="Mancano risposte valide: controlla tutte le 8 domande.";return;
+ }
+ quiz.submitting=true;
  if(vehicleBrevettoTimer){clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;}
- const qs=vehicleBrevettoQuiz.questions,answers=vehicleBrevettoQuiz.answers,attemptId=vehicleBrevettoQuiz.id,submit=$("vehicleBrevettoNext");
+ const qs=quiz.questions,answers=quiz.answers.slice(),attemptId=quiz.id,submit=$("vehicleBrevettoNext");
  let completed=false;
- submit.disabled=true;$("vehicleBrevettoHint").textContent="Verifica risposte e registrazione EXP nel grado personale…";
+ submit.disabled=true;submit.textContent="Salvataggio in corso…";
+ $("vehicleBrevettoHint").textContent="Invio delle 8 risposte e verifica del salvataggio sul server…";
  try{
   const {data,error}=await db.functions.invoke("department-engine",{body:{service_branch:selectedBranch,action:"vehicle_brevetto_submit",attempt_id:attemptId,answers}});
-  if(error||!data)throw new Error(await functionError(error,data?.error||"Risultato non registrato."));
+  if(error||!data||data.error)throw new Error(await functionError(error,data?.error||"Il server non ha confermato il salvataggio del brevetto."));
+  if(!Number.isInteger(Number(data.score))||Number(data.score)<0||Number(data.score)>8||!Number.isFinite(Number(data.exp_awarded)))
+    throw new Error("Il server ha risposto senza un esito completo: il risultato non viene mostrato come salvato.");
   let savedProgress=data.progress;
   if(!savedProgress){
     const {data:progressRow,error:progressError}=await db.from("progress").select("payload")
@@ -1962,14 +1970,25 @@ async function finishVehicleBrevettoQuiz(){
   }
   completed=true;
   const score=Number(data.score)||0,state=getVehicleBrevettoState();if(!data.already_completed)state.attempts=(state.attempts||0)+1;state.passed=state.passed||!!data.passed;state.best_score=Math.max(state.best_score||0,score);saveVehicleBrevettoState(state);progress=savedProgress;
-  $("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");$("vehicleBrevettoResult").classList.remove("hidden");
+  $("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");$("vehicleBrevettoResult").classList.remove("hidden");submit.textContent="Concludi quiz";
   $("vehicleBrevettoResult").innerHTML='<div class="badge">'+(data.passed?"BREVETTO SUPERATO":"ESITO QUIZ")+'</div><div class="result">'+score+' / 8</div><p class="small muted">'+(data.passed?"Prova superata. ":"Prova completata. ")+'Hai ottenuto <strong>'+Number(data.exp_awarded||0)+' EXP nella progressione ordinaria del grado</strong>. EXP della carriera reparto invariati.</p><div class="answer-review-list">'+qs.map((q,i)=>'<article class="notice2 answer-review '+(answers[i]===q[5]?"answer-correct":"answer-wrong")+'"><strong>Domanda '+(i+1)+'</strong><p>'+esc(q[0])+'</p><p class="small">Risposta corretta: '+esc(q[q[5]+1])+'</p><p class="tiny muted">'+esc(q[6]||"")+'</p><p class="tiny"><a href="'+esc(q[7]||"#")+'" target="_blank" rel="noopener noreferrer">Fonte</a></p></article>').join("")+'</div>';
   render();await syncVehicleBrevettoStatus();
- }catch(e){$("vehicleBrevettoHint").textContent=e?.message||"Risultato non registrato. Riprova.";submit.disabled=false;
-  if(vehicleBrevettoQuiz&&!vehicleBrevettoQuiz.expired){const tick=()=>{if(!vehicleBrevettoQuiz)return;const left=Math.max(0,vehicleBrevettoQuiz.expiresAt-Date.now());$("vehicleBrevettoTimer").textContent=formatRemaining(left);if(!left){vehicleBrevettoQuiz.expired=true;if(vehicleBrevettoTimer){clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;}$("vehicleBrevettoHint").textContent="Tempo scaduto. Avvia una nuova prova.";$("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");vehicleBrevettoQuiz=null;}};tick();if(vehicleBrevettoQuiz)vehicleBrevettoTimer=setInterval(tick,1000);}
+ }catch(e){
+  console.error("vehicle-brevetto-submit",e);
+  quiz.submitting=false;submit.disabled=false;submit.textContent="Riprova a salvare il risultato";
+  const message=e?.message||"Risultato non registrato. Riprova.";
+  $("vehicleBrevettoHint").textContent=message+" Le risposte restano memorizzate in questa schermata: premi Riprova a salvare il risultato.";
+  if(Date.now()>=quiz.expiresAt){$("vehicleBrevettoHint").textContent=message+" La sessione è scaduta: non chiudere questa schermata prima di aver contattato l'istruttore.";}
  }finally{if(completed){if(vehicleBrevettoTimer){clearInterval(vehicleBrevettoTimer);vehicleBrevettoTimer=null;}vehicleBrevettoQuiz=null;}}
 }
-document.addEventListener("click",event=>{const option=event.target.closest("[data-vb-option]");if(option){chooseVehicleBrevettoAnswer(Number(option.dataset.vbOption));return;}if(event.target.closest("#vehicleBrevettoNext")){if(!vehicleBrevettoQuiz)return;if(vehicleBrevettoQuiz.answers[vehicleBrevettoQuiz.index]===null)return;if(vehicleBrevettoQuiz.index<7){vehicleBrevettoQuiz.index++;renderVehicleBrevettoQuestion();}else void finishVehicleBrevettoQuiz();}});
+document.addEventListener("click",event=>{const option=event.target.closest("[data-vb-option]");if(option)chooseVehicleBrevettoAnswer(Number(option.dataset.vbOption));});
+const brevettoNextButton=$("vehicleBrevettoNext");
+if(brevettoNextButton)brevettoNextButton.addEventListener("click",()=>{
+ const quiz=vehicleBrevettoQuiz;if(!quiz||quiz.expired)return;
+ if(!Number.isInteger(quiz.answers[quiz.index])){$("vehicleBrevettoHint").textContent="Seleziona una risposta prima di proseguire.";return;}
+ if(quiz.index===7){void finishVehicleBrevettoQuiz();return;}
+ quiz.index+=1;renderVehicleBrevettoQuestion();
+});
 
 function fullSimulatedName(value){const raw=String(value||"").trim();const generic=/simulat|responsabile|gestore|trasportator|autista|comandante|addetto|referente|corriere|diportista|cliente|agente marittimo/i.test(raw);if(raw.split(/\s+/).length>1&&!/^[A-Z][a-z]+\s+[A-Z]\.$/.test(raw)&&!generic)return raw;const firstNames=["Alessandro","Matteo","Lorenzo","Andrea","Riccardo","Federico","Davide","Marco"];const surnames=["Rinaldi","Ferrari","Romano","Conti","Marino","Greco","Moretti","Galli"];let seed=0;for(let i=0;i<raw.length;i++)seed=(seed*31+raw.charCodeAt(i))>>>0;if(generic)return firstNames[seed%firstNames.length]+" "+surnames[(seed>>>4)%surnames.length];const first=(raw.match(/^([A-Za-zÀ-ÿ]+)/)||[])[1]||"Operatore",initial=(raw.match(/([A-Z])\.$/)||[])[1]||"";const byInitial={A:"Alessandrini",B:"Bianchi",C:"Conti",D:"De Luca",F:"Ferrari",G:"Greco",L:"Lombardi",M:"Marino",N:"Neri",O:"Orlando",P:"Pellegrini",R:"Romano",S:"Serra",T:"Testa",V:"Vitale"};return first+" "+(byInitial[initial]||"Rossi");}
 function syntheticItalianPlate(value){const seed=String(value).replace(/[^a-z0-9]/gi,"").toUpperCase();let n=0;for(let i=0;i<seed.length;i++)n=(n*31+seed.charCodeAt(i))>>>0;const letters="ABCDEFGHJKLMNPRSTVWXYZ",a=letters[n%letters.length],b=letters[(n>>>5)%letters.length],c=letters[(n>>>10)%letters.length],d=letters[(n>>>15)%letters.length];return a+b+" "+String(100+n%900)+" "+c+d;}function patrolSceneType(sc){const x=[sc.scene_type,sc.id,sc.vehicle,sc.model,sc.situation].join(" ").toLowerCase();if(/container|sigillo/.test(x))return"container";if(/carburant|benzina|tappo|rifornimento|autocistern/.test(x))return"fuel";if(/barca|nave|pattugliatore|mercantil|imbarcaz/.test(x))return/mercantil|nave/.test(x)?"ship":"boat";if(/negozio|bar |caff|esercizio|scontrino|corrispett/.test(x))return/bar |caff/.test(x)?"bar":"shop";if(/furgone|van|consegna|pacchi|trasporto|merci/.test(x))return"van";return"road";}
