@@ -250,6 +250,22 @@ jobs:
           if(!engine.includes('bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40')||!engine.includes('bankCounts.regulations===30&&seenPrompts.size===100'))throw new Error('Brevetto must remain blocked until exactly 30/40/30 questions are verified');
           console.log('PASS reproducible 30-question physics and 30-question regulation seed per vehicle, plus 40 technical questions, category progress and fail-closed guard');
           NODE
+      - name: Validate privacy-safe adaptive screen profile and patrol EXP
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const migration=fs.readFileSync('supabase/migrations/20261124235000_reward_patrol_exp_only_when_correct.sql','utf8');
+          const build=fs.readFileSync('.github/workflows/android-apk.yml','utf8');
+          for(const token of ['adaptive-device-profile','visualViewport','devicePixelRatio','safe-area-inset-top','prefers-reduced-motion','pointer: coarse','uiDevice','uiDensity']){
+            if(!html.includes(token))throw new Error('Adaptive screen profile missing: '+token);
+          }
+          if(/navigator\\.(userAgent|platform)|getHighEntropyValues|deviceMemory/.test(html))throw new Error('Adaptive profile must not fingerprint device model or hardware');
+          if(!migration.includes('v_reward := case when v_correct then 10 else 0 end;'))throw new Error('Patrol must award EXP only on correct decisions');
+          if(!build.includes('android:icon="@mipmap/ic_launcher"'))throw new Error('Launcher activity/application icon assignment missing');
+          if(!build.includes('grep -E \'/ic_launcher_foreground\\.png$\''))throw new Error('APK verification must locate the packaged adaptive foreground independent of resource qualifier');
+          console.log('PASS: privacy-safe responsive profile, correct-only patrol EXP and robust APK icon checks');
+          NODE
       - name: Validate maximum-grade command access parity
         run: |
           node <<'NODE'
