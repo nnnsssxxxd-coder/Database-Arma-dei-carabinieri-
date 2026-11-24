@@ -150,7 +150,8 @@ jobs:
           grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        timeout-minutes: 12
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --console=plain
 
       - name: Verify APK signature and package
         shell: bash
