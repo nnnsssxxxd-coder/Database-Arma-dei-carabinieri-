@@ -1425,9 +1425,9 @@ footer{padding:14px 8px 22px;font-size:10px}
   <h3 id="patrolModel"></h3><p id="patrolSituation"></p>
   <p class="tiny muted">Dati e targhe sono inventati esclusivamente per la simulazione.</p>
   <div class="patrol-check-grid">
-   <div><button type="button" data-patrol-check="documents">01 · Documenti</button><p id="patrolDetail-documents" class="tiny muted">Verifica da effettuare</p></div>
-   <div><button type="button" data-patrol-check="vehicle">02 · Veicolo</button><p id="patrolDetail-vehicle" class="tiny muted">Verifica da effettuare</p></div>
-   <div><button type="button" data-patrol-check="conduct">03 · Condotta</button><p id="patrolDetail-conduct" class="tiny muted">Verifica da effettuare</p></div>
+   <div><button type="button" data-patrol-check="license">01 · Patente del conducente</button><p id="patrolDetail-license" class="tiny muted">Verifica da effettuare</p></div>
+   <div><button type="button" data-patrol-check="reports">02 · Segnalazioni recenti</button><p id="patrolDetail-reports" class="tiny muted">Verifica da effettuare</p></div>
+   <div><button type="button" data-patrol-check="inspection">03 · Controllo del veicolo</button><p id="patrolDetail-inspection" class="tiny muted">Verifica da effettuare</p></div>
   </div>
   <div id="patrolDecisions" class="hidden"><h3>Decisione finale</h3><p class="small muted">Scegli soltanto sulla base degli elementi verificati.</p><div class="patrol-decision-grid"><button type="button" data-patrol-action="sanzione">A. Contestare la violazione</button><button type="button" data-patrol-action="nessuna_violazione">B. Nessuna violazione</button><button type="button" data-patrol-action="avviso">C. Avviso / approfondimento</button></div></div>
  </div>
@@ -1952,9 +1952,16 @@ async function finishVehicleBrevettoQuiz(){
  submit.disabled=true;$("vehicleBrevettoHint").textContent="Verifica risposte e registrazione EXP nel grado personale…";
  try{
   const {data,error}=await db.functions.invoke("department-engine",{body:{service_branch:selectedBranch,action:"vehicle_brevetto_submit",attempt_id:attemptId,answers}});
-  if(error||!data||!data.progress)throw new Error(data?.error||error?.message||"Risultato non registrato.");
+  if(error||!data)throw new Error(await functionError(error,data?.error||"Risultato non registrato."));
+  let savedProgress=data.progress;
+  if(!savedProgress){
+    const {data:progressRow,error:progressError}=await db.from("progress").select("payload")
+      .eq("user_id",user.id).eq("service_branch",selectedBranch).maybeSingle();
+    if(progressError||!progressRow?.payload)throw new Error("Il risultato è stato ricevuto, ma la sincronizzazione EXP non è disponibile. Riprova tra poco.");
+    savedProgress=progressRow.payload;
+  }
   completed=true;
-  const score=Number(data.score)||0,state=getVehicleBrevettoState();state.attempts=(state.attempts||0)+1;state.passed=state.passed||!!data.passed;state.best_score=Math.max(state.best_score||0,score);saveVehicleBrevettoState(state);progress=data.progress;
+  const score=Number(data.score)||0,state=getVehicleBrevettoState();if(!data.already_completed)state.attempts=(state.attempts||0)+1;state.passed=state.passed||!!data.passed;state.best_score=Math.max(state.best_score||0,score);saveVehicleBrevettoState(state);progress=savedProgress;
   $("vehicleBrevettoQuizPlay").classList.add("hidden");$("vehicleBrevettoQuizSetup").classList.remove("hidden");$("vehicleBrevettoResult").classList.remove("hidden");
   $("vehicleBrevettoResult").innerHTML='<div class="badge">'+(data.passed?"BREVETTO SUPERATO":"ESITO QUIZ")+'</div><div class="result">'+score+' / 8</div><p class="small muted">'+(data.passed?"Prova superata. ":"Prova completata. ")+'Hai ottenuto <strong>'+Number(data.exp_awarded||0)+' EXP nella progressione ordinaria del grado</strong>. EXP della carriera reparto invariati.</p><div class="answer-review-list">'+qs.map((q,i)=>'<article class="notice2 answer-review '+(answers[i]===q[5]?"answer-correct":"answer-wrong")+'"><strong>Domanda '+(i+1)+'</strong><p>'+esc(q[0])+'</p><p class="small">Risposta corretta: '+esc(q[q[5]+1])+'</p><p class="tiny muted">'+esc(q[6]||"")+'</p><p class="tiny"><a href="'+esc(q[7]||"#")+'" target="_blank" rel="noopener noreferrer">Fonte</a></p></article>').join("")+'</div>';
   render();await syncVehicleBrevettoStatus();
@@ -2018,7 +2025,7 @@ function renderPatrolSession(){
   const allowedPhoto=/^https:\/\/(images\.unsplash\.com|upload\.wikimedia\.org|www\.aast\.edu|www\.ilrestodelcarlino\.it)\//i.test(photo);
   illustration.innerHTML=fallback+(allowedPhoto?'<img class="patrol-photo" src="'+esc(photo)+'" alt="Fotografia illustrativa dello scenario" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':"");
  }
- ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=({documents:"01 · Documenti",vehicle:"02 · Veicolo",conduct:"03 · Condotta"})[id]+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
+ ["license","reports","inspection"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=({license:"01 · Patente del conducente",reports:"02 · Segnalazioni recenti",inspection:"03 · Controllo del veicolo"})[id]+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
 async function startPatrolService(){
@@ -2053,13 +2060,13 @@ async function finishPatrolService(action){
   const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action:"finish",service_branch:selectedBranch,session_id:patrolSession.id,chosen_action:action}});
   if(error||!data)throw new Error(data?.error||error?.message||"Esito non registrato.");
   if(data.expired){if(patrolTimer){clearInterval(patrolTimer);patrolTimer=null;}patrolSession=null;renderPatrolSession();$("patrolMessage").textContent="Sessione scaduta e registrata senza EXP.";await refreshPatrolStatus();return;}
-  if(!data.completed||data.duplicate)throw new Error("Questo controllo è già stato concluso o non è valido.");
+  if(!data.completed&&!data.duplicate)throw new Error("Il pattugliamento non risulta registrato.");
   if(patrolTimer){clearInterval(patrolTimer);patrolTimer=null;}
   if(data.progress)progress={...progress,...data.progress};
-  const correct=!!data.correct,earned=Number(data.exp_awarded)||0;
+  const correct=!!data.correct,earned=Number(data.exp_awarded)||0,duplicate=!!data.duplicate;
   patrolSession=null;renderPatrolSession();render();
   $("patrolResult").classList.remove("hidden");
-  $("patrolResult").innerHTML='<div class="badge">'+(correct?"CONTROLLO CORRETTO":"CONTROLLO DA RIVEDERE")+'</div><h3>'+(correct?"Decisione corretta":"Decisione non corretta")+'</h3><p>'+esc(data.explanation||"Esito registrato.")+'</p><p class="small muted">EXP ottenuti: <strong>'+earned+'</strong></p>';
+  $("patrolResult").innerHTML='<div class="badge">'+(duplicate?"PATTUGLIAMENTO GIÀ REGISTRATO":correct?"CONTROLLO CORRETTO":"CONTROLLO DA RIVEDERE")+'</div><h3>'+(duplicate?"Esito recuperato dal database":correct?"Decisione corretta":"Decisione non corretta")+'</h3><p>'+esc(data.explanation||"Esito registrato.")+'</p><p class="small muted">'+(duplicate?"Nessun accredito duplicato: gli EXP del primo invio sono già registrati.":"EXP ottenuti: <strong>"+earned+"</strong>")+'</p>';
   $("patrolMessage").textContent="Controllo concluso.";if(data.cooldown_until)startPatrolCooldown(data.cooldown_until);else void refreshPatrolStatus();
  }catch(e){$("patrolMessage").textContent=e?.message||"Errore nel salvataggio dell'esito.";}
  finally{buttons.forEach(b=>b.disabled=false);}
