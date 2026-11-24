@@ -106,6 +106,66 @@ Deno.serve(async (req: Request) => {
     if(membershipAccessError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
     if(!membershipAccess)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
      const action = String(body.action ?? "");
+     // Il brevetto è autonomo dalla carriera di reparto: si sblocca sul grado personale.
+     if (action.startsWith("vehicle_brevetto_")) {
+       const rankRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+       if(rankRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
+       const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankRow.data?.payload?.rank)||0);
+       const minimumRank=branch==="finanza"?3:2;
+       if(baseRank<minimumRank)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
+       if(action==="vehicle_brevetto_status"){
+         const [{data:catalog,error:catalogError},{data:chosen,error:chosenError}]=await Promise.all([
+           db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain,description,source_url,sort_order").eq("service_branch",branch).eq("active",true).order("sort_order"),
+           db.from("department_vehicle_brevetti").select("vehicle_id,vehicle_name,vehicle_type,selected_at").eq("user_id",user.id).eq("service_branch",branch).maybeSingle()
+         ]);
+         if(catalogError||chosenError)return reply(req,{error:"Impossibile caricare catalogo o scelta brevetto."},500);
+         const {data:last}=await db.from("department_vehicle_brevetto_attempts").select("completed_at").eq("user_id",user.id).eq("service_branch",branch).not("completed_at","is",null).order("completed_at",{ascending:false}).limit(1).maybeSingle();
+         const cooldownUntil=last?.completed_at?new Date(new Date(last.completed_at).getTime()+12*60*60*1000).toISOString():null;
+         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil});
+       }
+       if(action==="vehicle_brevetto_choose"){
+         const vehicleId=String(body.vehicle_id??"");
+         const {data:vehicle,error:vehicleError}=await db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain").eq("id",vehicleId).eq("service_branch",branch).eq("active",true).maybeSingle();
+         if(vehicleError)return reply(req,{error:"Impossibile verificare il veicolo."},500);
+         if(!vehicle)return reply(req,{error:"Veicolo non presente nel catalogo ufficiale del Corpo."},400);
+         const {data:existing,error:existingError}=await db.from("department_vehicle_brevetti").select("vehicle_id").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+         if(existingError)return reply(req,{error:"Impossibile verificare la scelta già registrata."},500);
+         if(existing)return reply(req,{error:"Hai già scelto il brevetto: la scelta è unica e non modificabile."},409);
+         const {data:saved,error:saveError}=await db.from("department_vehicle_brevetti").insert({user_id:user.id,service_branch:branch,department_id:null,vehicle_id:vehicle.id,vehicle_name:vehicle.display_name,vehicle_type:vehicle.vehicle_domain}).select("vehicle_id,vehicle_name,vehicle_type,selected_at").single();
+         if(saveError)return reply(req,{error:saveError.code==="23505"?"Hai già scelto un brevetto.":"Impossibile registrare il brevetto."},saveError.code==="23505"?409:500);
+         return reply(req,{brevetto:saved},201);
+       }
+       if(action==="vehicle_brevetto_start"){
+         const {data:selected,error:selectedError}=await db.from("department_vehicle_brevetti").select("vehicle_id,vehicle_name,vehicle_type").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
+         if(selectedError)return reply(req,{error:"Impossibile verificare il veicolo scelto."},500);
+         if(!selected)return reply(req,{error:"Scegli prima il Brevetto veicolo speciale."},403);
+         const {data:latest,error:latestError}=await db.from("department_vehicle_brevetto_attempts").select("id,questions,started_at,completed_at").eq("user_id",user.id).eq("service_branch",branch).order("started_at",{ascending:false}).limit(1).maybeSingle();
+         if(latestError)return reply(req,{error:"Impossibile verificare i tentativi precedenti."},500);
+         if(latest&&!latest.completed_at&&new Date(latest.started_at).getTime()>Date.now()-10*60*1000){
+           return reply(req,{attempt_id:latest.id,questions:latest.questions,expires_at:new Date(new Date(latest.started_at).getTime()+10*60*1000).toISOString(),resumed:true});
+         }
+         if(latest?.completed_at){
+           const availableAt=new Date(new Date(latest.completed_at).getTime()+12*60*60*1000);
+           if(availableAt.getTime()>Date.now())return reply(req,{error:"Il prossimo Quiz Brevetto sarà disponibile tra 12 ore dall'ultimo tentativo.",cooldown_until:availableAt.toISOString()},429);
+         }
+         const {data:pool,error:poolError}=await db.from("vehicle_brevetto_question_bank").select("id,prompt,options,correct_index,explanation,source_url").eq("vehicle_id",selected.vehicle_id).eq("active",true);
+         if(poolError)return reply(req,{error:"Impossibile caricare la banca dati del veicolo."},500);
+         if(!pool||pool.length<100)return reply(req,{error:"La banca dati verificata di questo veicolo non è ancora completa: servono 100 domande approvate. Il quiz non verrà avviato con domande inventate.",available:pool?.length??0,required:100},503);
+         const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+         const rows=shuffled.slice(0,8);
+         const questions=rows.map(q=>[q.prompt,...q.options,q.correct_index,q.explanation,q.source_url]);
+         const {data:attempt,error:insertError}=await db.from("department_vehicle_brevetto_attempts").insert({user_id:user.id,service_branch:branch,department_id:null,vehicle_id:selected.vehicle_id,questions}).select("id,started_at").single();
+         if(insertError)return reply(req,{error:"Impossibile creare il tentativo del brevetto."},500);
+         return reply(req,{attempt_id:attempt.id,questions,expires_at:new Date(new Date(attempt.started_at).getTime()+10*60*1000).toISOString(),resumed:false});
+       }
+       if(action==="vehicle_brevetto_submit"){
+         const attemptId=String(body.attempt_id??""),answers=body.answers;
+         if(!/^[0-9a-f-]{36}$/i.test(attemptId)||!Array.isArray(answers)||answers.length!==8||answers.some((a:unknown)=>!Number.isInteger(a)||Number(a)<0||Number(a)>3))return reply(req,{error:"Il quiz richiede 8 risposte valide."},400);
+         const {data,error:submitError}=await db.rpc("complete_vehicle_brevetto_attempt",{p_user_id:user.id,p_attempt_id:attemptId,p_answers:answers});
+         if(submitError){const message=String(submitError.message||"");const code=message.includes("già consegnato")?409:message.includes("scaduta")?410:400;return reply(req,{error:message.includes("già consegnato")?"Quiz già consegnato.":message.includes("scaduta")?"Tempo del quiz scaduto.":"Impossibile registrare il risultato del brevetto."},code);}
+         return reply(req,submitError?{error:"Risultato non registrato."}:submitError??data);
+       }
+     }
     if (action === "catalog") {
       const { data, error } = await db.from("department_catalog").select("id,name,description,source_url").eq("service_branch",branch).eq("active", true).order("name");
       if (error) return reply(req,{ error: "Catalogo reparti non disponibile" }, 500);
