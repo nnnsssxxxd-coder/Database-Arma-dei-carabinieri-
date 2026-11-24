@@ -1478,6 +1478,15 @@ function applyServiceBranding(branch){
 
  const homeEyebrow=document.querySelector("#home .eyebrow");if(homeEyebrow)homeEyebrow.textContent=name+" · AREA PERSONALE";
  const quizTitle=$("quiz")?.querySelector("h2");if(quizTitle)quizTitle.textContent=finanza?"Quiz di preparazione · Guardia di Finanza":"Quiz di preparazione";
+ const patrolTitle=$("patrol")?.querySelector("h2"),patrolEyebrow=$("patrol")?.querySelector(".eyebrow"),patrolLead=$("patrol")?.querySelector(".row p"),patrolIntroTitle=$("patrol")?.querySelector(".patrol-intro strong"),patrolIntroText=$("patrol")?.querySelector(".patrol-intro p"),patrolStart=$("patrolStart"),patrolBadge=$("patrol")?.querySelector(".row .badge");
+ if(patrolTitle)patrolTitle.textContent=finanza?"Controllo economico-finanziario":"Servizio di pattuglia";
+ if(patrolEyebrow)patrolEyebrow.textContent=finanza?"SIMULAZIONE OPERATIVA · GdF":"SIMULAZIONE OPERATIVA";
+ if(patrolLead)patrolLead.textContent=finanza?"Scenari didattici fittizi su verifiche documentali, trasporti e tutela dei mercati.":"Scenari didattici fittizi. Verifica i dati, valuta le circostanze e scegli una decisione proporzionata.";
+ if(patrolIntroTitle)patrolIntroTitle.textContent=finanza?"Verifica economico-finanziaria":"Procedura di controllo";
+ if(patrolIntroText)patrolIntroText.textContent=finanza?"Esamina documenti, merce e circostanze prima di decidere. Le risposte corrette assegnano EXP alla progressione della Guardia di Finanza.":"Effettua le tre verifiche disponibili prima di decidere. Le risposte corrette assegnano EXP alla progressione del Corpo selezionato.";
+ if(patrolStart)patrolStart.textContent=finanza?"Inizia controllo":"Inizia servizio";
+ if(patrolBadge)patrolBadge.textContent=finanza?"GdF · CONTROLLO":"CONTROLLO";
+
  const quizCategory=$("quizCategory");
  if(quizCategory){
   const categories=finanza?["Tutte le materie","Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"]:["Tutte le materie","Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
@@ -1893,8 +1902,8 @@ function renderPatrolSession(){
  if(!patrolSession){session.classList.add("hidden");if(start)start.classList.remove("hidden");return;}
  session.classList.remove("hidden");if(start)start.classList.add("hidden");
  const sc=patrolSession.scenario||{};
- $("patrolVehicle").textContent=sc.vehicle||"Veicolo";$("patrolPlate").textContent="Targa simulata: "+(sc.plate||"—");
- $("patrolDriver").textContent="Conducente: "+(sc.driver||"—");$("patrolModel").textContent=sc.model||"Controllo";
+ $("patrolVehicle").textContent=sc.vehicle||"Veicolo";$("patrolPlate").textContent=(selectedBranch==="finanza"?"Riferimento simulato: ":"Targa simulata: ")+(sc.plate||"—");
+ $("patrolDriver").textContent=(selectedBranch==="finanza"?"Referente: ":"Conducente: ")+(sc.driver||"—");$("patrolModel").textContent=sc.model||"Controllo";
  $("patrolSituation").textContent=sc.situation||"";
  ["documents","vehicle","conduct"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(b)b.disabled=(patrolSession.checked||[]).includes(id);});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
