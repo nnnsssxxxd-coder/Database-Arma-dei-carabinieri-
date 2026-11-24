@@ -31,7 +31,10 @@ jobs:
             supabase/functions/command-general-action/index.ts \
             supabase/functions/department-engine/index.ts \
             supabase/functions/audit-event/index.ts \
-            supabase/functions/username-login/index.ts
+            supabase/functions/username-login/index.ts \
+            supabase/functions/command-general-login/index.ts \
+            supabase/functions/ministry-login/index.ts \
+            supabase/functions/traffic-control-engine/index.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
@@ -140,4 +143,35 @@ jobs:
             if(!progressRepair.includes(token)) throw new Error('Missing progression repair safeguard: '+token);
           }
           console.log('PASS CORS, query error handling, department branch schema, progression repair and removed controls');
+          NODE
+
+      - name: Validate both Corps, quiz counts, brevetto cycles and Android icon
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const brevetto=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const migration=fs.readFileSync('supabase/migrations/20261124190000_vehicle_brevetto_six_attempt_cycle.sql','utf8');
+          const build=fs.readFileSync('.github/workflows/android-apk.yml','utf8');
+          function ranks(name){
+            const match=html.match(new RegExp('const '+name+'=\\[([^\\]]+)\\]'));
+            if(!match)throw new Error('Missing '+name);
+            return [...match[1].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
+          }
+          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
+            const list=ranks(name);
+            if(list.length!==24)throw new Error(name+' should contain 24 ordered official grades, found '+list.length);
+            if(new Set(list).size!==list.length)throw new Error(name+' contains duplicate grades');
+          }
+          for(const token of ['#d4af37','#0d3b27','applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
+            if(!html.includes(token))throw new Error('Missing branch identity: '+token);
+          }
+          if(!quiz.includes('shuffled.slice(0,5)')||!quiz.includes('answers.length!==5')||!html.includes('DOMANDA 1 / 5'))throw new Error('Rank exam must use five questions end-to-end');
+          if(!brevetto.includes('start_vehicle_brevetto_attempt')||!brevetto.includes('answers.length!==8'))throw new Error('Eight-question brevetto flow is incomplete');
+          for(const token of ['completed_attempts between 0 and 6',"interval '12 hours'","used_question_ids=array","jsonb_array_length(questions)=8","score <= 8"]){
+            if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
+          }
+          if(!build.includes('app-icon-foreground.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('application-icon-160:'))throw new Error('Android adaptive launcher icon is not verified');
+          console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and adaptive APK icon');
           NODE
