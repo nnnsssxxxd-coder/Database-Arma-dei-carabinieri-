@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
        const rankRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
        if(rankRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
        const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankRow.data?.payload?.rank)||0);
-       const minimumRank=branch==="finanza"?3:2;
+       const minimumRank=branch==="finanza"?2:2;
        if(baseRank<minimumRank)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_status"){
          const [{data:catalog,error:catalogError},{data:chosen,error:chosenError}]=await Promise.all([
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
       const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
-      const minimumRank = branch === "finanza" ? 6 : 5;
+      const minimumRank = branch === "finanza" ? 5 : 5;
       if (personalRank < minimumRank) return reply(req,{ error: branch === "finanza" ? "La Carriera Reparto si sblocca dal grado di Vice Brigadiere." : "La Carriera Reparto si sblocca dal grado di Vicebrigadiere." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
