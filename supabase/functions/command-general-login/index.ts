@@ -30,7 +30,7 @@ async function resolveCommandAccess(username:string){
  if(me)throw me;
  // Indici massimi del catalogo gradi del simulatore: Carabinieri 23, Guardia di Finanza 24.
  const {data:progressRows,error:ge}=await admin.from("progress").select("service_branch,payload").eq("user_id",profile.id);if(ge)throw ge;
- const rankFor=(m)=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
+ const rankFor=(m: {initial_rank?: number; service_branch: string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
  const eligible=(memberships??[]).some(m=>(m.service_branch==="carabinieri"&&rankFor(m)===23)||(m.service_branch==="finanza"&&rankFor(m)===24));
  if(!eligible)return null;
  const {data:authUser,error:ue}=await admin.auth.admin.getUserById(profile.id);
