@@ -203,6 +203,22 @@ jobs:
           if(!engine.includes('if(error||!pool||pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete question bank');
           console.log('PASS 38 missing explanations are supplied and rank exam bank guard remains enabled');
           NODE
+      - name: Validate sourced brevetto bank seed and progress feedback
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const physics=fs.readFileSync('supabase/migrations/20261124190000_seed_vehicle_physics_30.sql','utf8');
+          const rules=fs.readFileSync('supabase/migrations/20261124190100_seed_vehicle_regulations_30.sql','utf8');
+          const engine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          if((physics.match(/"prompt":/g)||[]).length!==44)throw new Error('Physics seed must contain 22 land and 22 naval source questions');
+          if((rules.match(/"prompt":/g)||[]).length!==60)throw new Error('Regulations seed must contain 30 road and 30 COLREG questions');
+          for(const vehicle of ['cc-subaru-crosstrek','cc-iveco-50c17-op','cc-defender-110','cc-jeep-wrangler','gdf-classe-monti','gdf-classe-di-bartolo','gdf-classe-bigliani-viii','gdf-bso-139']){
+            if(!physics.includes(vehicle)||!rules.includes(vehicle))throw new Error('Missing seed target '+vehicle);
+          }
+          if(!engine.includes('fisica ${bankCounts.physics}/30, tecniche ${bankCounts.technical}/40, normative ${bankCounts.regulations}/30'))throw new Error('Incomplete-bank progress message missing');
+          if(!engine.includes('bank.length===100&&bankCounts.physics===30&&bankCounts.technical===40&&bankCounts.regulations===30'))throw new Error('Brevetto must remain blocked until exactly 30/40/30 questions are verified');
+          console.log('PASS reproducible 30-question physics and 30-question regulation seed per vehicle, plus category progress and fail-closed guard');
+          NODE
       - name: Validate maximum-grade command access parity
         run: |
           node <<'NODE'
