@@ -201,7 +201,7 @@ jobs:
           if(!monochrome.includes('fill="#fff"')||!monochrome.includes('fill-rule="evenodd"'))throw new Error('The app icon source assets must retain a valid monochrome shield');
           if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
           if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
-          if(!html.includes('Controllo economico-finanziario')||!html.includes('Riferimento simulato: '))throw new Error('The Guardia di Finanza patrol UI must use its own terminology');
+          if(!traffic.includes('Verifica della documentazione fiscale e commerciale')||!traffic.includes('Riscontro di merci e tracciabilità')||!html.includes('checkDefs=Array.isArray(sc.checks)')||!html.includes('plateEl.hidden=!simPlate'))throw new Error('The Guardia di Finanza patrol UI must use its own business-control checks and must not display a fictitious vehicle plate');
 
           console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and density-specific PNG APK icon');
           const dollarArgs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
