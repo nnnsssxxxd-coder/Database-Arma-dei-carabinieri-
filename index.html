@@ -2060,7 +2060,7 @@ function renderPatrolSession(){
  if(!patrolSession){session.classList.add("hidden");if(start)start.classList.remove("hidden");return;}
  session.classList.remove("hidden");if(start)start.classList.add("hidden");
  const sc=patrolSession.scenario||{};
- $("patrolVehicle").textContent=sc.vehicle||"Veicolo";const rawPlate=String(sc.plate||"").trim();const simPlate=/^SIM\s/i.test(rawPlate)?syntheticItalianPlate(rawPlate):rawPlate.toUpperCase();$("patrolPlate").textContent=(selectedBranch==="finanza"?"RIF. CONTROLLO · ":"Riferimento simulato: ")+simPlate;
+ $("patrolVehicle").textContent=sc.vehicle||"Veicolo";const rawPlate=String(sc.plate||"").trim();const simPlate=/^SIM\\s/i.test(rawPlate)?syntheticItalianPlate(rawPlate):rawPlate.toUpperCase();const plateEl=$("patrolPlate");plateEl.textContent=simPlate?"Riferimento veicolo dimostrativo: "+simPlate:"";plateEl.hidden=!simPlate;
  $("patrolDriver").textContent=(selectedBranch==="finanza"?"REFERENTE · ":"CONDUCENTE · ")+fullSimulatedName(sc.driver||"Operatore simulato");$("patrolModel").textContent=sc.model||"Controllo";
  $("patrolSituation").textContent=sc.situation||"";const illustration=$("patrolIllustration");if(illustration){
   const scene=patrolSceneType(sc);
@@ -2069,7 +2069,9 @@ function renderPatrolSession(){
   const allowedPhoto=/^https:\/\/(images\.unsplash\.com|upload\.wikimedia\.org|www\.aast\.edu|www\.ilrestodelcarlino\.it)\//i.test(photo);
   illustration.innerHTML=fallback+(allowedPhoto?'<img class="patrol-photo" src="'+esc(photo)+'" alt="Fotografia illustrativa dello scenario" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':"");
  }
- ["license","reports","inspection"].forEach(id=>{const b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=({license:"01 · Verifica della patente di guida",reports:"02 · Verifica delle segnalazioni disponibili",inspection:"03 · Verifica dei dati del veicolo"})[id]+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
+ const checkDefs=Array.isArray(sc.checks)&&sc.checks.length===3?sc.checks:(selectedBranch==="finanza"?[{id:"license",label:"01 · Verifica della documentazione fiscale e commerciale"},{id:"reports",label:"02 · Riscontro di registri, corrispettivi e dati contabili"},{id:"inspection",label:"03 · Verifica di merci, carichi e tracciabilità"}]:[{id:"license",label:"01 · Verifica della patente di guida"},{id:"reports",label:"02 · Verifica delle segnalazioni disponibili"},{id:"inspection",label:"03 · Verifica dei dati del veicolo"}]);
+ const checkGrid=document.querySelector("#patrolSession .patrol-check-grid");if(checkGrid){checkGrid.innerHTML=checkDefs.map(item=>'<div><button type="button" data-patrol-check="'+item.id+'">'+item.label+'</button><p id="patrolDetail-'+item.id+'" class="tiny muted">Verifica da effettuare</p></div>').join("");}
+ checkDefs.forEach(item=>{const id=item.id,b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=item.label+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
 async function startPatrolService(){
