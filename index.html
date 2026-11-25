@@ -2071,7 +2071,7 @@ function renderPatrolSession(){
  }
  const checkDefs=Array.isArray(sc.checks)&&sc.checks.length===3?sc.checks:(selectedBranch==="finanza"?[{id:"license",label:"01 · Verifica della documentazione fiscale e commerciale"},{id:"reports",label:"02 · Riscontro di registri, corrispettivi e dati contabili"},{id:"inspection",label:"03 · Verifica di merci, carichi e tracciabilità"}]:[{id:"license",label:"01 · Verifica della patente di guida"},{id:"reports",label:"02 · Verifica delle segnalazioni disponibili"},{id:"inspection",label:"03 · Verifica dei dati del veicolo"}]);
  const checkGrid=document.querySelector("#patrolSession .patrol-check-grid");if(checkGrid){checkGrid.innerHTML=checkDefs.map(item=>'<div><button type="button" data-patrol-check="'+item.id+'">'+item.label+'</button><p id="patrolDetail-'+item.id+'" class="tiny muted">Verifica da effettuare</p></div>').join("");}
- checkDefs.forEach(item=>{const id=item.id,b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=item.label+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");});
+ checkDefs.forEach(item=>{const id=item.id,b=document.querySelector('[data-patrol-check="'+id+'"]');if(!b)return;const done=(patrolSession.checked||[]).includes(id),state=done?(patrolSession.checkStates?.[id]||"ok"):"";b.disabled=done;b.classList.remove("check-ok","check-bad","check-warning");if(state)b.classList.add(state==="bad"?"check-bad":state==="warning"?"check-warning":"check-ok");b.textContent=item.label+(done?(state==="bad"?" ✕":state==="warning"?" !":" ✓"):"");const detail=$("patrolDetail-"+id);if(detail)detail.textContent=patrolSession.checkDetails?.[id]||"Verifica da effettuare";});
  $("patrolDecisions").classList.toggle("hidden",(patrolSession.checked||[]).length<3);
 }
 async function startPatrolService(){
@@ -2093,7 +2093,7 @@ async function inspectPatrol(checkId){
  try{
   const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action:"inspect",service_branch:selectedBranch,session_id:patrolSession.id,check_id:checkId}});
   if(error||!data)throw new Error(data?.error||error?.message||"Verifica non disponibile.");
-  patrolSession.checked=data.completed_checks||patrolSession.checked||[];patrolSession.checkStates={...(patrolSession.checkStates||{}),[checkId]:data.status||"ok"};
+  patrolSession.checked=data.completed_checks||patrolSession.checked||[];patrolSession.checkStates={...(patrolSession.checkStates||{}),[checkId]:data.status||"ok"};patrolSession.checkDetails={...(patrolSession.checkDetails||{}),[checkId]:data.detail||"Verifica completata."};
   $("patrolDetail-"+checkId).textContent=data.detail||"Verifica completata.";
   renderPatrolSession();
  }catch(e){btn.disabled=false;$("patrolMessage").textContent=e?.message||"Verifica non riuscita.";}
