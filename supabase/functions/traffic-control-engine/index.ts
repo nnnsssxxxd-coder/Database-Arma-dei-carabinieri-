@@ -101,6 +101,10 @@ const finanzaScenarios = [
 
 ];
 const scenariosByBranch = {carabinieri:scenarios,finanza:finanzaScenarios};
+const patrolChecksByBranch = {
+ carabinieri:[{id:"license",label:"01 · Verifica della patente di guida"},{id:"reports",label:"02 · Verifica delle segnalazioni disponibili"},{id:"inspection",label:"03 · Verifica dei dati del veicolo"}],
+ finanza:[{id:"license",label:"01 · Verifica della documentazione fiscale e commerciale"},{id:"reports",label:"02 · Riscontro di registri, corrispettivi e dati contabili"},{id:"inspection",label:"03 · Verifica di merci, carichi e tracciabilità"}]
+};
 async function getUser(req:Request) {
  const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
  const {data:{user}}=await caller.auth.getUser(); return user;
@@ -169,14 +173,15 @@ Deno.serve(async(req:Request)=>{
       throw error;
     }
     const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
+    if(branch==="finanza"){delete publicScenario.plate;}
     const vehicleText=[scenario.vehicle,scenario.model].join(" ");
     const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[scenario.scene_type??""] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
-    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
+    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage,checks:patrolChecksByBranch[branch as keyof typeof patrolChecksByBranch]},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
   }
   if(body.action==="inspect") {
     const sessionId=String(body.session_id??"");
     const checkId=String(body.check_id??"");
-    if(!/^[0-9a-f-]{36}$/i.test(sessionId)||!["license","reports","inspection"].includes(checkId))
+    if(!/^[0-9a-f-]{36}$/i.test(sessionId)||!patrolChecksByBranch[branch as keyof typeof patrolChecksByBranch].some(item=>item.id===checkId))
       return reply(req,{error:"Verifica non valida"},400);
     const {data:session,error:se}=await db.from("traffic_control_sessions")
       .select("id,scenario_id,checks_completed,expires_at,completed_at")
@@ -194,7 +199,24 @@ Deno.serve(async(req:Request)=>{
 
     const evidence=[String(scenario.situation??""),...(scenario.clues??[])].join(" ");
     let detail="",status="ok";
-    if(checkId==="license"){
+    if(branch==="finanza"){
+      if(checkId==="license"){
+        if(/mancan|non esibit|incomplet|discordan|non coincide|assenza verificata|non emess/i.test(evidence)){
+          detail="Documentazione fiscale o commerciale da approfondire: confrontare i documenti acquisiti con l'operazione e gli obblighi applicabili.";
+          status=/mancanza verificata|assenza verificata|non viene emesso|documento non emesso|discordanza confermata/i.test(evidence)?"bad":"warning";
+        }else detail="Documentazione esaminata: gli elementi disponibili risultano coerenti con lo scenario.";
+      }else if(checkId==="reports"){
+        if(/corrispettiv|registratore telematico|pagamento|fattura|registrazion|movimenti di denaro|prezzi applicati|accise|quantità dichiarata/i.test(evidence)){
+          detail="Riscontro contabile: confrontare i dati di pagamento, i corrispettivi e le registrazioni del periodo indicato.";
+          status=/non coincid|discordan|differenza|mancata emissione|non viene emesso|scostament/i.test(evidence)?(/causa non|non ancora chiar|da verificare|incomplet/i.test(evidence)?"warning":"bad"):"ok";
+        }else detail="Riscontro dei registri completato: nello scenario non emergono scostamenti contabili documentati.";
+      }else{
+        if(/merce|carico|colli|sigillo|container|marchio|origine|tabacchi|prodotto|trasporto|autocisterna/i.test(evidence)){
+          detail="Riscontro di merci e tracciabilità: confrontare quantità, identificativi, origine e documenti di accompagnamento prima di formulare conclusioni.";
+          status=/discordanza persistente e documentata|riscontro tecnico.*confermato|contraffatti|quantità effettivamente documentata/i.test(evidence)?"bad":(/non ancora|da verificare|incomplet|sospett|non coincide|discordan/i.test(evidence)?"warning":"ok");
+        }else detail="Verifica di merci e tracciabilità completata: nessuna anomalia specifica risulta dagli elementi dello scenario.";
+      }
+    }else if(checkId==="license"){
       if(/senza patente|patente[^.]{0,45}(scadut|revocat|sospes|ritirat|non valida|assent)|patente non valida/i.test(evidence)){
         detail="Patente non regolare: nella simulazione risulta un'anomalia da verificare prima di consentire la ripartenza.";
         status="bad";
