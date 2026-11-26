@@ -102,6 +102,7 @@ const finanzaScenarios = [
 ];
 const scenariosByBranch = {carabinieri:scenarios,finanza:finanzaScenarios};
 function finanzaSceneType(scenario: any): string {
+ if(["shop","bar","merchant_ship","boat","container","fuel","truck","van","business"].includes(String(scenario.scene_type??""))) return String(scenario.scene_type);
  const text=[scenario.vehicle,scenario.model,scenario.situation,...(scenario.clues??[])].join(" ").toLowerCase();
  if(/negozio|bar |caffetter|esercizio commercial|attività commercial|punto vendita|distributore carburanti|impianto di distribuzione|gestore impianto/.test(text)) return /bar |caffetter/.test(text)?"bar":"shop";
  if(/nave mercantile|unità da diporto|barca|pattugliatore|imbarcazione|porto|banchina|marittim/.test(text)) return /nave mercantile/.test(text)?"merchant_ship":"boat";
@@ -114,24 +115,24 @@ function checksForScenario(branch: string, scenario: any) {
  if(branch==="carabinieri") return patrolChecksByBranch.carabinieri;
  const kind=finanzaSceneType(scenario);
  if(kind==="shop"||kind==="bar") return [
-  {id:"license",label:"01 · Verifica dei documenti fiscali e del documento commerciale"},
-  {id:"reports",label:"02 · Riscontro dei corrispettivi e del registratore telematico"},
-  {id:"inspection",label:"03 · Controllo di merci, prezzi e tracciabilità"}
+  {id:"fiscal_docs",label:"01 · Esame dei documenti fiscali e commerciali"},
+  {id:"accounting",label:"02 · Riscontro di pagamenti, corrispettivi e registratore telematico"},
+  {id:"inventory",label:"03 · Verifica di prodotti, prezzi esposti e tracciabilità"}
  ];
  if(kind==="merchant_ship"||kind==="boat") return [
-  {id:"license",label:"01 · Verifica della documentazione commerciale e di bordo"},
-  {id:"reports",label:"02 · Riscontro di registri, dichiarazioni e operazioni"},
-  {id:"inspection",label:"03 · Controllo di merci, carichi e sigilli"}
+  {id:"fiscal_docs",label:"01 · Esame di manifesti, dichiarazioni e documenti di bordo"},
+  {id:"accounting",label:"02 · Riscontro di registri, operazioni e movimenti"},
+  {id:"inventory",label:"03 · Verifica di merci, carichi e sigilli"}
  ];
  return [
-  {id:"license",label:"01 · Verifica dei documenti fiscali e di trasporto"},
-  {id:"reports",label:"02 · Confronto di registri, quantità e corrispettivi"},
-  {id:"inspection",label:"03 · Riscontro di merci, carichi e tracciabilità"}
+  {id:"fiscal_docs",label:"01 · Esame dei documenti fiscali, doganali e di trasporto"},
+  {id:"accounting",label:"02 · Confronto di registri, quantità dichiarate e operazioni"},
+  {id:"inventory",label:"03 · Riscontro di merci, carichi e tracciabilità"}
  ];
 }
 const patrolChecksByBranch = {
  carabinieri:[{id:"license",label:"01 · Verifica della patente di guida"},{id:"reports",label:"02 · Verifica delle segnalazioni disponibili"},{id:"inspection",label:"03 · Verifica dei dati del veicolo"}],
- finanza:[{id:"license",label:"01 · Verifica della documentazione fiscale e commerciale"},{id:"reports",label:"02 · Riscontro di registri, corrispettivi e dati contabili"},{id:"inspection",label:"03 · Verifica di merci, carichi e tracciabilità"}]
+ finanza:[{id:"fiscal_docs",label:"01 · Esame della documentazione fiscale e commerciale"},{id:"accounting",label:"02 · Riscontro di registri, pagamenti e corrispettivi"},{id:"inventory",label:"03 · Verifica di prodotti, merci e tracciabilità"}]
 };
 async function getUser(req:Request) {
  const caller=createClient(url,anon,{global:{headers:{Authorization:req.headers.get("Authorization")??""}},auth:{persistSession:false}});
@@ -201,9 +202,10 @@ Deno.serve(async(req:Request)=>{
       throw error;
     }
     const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
-    if(branch==="finanza"){publicScenario.plate="";publicScenario.scene_type=finanzaSceneType(scenario);}
+    if(branch==="finanza"){publicScenario.plate="";publicScenario.scene_type=finanzaSceneType(scenario);if(["shop","bar"].includes(publicScenario.scene_type)){publicScenario.driver="Referente dell'attività";publicScenario.model="Controllo economico-fiscale dell'esercizio";}}
     const vehicleText=[scenario.vehicle,scenario.model].join(" ");
-    const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[scenario.scene_type??""] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
+    const sceneKind=branch==="finanza"?finanzaSceneType(scenario):String(scenario.scene_type??"");
+    const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[sceneKind] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
     return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage,checks:checksForScenario(branch,scenario)},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
   }
   if(body.action==="inspect") {
@@ -228,21 +230,21 @@ Deno.serve(async(req:Request)=>{
     const evidence=[String(scenario.situation??""),...(scenario.clues??[])].join(" ");
     let detail="",status="ok";
     if(branch==="finanza"){
-      if(checkId==="license"){
+      if(checkId==="fiscal_docs"){
         if(/mancan|non esibit|incomplet|discordan|non coincide|assenza verificata|non emess/i.test(evidence)){
-          detail="Documentazione fiscale o commerciale da approfondire: confrontare i documenti acquisiti con l'operazione e gli obblighi applicabili.";
+          detail="Esame documentale: acquisire e confrontare documenti fiscali, commerciali o di trasporto pertinenti all'operazione.";
           status=/mancanza verificata|assenza verificata|non viene emesso|documento non emesso|discordanza confermata/i.test(evidence)?"bad":"warning";
-        }else detail="Documentazione esaminata: gli elementi disponibili risultano coerenti con lo scenario.";
-      }else if(checkId==="reports"){
+        }else detail="Esame documentale completato: gli elementi disponibili risultano coerenti con lo scenario.";
+      }else if(checkId==="accounting"){
         if(/corrispettiv|registratore telematico|pagamento|fattura|registrazion|movimenti di denaro|prezzi applicati|accise|quantità dichiarata/i.test(evidence)){
-          detail="Riscontro contabile: confrontare i dati di pagamento, i corrispettivi e le registrazioni del periodo indicato.";
+          detail="Riscontro economico-contabile: confrontare pagamenti, corrispettivi, registrazioni e quantità dichiarate nel periodo interessato.";
           status=/non coincid|discordan|differenza|mancata emissione|non viene emesso|scostament/i.test(evidence)?(/causa non|non ancora chiar|da verificare|incomplet/i.test(evidence)?"warning":"bad"):"ok";
-        }else detail="Riscontro dei registri completato: nello scenario non emergono scostamenti contabili documentati.";
+        }else detail="Riscontro economico-contabile completato: nello scenario non emergono scostamenti documentati.";
       }else{
-        if(/merce|carico|colli|sigillo|container|marchio|origine|tabacchi|prodotto|trasporto|autocisterna/i.test(evidence)){
-          detail="Riscontro di merci e tracciabilità: confrontare quantità, identificativi, origine e documenti di accompagnamento prima di formulare conclusioni.";
+        if(/merce|carico|colli|sigillo|container|marchio|origine|tabacchi|prodotto|trasporto|autocisterna|prezzi/i.test(evidence)){
+          detail="Verifica di prodotti e merci: confrontare quantità, identificativi, origine, prezzi esposti e tracciabilità prima di formulare conclusioni.";
           status=/discordanza persistente e documentata|riscontro tecnico.*confermato|contraffatti|quantità effettivamente documentata/i.test(evidence)?"bad":(/non ancora|da verificare|incomplet|sospett|non coincide|discordan/i.test(evidence)?"warning":"ok");
-        }else detail="Verifica di merci e tracciabilità completata: nessuna anomalia specifica risulta dagli elementi dello scenario.";
+        }else detail="Verifica di prodotti e merci completata: nessuna anomalia specifica risulta dagli elementi dello scenario.";
       }
     }else if(checkId==="license"){
       if(/senza patente|patente[^.]{0,45}(scadut|revocat|sospes|ritirat|non valida|assent)|patente non valida/i.test(evidence)){
