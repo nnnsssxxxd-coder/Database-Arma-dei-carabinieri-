@@ -101,6 +101,34 @@ const finanzaScenarios = [
 
 ];
 const scenariosByBranch = {carabinieri:scenarios,finanza:finanzaScenarios};
+function finanzaSceneType(scenario: any): string {
+ const text=[scenario.vehicle,scenario.model,scenario.situation,...(scenario.clues??[])].join(" ").toLowerCase();
+ if(/negozio|bar |caffetter|esercizio commercial|attività commercial|punto vendita|distributore carburanti|impianto di distribuzione|gestore impianto/.test(text)) return /bar |caffetter/.test(text)?"bar":"shop";
+ if(/nave mercantile|unità da diporto|barca|pattugliatore|imbarcazione|porto|banchina|marittim/.test(text)) return /nave mercantile/.test(text)?"merchant_ship":"boat";
+ if(/container/.test(text)) return "container";
+ if(/autocisterna|carburant|rifornimento/.test(text)) return "fuel";
+ if(/furgone|autocarro|trasporto|trasportatore|corriere|carico|colli|merci/.test(text)) return "truck";
+ return "business";
+}
+function checksForScenario(branch: string, scenario: any) {
+ if(branch==="carabinieri") return patrolChecksByBranch.carabinieri;
+ const kind=finanzaSceneType(scenario);
+ if(kind==="shop"||kind==="bar") return [
+  {id:"license",label:"01 · Verifica dei documenti fiscali e del documento commerciale"},
+  {id:"reports",label:"02 · Riscontro dei corrispettivi e del registratore telematico"},
+  {id:"inspection",label:"03 · Controllo di merci, prezzi e tracciabilità"}
+ ];
+ if(kind==="merchant_ship"||kind==="boat") return [
+  {id:"license",label:"01 · Verifica della documentazione commerciale e di bordo"},
+  {id:"reports",label:"02 · Riscontro di registri, dichiarazioni e operazioni"},
+  {id:"inspection",label:"03 · Controllo di merci, carichi e sigilli"}
+ ];
+ return [
+  {id:"license",label:"01 · Verifica dei documenti fiscali e di trasporto"},
+  {id:"reports",label:"02 · Confronto di registri, quantità e corrispettivi"},
+  {id:"inspection",label:"03 · Riscontro di merci, carichi e tracciabilità"}
+ ];
+}
 const patrolChecksByBranch = {
  carabinieri:[{id:"license",label:"01 · Verifica della patente di guida"},{id:"reports",label:"02 · Verifica delle segnalazioni disponibili"},{id:"inspection",label:"03 · Verifica dei dati del veicolo"}],
  finanza:[{id:"license",label:"01 · Verifica della documentazione fiscale e commerciale"},{id:"reports",label:"02 · Riscontro di registri, corrispettivi e dati contabili"},{id:"inspection",label:"03 · Verifica di merci, carichi e tracciabilità"}]
@@ -173,10 +201,10 @@ Deno.serve(async(req:Request)=>{
       throw error;
     }
     const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
-    if(branch==="finanza"){publicScenario.plate="";}
+    if(branch==="finanza"){publicScenario.plate="";publicScenario.scene_type=finanzaSceneType(scenario);}
     const vehicleText=[scenario.vehicle,scenario.model].join(" ");
     const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[scenario.scene_type??""] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
-    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage,checks:patrolChecksByBranch[branch as keyof typeof patrolChecksByBranch]},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
+    return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage,checks:checksForScenario(branch,scenario)},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
   }
   if(body.action==="inspect") {
     const sessionId=String(body.session_id??"");
