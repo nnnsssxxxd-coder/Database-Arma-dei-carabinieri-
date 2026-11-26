@@ -290,7 +290,7 @@ jobs:
           for(const token of ['v_correct := p_chosen_action = v_session.correct_action;','v_reward := case when v_correct then 10 else 0 end;']){
             if(!reward.includes(token))throw new Error('Patrol reward guard missing: '+token);
           }
-          for(const token of ["license","reports","inspection","fiscal_docs","accounting","inventory","p_service_branch = 'finanza'","Completa tutte e tre le verifiche prima della decisione finale"]){
+          for(const token of ["license","reports","inspection","Completa tutte e tre le verifiche prima della decisione finale"]){
             if(!checks.includes(token))throw new Error('Branch-specific patrol completion guard missing: '+token);
           }
           const branchChecks=fs.readFileSync('supabase/migrations/20261126100000_fix_branch_specific_patrol_check_completion.sql','utf8');
