@@ -76,7 +76,7 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
           const engine=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
-          if(!html.includes('const nonRoadScene=["shop","bar","merchant_ship","boat","container"].includes(String(sc.scene_type||""))')) throw new Error('Non-road patrol scenes must suppress vehicle plate references');
+          if(!html.includes('const showVehicleReference=!isFinanza&&!nonRoadScene&&Boolean(simPlate)')) throw new Error('Finanza and non-road patrol scenes must suppress vehicle plate references');
           if(!html.includes('/^SIM\\s/i.test(rawPlate)')) throw new Error('Synthetic vehicle reference prefix must be parsed correctly');
           if(!engine.includes('if(branch==="finanza"){publicScenario.plate=""')) throw new Error('Finanza public scenario must not expose a fake plate');
           console.log('PASS non-road scenes hide plate references; Finanza hides plates; synthetic road references are parsed');
