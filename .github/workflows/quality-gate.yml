@@ -309,6 +309,7 @@ jobs:
           if(!html.includes('start.disabled=!!cooling||vehicleBrevettoAttemptsRemaining<=0'))throw new Error('Start button must remain disabled during cooldown');
           if(!html.includes('const expiresAt=Date.parse(data.expires_at)')||!html.includes('if(!Number.isFinite(expiresAt)||expiresAt<=Date.now())'))throw new Error('Brevetto session timer must reject invalid/expired timestamps');
           if(!cycle.includes('when completed_attempts+1>=6 then now()+interval \'12 hours\''))throw new Error('Sixth completed quiz must trigger the 12-hour cooldown');
+          const balanced=fs.readFileSync('supabase/migrations/20261126103000_balance_vehicle_brevetto_question_categories.sql','utf8');
           for(const token of ["category = 'physics'","category = 'technical'","category = 'regulations'","order by random() limit 2","order by random() limit 3"]){
             if(!balanced.includes(token))throw new Error('Brevetto quiz must draw a balanced mix of physics, technical and regulatory questions: '+token);
           }
