@@ -2060,7 +2060,7 @@ function renderPatrolSession(){
  if(!patrolSession){session.classList.add("hidden");if(start)start.classList.remove("hidden");return;}
  session.classList.remove("hidden");if(start)start.classList.add("hidden");
  const sc=patrolSession.scenario||{};
- $("patrolVehicle").textContent=sc.vehicle||"Veicolo";const rawPlate=String(sc.plate||"").trim();const simPlate=/^SIM\\s/i.test(rawPlate)?syntheticItalianPlate(rawPlate):rawPlate.toUpperCase();const plateEl=$("patrolPlate");plateEl.textContent=simPlate?"Riferimento veicolo dimostrativo: "+simPlate:"";plateEl.hidden=!simPlate;
+ $("patrolVehicle").textContent=sc.vehicle||"Veicolo";const rawPlate=String(sc.plate||"").trim();const nonRoadScene=["shop","bar","merchant_ship","boat","container"].includes(String(sc.scene_type||""));const simPlate=/^SIM\s/i.test(rawPlate)?syntheticItalianPlate(rawPlate):rawPlate.toUpperCase();const plateEl=$("patrolPlate");const showVehicleReference=!nonRoadScene&&Boolean(simPlate);plateEl.textContent=showVehicleReference?"Riferimento veicolo dimostrativo: "+simPlate:"";plateEl.hidden=!showVehicleReference;
  $("patrolDriver").textContent=(selectedBranch==="finanza"?"REFERENTE · ":"CONDUCENTE · ")+fullSimulatedName(sc.driver||"Operatore simulato");$("patrolModel").textContent=sc.model||"Controllo";
  $("patrolSituation").textContent=sc.situation||"";const illustration=$("patrolIllustration");if(illustration){
   const scene=patrolSceneType(sc);
