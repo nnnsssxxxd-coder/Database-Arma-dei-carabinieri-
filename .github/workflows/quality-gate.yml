@@ -70,6 +70,17 @@ jobs:
           if(html.includes('La sessione salvata non è stata cancellata')) throw new Error('Login recovery message contradicts the explicit prior-session cleanup');
           console.log('PASS '+ids.length+' unique DOM IDs and '+new Set(refs).size+' direct ID references');
           NODE
+      - name: Prevent fake plates in non-road patrol scenes
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const engine=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
+          if(!html.includes('const nonRoadScene=["shop","bar","merchant_ship","boat","container"].includes(String(sc.scene_type||""))')) throw new Error('Non-road patrol scenes must suppress vehicle plate references');
+          if(!html.includes('/^SIM\\s/i.test(rawPlate)')) throw new Error('Synthetic vehicle reference prefix must be parsed correctly');
+          if(!engine.includes('if(branch==="finanza"){publicScenario.plate=""')) throw new Error('Finanza public scenario must not expose a fake plate');
+          console.log('PASS non-road scenes hide plate references; Finanza hides plates; synthetic road references are parsed');
+          NODE
       - name: Check branch isolation guards
         run: |
           node <<'NODE'
