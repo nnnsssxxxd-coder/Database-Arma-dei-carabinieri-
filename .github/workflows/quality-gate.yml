@@ -213,6 +213,10 @@ jobs:
           if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
           if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
           if(!traffic.includes('id:"fiscal_docs"')||!traffic.includes('id:"accounting"')||!traffic.includes('id:"inventory"')||!traffic.includes('fuel_station')||!traffic.includes('Esame dei documenti fiscali e commerciali')||!html.includes('id:"fiscal_docs"')||!html.includes('plateEl.hidden=!showVehicleReference')||!html.includes('GESTORE · ')||!html.includes('return"fuel_station"'))throw new Error('The Guardia di Finanza patrol UI must use contextual fiscal/business checks, identify fuel-station roles correctly and hide fictitious plates');
+           const finanzaBlock=traffic.slice(traffic.indexOf('const finanzaScenarios = ['),traffic.indexOf('const scenariosByBranch'));
+           if(!finanzaBlock||/plate:/.test(finanzaBlock))throw new Error('Finanza patrol scenarios must not contain fictitious vehicle plates');
+           if(!traffic.includes('fuel_station')||!traffic.includes('GESTORE')||!html.includes('sceneKind==="fuel_station"'))throw new Error('Fuel-station scenarios must have contextual classification and role labels');
+           if(!traffic.includes('Verifica di prodotti energetici, prezzi esposti e misurazioni')||!traffic.includes('Riscontro economico-contabile'))throw new Error('Fuel-station checks must be fiscal and commercial, not driver/vehicle checks');
 
           console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and density-specific PNG APK icon');
           const dollarArgs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
@@ -312,6 +316,8 @@ jobs:
           const balanced=fs.readFileSync('supabase/migrations/20261126103000_balance_vehicle_brevetto_question_categories.sql','utf8');
           for(const token of ["category = 'physics'","category = 'technical'","category = 'regulations'","order by random() limit 2","order by random() limit 3"]){
             if(!balanced.includes(token))throw new Error('Brevetto quiz must draw a balanced mix of physics, technical and regulatory questions: '+token);
+           const rankGuard=fs.readFileSync('supabase/migrations/20261126114500_require_active_profile_for_rank_exam.sql','utf8');
+           if(!rankGuard.includes('p.active=true')||!rankGuard.includes('p.deleted=false'))throw new Error('Rank exam completion must require an active, non-deleted profile');
            const accuracy=fs.readFileSync('supabase/migrations/20261126120000_vehicle_question_bank_accuracy.sql','utf8');
            for(const token of ['e-BOXER','Symmetrical All-Wheel Drive','B.S.O. 139','classe Monti','classe Di Bartolo','classe Bigliani','Off Road+','Terrain Response','motore entrobordo','U.S. Coast Guard']){
              if(!accuracy.includes(token))throw new Error('Vehicle-specific brevetto correction missing: '+token);
