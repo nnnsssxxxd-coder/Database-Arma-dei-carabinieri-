@@ -79,7 +79,7 @@ FROM (VALUES
 ('fab29a77-3079-43d7-95cb-bcb5824eb549','Quale apparato propulsivo è indicato per i Guardacoste classe Bigliani?','["Un motore diesel singolo","Due motori diesel","Due motori elettrici","Un motore a vapore"]',1,'La scheda ufficiale GdF descrive i Guardacoste classe Bigliani come propulsi da due motori diesel.','https://www.gdf.gov.it/it/chi-siamo/organizzazione/specializzazioni/servizio-navale-polizia-del-mare/chi-siamo/flotta-navale/unita-navali-operative/guardacoste/guardacoste-classe-bigliani','GdF - propulsione classe Bigliani'),
 ('fcd76190-8f7b-42bf-b7bb-62e3ce618931','Quale funzione svolge il radiatore?','["Trasmettere la coppia alle ruote","Alimentare gli iniettori","Dissipare verso l’aria il calore del refrigerante","Aumentare la pressione dell’olio"]',2,'Scambiatore di calore del circuito di raffreddamento.','https://www.landrover.it/defender/defender-110/models-and-specifications.html','Specifiche ufficiali Land Rover Defender 110; dotazioni da verificare in base all’allestimento')
 ) AS v(id,prompt,options,correct_index,explanation,source_url,source_note)
-WHERE b.id=v.id;
+WHERE b.id=v.id::uuid;
 
 UPDATE public.vehicle_brevetto_question_bank
 SET explanation=trim(replace(explanation,' Quesito di tecnica generale; dotazioni e procedure effettive vanno sempre verificate sul manuale e sull’allestimento dell’unità.',''))
