@@ -25,7 +25,7 @@ const scenarios = [
  {id:"belt-check",vehicle:"Berlina grigia",plate:"EX 482 KM",driver:"Marco R.",model:"Berlina media",situation:"Il conducente attraversa un tratto urbano senza indossare la cintura. Il veicolo è fermo al semaforo e non ci sono altre anomalie.",clues:["Cintura non allacciata","Nessuna altra infrazione rilevata","Condotta collaborativa"],action:"sanzione",explanation:"La cintura di sicurezza è obbligatoria: la condotta corretta è contestare l'infrazione prevista."},
  {id:"documents-ok",vehicle:"SUV blu",plate:"GF 731 PL",driver:"Elena C.",model:"SUV familiare",situation:"Documenti validi, revisione regolare e cintura allacciata. Non emergono violazioni durante il controllo.",clues:["Patente valida","Revisione regolare","Nessuna violazione osservata"],action:"nessuna_violazione",explanation:"Non si deve elevare una sanzione senza un'infrazione accertata."},
  {id:"phone-use",vehicle:"Utilitaria bianca",plate:"HT 205 NR",driver:"Luca P.",model:"Utilitaria",situation:"Durante la marcia il conducente utilizza il telefono tenendolo in mano. La pattuglia osserva chiaramente la condotta.",clues:["Telefono in mano durante la guida","Veicolo in movimento","Condotta osservata direttamente"],action:"sanzione",explanation:"L'uso del telefono tenuto in mano durante la guida costituisce una violazione."},
- {id:"minor-light",vehicle:"Compatta rossa",plate:"DR 918 FS",driver:"Sara M.",model:"Compatta",situation:"Un fanale posteriore è spento. Il conducente si ferma in sicurezza e collabora; non risultano altre violazioni.",clues:["Luce posteriore non funzionante","Nessun pericolo immediato aggiuntivo","Conducente collaborativo"],action:"avviso",explanation:"Per questa simulazione didattica è previsto un richiamo con invito alla riparazione, senza inventare altre violazioni."},
+ {id:"minor-light",vehicle:"Compatta rossa",plate:"DR 918 FS",driver:"Sara M.",model:"Compatta",situation:"Un fanale posteriore è spento. Il conducente si ferma in sicurezza e collabora; non risultano altre violazioni.",clues:["Luce posteriore non funzionante","Nessun pericolo immediato aggiuntivo","Conducente collaborativo"],action:"avviso",explanation:"Per questa esercitazione didattica è previsto un richiamo con invito alla riparazione, senza inventare altre violazioni."},
  {id:"speeding",vehicle:"Crossover nero",plate:"LM 640 VT",driver:"Andrea F.",model:"Crossover",situation:"Il rilevamento omologato indica una velocità superiore al limite segnalato. La misurazione è valida e verificata.",clues:["Limite segnalato 50 km/h","Rilevamento verificato 68 km/h","Dispositivo regolarmente verificato"],action:"sanzione",explanation:"La violazione è documentata da un rilevamento valido: si procede secondo la normativa."},
  {id:"parking-ok",vehicle:"Van argento",plate:"CP 114 AZ",driver:"Nadia S.",model:"Veicolo commerciale",situation:"Il veicolo è in sosta regolare in uno stallo consentito. Il passaggio pedonale e l'accesso sono liberi.",clues:["Stallo consentito","Nessun intralcio","Segnaletica rispettata"],action:"nessuna_violazione",explanation:"La sosta è regolare: non va contestata alcuna infrazione."},
  {id:"inspection",vehicle:"Station wagon verde",plate:"FA 590 QX",driver:"Paolo D.",model:"Station wagon",situation:"La revisione risulta scaduta dalla consultazione dei dati del veicolo. Il resto dei documenti è regolare.",clues:["Revisione scaduta","Identità del veicolo verificata","Nessuna anomalia documentale ulteriore"],action:"sanzione",explanation:"La revisione scaduta è una violazione accertata e va contestata secondo le procedure."},
@@ -62,12 +62,12 @@ const scenarios = [
 
 ];
 const finanzaScenarios = [
- {id:"gdf-documento-commerciale",vehicle:"Negozio al dettaglio",plate:"ESERCIZIO GDF-01",driver:"Responsabile esercizio",model:"Verifica documentale",situation:"Durante un controllo, l'acquisto è stato pagato ma il documento commerciale non viene emesso. La circostanza è stata verificata e registrata nella simulazione.",clues:["Pagamento riscontrato","Documento commerciale non emesso","Circostanza verificata"],action:"sanzione",explanation:"La mancata emissione del documento commerciale, quando dovuto e accertata, richiede la contestazione secondo le procedure e la normativa applicabile."},
+ {id:"gdf-documento-commerciale",vehicle:"Negozio al dettaglio",plate:"ESERCIZIO GDF-01",driver:"Responsabile esercizio",model:"Verifica documentale",situation:"Durante un controllo, l'acquisto è stato pagato ma il documento commerciale non viene emesso. La circostanza è stata verificata e registrata nell'esercitazione.",clues:["Pagamento riscontrato","Documento commerciale non emesso","Circostanza verificata"],action:"sanzione",explanation:"La mancata emissione del documento commerciale, quando dovuto e accertata, richiede la contestazione secondo le procedure e la normativa applicabile."},
  {id:"gdf-trasporto-regolare",vehicle:"Furgone merci",plate:"TRASPORTO GDF-02",driver:"Autista",model:"Controllo trasporto",situation:"La documentazione di trasporto è presente e coerente con la merce e con i dati del veicolo. Non emergono irregolarità.",clues:["Documenti disponibili","Dati coerenti con il carico","Nessuna anomalia accertata"],action:"nessuna_violazione",explanation:"La documentazione risulta coerente: non si contesta un illecito in assenza di elementi concreti."},
  {id:"gdf-carburante",vehicle:"Autocisterna",plate:"CARBURANTE GDF-03",driver:"Conducente",model:"Verifica settore carburanti",situation:"La verifica documentale accerta una discordanza tra quantità dichiarata e quantità effettivamente documentata. La discrepanza è stata ricontrollata.",clues:["Quantità dichiarata acquisita","Documenti confrontati","Discordanza confermata"],action:"sanzione",explanation:"Una discrepanza documentale confermata richiede gli approfondimenti e gli atti previsti dalle procedure di competenza."},
  {id:"gdf-marchio-sospetto",vehicle:"Furgone commerciale",plate:"MERCE GDF-04",driver:"Responsabile carico",model:"Tutela dei prodotti",situation:"Alcuni prodotti presentano un marchio visivamente sospetto, ma non è ancora disponibile una verifica tecnica che confermi la contraffazione.",clues:["Anomalia solo apparente","Nessuna conferma tecnica","Necessario approfondimento specialistico"],action:"nessuna_violazione",explanation:"Il solo sospetto visivo non basta a dichiarare accertata la contraffazione: occorre verificare e documentare prima di procedere."},
  {id:"gdf-prezzi-regolari",vehicle:"Distributore carburanti",plate:"IMPIANTO GDF-05",driver:"Gestore impianto",model:"Trasparenza prezzi",situation:"I prezzi esposti sono coerenti con quelli applicati e con i dati acquisiti durante il controllo. Non risultano scostamenti.",clues:["Prezzi esposti leggibili","Prezzi applicati coerenti","Nessuna differenza rilevata"],action:"nessuna_violazione",explanation:"I dati risultano coerenti: non va contestata alcuna irregolarità non riscontrata."},
- {id:"gdf-documento-mancante",vehicle:"Veicolo commerciale",plate:"DOCUMENTI GDF-06",driver:"Trasportatore",model:"Verifica documenti",situation:"Per la merce trasportata manca un documento richiesto nel caso simulato; l'assenza è stata verificata e non è stata fornita documentazione sostitutiva.",clues:["Documento richiesto individuato","Assenza verificata","Nessuna documentazione sostitutiva"],action:"sanzione",explanation:"Quando l'obbligo documentale è applicabile e l'assenza è accertata, si procede secondo le competenze e le procedure previste."},
+ {id:"gdf-documento-mancante",vehicle:"Veicolo commerciale",plate:"DOCUMENTI GDF-06",driver:"Trasportatore",model:"Verifica documenti",situation:"Per la merce trasportata manca un documento richiesto nel caso didattico; l'assenza è stata verificata e non è stata fornita documentazione sostitutiva.",clues:["Documento richiesto individuato","Assenza verificata","Nessuna documentazione sostitutiva"],action:"sanzione",explanation:"Quando l'obbligo documentale è applicabile e l'assenza è accertata, si procede secondo le competenze e le procedure previste."},
  {id:"gdf-registratore-regolare",vehicle:"Attività commerciale",plate:"CASSA GDF-07",driver:"Esercente",model:"Verifica corrispettivi",situation:"I dati del registratore telematico e i documenti commerciali esaminati risultano coerenti nel periodo controllato.",clues:["Dati acquisiti correttamente","Documenti confrontati","Nessuna discordanza"],action:"nessuna_violazione",explanation:"La verifica non evidenzia irregolarità: l'esito corretto è non contestare violazioni inesistenti."},
  {id:"gdf-carico-discordante",vehicle:"Autocarro",plate:"CARICO GDF-08",driver:"Autista",model:"Controllo merci",situation:"La descrizione e la quantità della merce non corrispondono ai documenti esibiti. Il confronto è stato ripetuto e la discordanza permane.",clues:["Merce identificata","Documenti esaminati","Discordanza persistente e documentata"],action:"sanzione",explanation:"Una discordanza documentale confermata va gestita con gli accertamenti e gli atti previsti, senza formulare contestazioni ulteriori non provate."}
  ,{id:"gdf-invoice-discrepancy",vehicle:"Furgone merci",plate:"SIM GDF-009",driver:"Trasportatore simulato",model:"Verifica documentazione fiscale",situation:"Nel controllo documentale emergono differenze tra i dati di fattura e la merce esibita. La documentazione è incompleta e occorre acquisire ulteriori elementi.",clues:["Dati non coincidenti","Documentazione da integrare","Nessuna conclusione definitiva"],action:"avviso",explanation:"La discordanza è un elemento da approfondire e verbalizzare. Non si presume automaticamente una violazione fiscale senza gli ulteriori riscontri."}
@@ -102,9 +102,10 @@ const finanzaScenarios = [
 ];
 const scenariosByBranch = {carabinieri:scenarios,finanza:finanzaScenarios};
 function finanzaSceneType(scenario: any): string {
- if(["shop","bar","merchant_ship","boat","container","fuel","truck","van","business"].includes(String(scenario.scene_type??""))) return String(scenario.scene_type);
+ if(["shop","bar","fuel_station","merchant_ship","boat","container","fuel","truck","van","business"].includes(String(scenario.scene_type??""))) return String(scenario.scene_type);
  const text=[scenario.vehicle,scenario.model,scenario.situation,...(scenario.clues??[])].join(" ").toLowerCase();
- if(/negozio|bar |caffetter|esercizio commercial|attività commercial|punto vendita|distributore carburanti|impianto di distribuzione|gestore impianto/.test(text)) return /bar |caffetter/.test(text)?"bar":"shop";
+ if(/distributore carburanti|impianto di distribuzione|gestore impianto|pompa carburante|erogatore carburante/.test(text)) return "fuel_station";
+ if(/negozio|bar |caffetter|esercizio commercial|attività commercial|punto vendita/.test(text)) return /bar |caffetter/.test(text)?"bar":"shop";
  if(/nave mercantile|unità da diporto|barca|pattugliatore|imbarcazione|porto|banchina|marittim/.test(text)) return /nave mercantile/.test(text)?"merchant_ship":"boat";
  if(/container/.test(text)) return "container";
  if(/autocisterna|carburant|rifornimento/.test(text)) return "fuel";
@@ -118,6 +119,16 @@ function checksForScenario(branch: string, scenario: any) {
   {id:"fiscal_docs",label:"01 · Esame dei documenti fiscali e commerciali"},
   {id:"accounting",label:"02 · Riscontro di pagamenti, corrispettivi e registratore telematico"},
   {id:"inventory",label:"03 · Verifica di prodotti, prezzi esposti e tracciabilità"}
+ ];
+ if(kind==="fuel_station") return [
+  {id:"fiscal_docs",label:"01 · Esame dei documenti fiscali e delle autorizzazioni dell'impianto"},
+  {id:"accounting",label:"02 · Confronto tra erogazioni, corrispettivi e registrazioni"},
+  {id:"inventory",label:"03 · Verifica di prodotti energetici, prezzi esposti e misurazioni"}
+ ];
+ if(kind==="fuel") return [
+  {id:"fiscal_docs",label:"01 · Esame dei documenti di trasporto e della provenienza del prodotto"},
+  {id:"accounting",label:"02 · Riscontro di quantità caricate, scaricate e registrate"},
+  {id:"inventory",label:"03 · Verifica del prodotto, dei sigilli e della tracciabilità"}
  ];
  if(kind==="merchant_ship"||kind==="boat") return [
   {id:"fiscal_docs",label:"01 · Esame di manifesti, dichiarazioni e documenti di bordo"},
@@ -202,10 +213,10 @@ Deno.serve(async(req:Request)=>{
       throw error;
     }
     const {action:correctAction,clues:privateClues,explanation:privateExplanation,...publicScenario}=scenario;
-    if(branch==="finanza"){publicScenario.plate="";publicScenario.scene_type=finanzaSceneType(scenario);if(["shop","bar"].includes(publicScenario.scene_type)){publicScenario.driver="Referente dell'attività";publicScenario.model="Controllo economico-fiscale dell'esercizio";}}
+    if(branch==="finanza"){publicScenario.plate="";publicScenario.scene_type=finanzaSceneType(scenario);if(["shop","bar"].includes(publicScenario.scene_type)){publicScenario.driver="Responsabile dell'esercizio";publicScenario.model="Controllo economico-fiscale dell'esercizio";}else if(publicScenario.scene_type==="fuel_station"){publicScenario.driver="Gestore dell'impianto";publicScenario.model="Controllo economico-fiscale dell'impianto";}else if(["boat","merchant_ship"].includes(publicScenario.scene_type)){publicScenario.driver="Comandante dell'unità";}else{publicScenario.driver="Conducente / referente del carico";}}
     const vehicleText=[scenario.vehicle,scenario.model].join(" ");
     const sceneKind=branch==="finanza"?finanzaSceneType(scenario):String(scenario.scene_type??"");
-    const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[sceneKind] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
+    const imageByScene:Record<string,string>={container:"https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=82",merchant_ship:"https://www.aast.edu/en/maritime/img/courses/port-state-audit-scheme-1.jpg",boat:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg/1280px-Heraklion_old_harbour_in_Crete%2C_Greece_003.jpg",shop:"https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=82",bar:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=82",fuel_station:"https://images.unsplash.com/photo-1727483771218-c1cc488d020c?auto=format&fit=crop&fm=jpg&q=80&w=1200",truck:"https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=1200&q=82"}; const vehicleImage = imageByScene[sceneKind] ?? (/camion|autocisterna|furgone|merci|trasporto/i.test(vehicleText) ? imageByScene.truck : (/barca|battello|pattugliatore|nave|guardacoste|unità da diporto/i.test(vehicleText) ? imageByScene.boat : (branch==="carabinieri" ? "https://www.ilrestodelcarlino.it/image-service/version/c%3AMjdmNzdhZTEtM2M3OS00%3AZTEtM2M3OS00MzI1MzMx/in-azione-i-carabinieri.jpeg" : imageByScene.truck)));
     return reply(req,{session_id:session.id,expires_at:session.expires_at,scenario:{...publicScenario,vehicle_image_url:vehicleImage,checks:checksForScenario(branch,scenario)},service_branch:branch,completed_count:Number(cycle?.completed_count??0),remaining:Math.max(0,10-Number(cycle?.completed_count??0))},201);
   }
   if(body.action==="inspect") {
@@ -248,13 +259,13 @@ Deno.serve(async(req:Request)=>{
       }
     }else if(checkId==="license"){
       if(/senza patente|patente[^.]{0,45}(scadut|revocat|sospes|ritirat|non valida|assent)|patente non valida/i.test(evidence)){
-        detail="Patente non regolare: nella simulazione risulta un'anomalia da verificare prima di consentire la ripartenza.";
+        detail="Patente non regolare: nell'esercitazione risulta un'anomalia da verificare prima di consentire la ripartenza.";
         status="bad";
       } else if(/patente[^.]{0,45}(non esibit|non disponibile|da verificare|non reperibil)|documento[^.]{0,35}(non disponibile|non esibit)/i.test(evidence)){
         detail="Patente non ancora verificata: occorre acquisire il documento e completare il riscontro.";
         status="warning";
       } else {
-        detail="Patente verificata nella simulazione: valida e coerente con il veicolo.";
+        detail="Patente verificata nell'esercitazione: valida e coerente con il veicolo.";
       }
     } else if(checkId==="reports"){
       if(/segnalazion|furto|ricercat|alert|precedent|denuncia|corrispondenza sospett/i.test(evidence)){
@@ -271,7 +282,7 @@ Deno.serve(async(req:Request)=>{
         detail="Controllo veicolo: anomalia da approfondire. Al momento non è confermata la presenza di un oggetto pericoloso.";
         status="warning";
       } else {
-        detail="Controllo veicolo completato: nessun oggetto pericoloso rilevato nella simulazione.";
+        detail="Controllo veicolo completato: nessun oggetto pericoloso rilevato nell'esercitazione.";
       }
     }
     return reply(req,{check_id:checkId,detail,status,completed_checks:completed,all_checked:completed.length>=3});
