@@ -78,7 +78,8 @@ jobs:
           const engine=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
           if(!html.includes('const showVehicleReference=!isFinanza&&!nonRoadScene&&Boolean(simPlate)')) throw new Error('Finanza and non-road patrol scenes must suppress vehicle plate references');
           if(!html.includes('/^SIM\\s/i.test(rawPlate)')) throw new Error('Synthetic vehicle reference prefix must be parsed correctly');
-          if(!engine.includes('if(branch==="finanza"){publicScenario.plate=""')) throw new Error('Finanza public scenario must not expose a fake plate');
+          const finanzaScenarios=engine.slice(engine.indexOf('const finanzaScenarios = ['),engine.indexOf('const scenariosByBranch'));
+if(/plate:/.test(finanzaScenarios)||engine.includes('publicScenario.plate=')) throw new Error('Finanza patrol scenarios and API payloads must not contain fictitious plate fields');
           console.log('PASS non-road scenes hide plate references; Finanza hides plates; synthetic road references are parsed');
           NODE
       - name: Check branch isolation guards
