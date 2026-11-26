@@ -215,7 +215,7 @@ jobs:
           if(!traffic.includes('id:"fiscal_docs"')||!traffic.includes('id:"accounting"')||!traffic.includes('id:"inventory"')||!traffic.includes('fuel_station')||!traffic.includes('Esame dei documenti fiscali e commerciali')||!html.includes('id:"fiscal_docs"')||!html.includes('plateEl.hidden=!showVehicleReference')||!html.includes('GESTORE · ')||!html.includes('return"fuel_station"'))throw new Error('The Guardia di Finanza patrol UI must use contextual fiscal/business checks, identify fuel-station roles correctly and hide fictitious plates');
            const finanzaBlock=traffic.slice(traffic.indexOf('const finanzaScenarios = ['),traffic.indexOf('const scenariosByBranch'));
            if(!finanzaBlock||/plate:/.test(finanzaBlock))throw new Error('Finanza patrol scenarios must not contain fictitious vehicle plates');
-           if(!traffic.includes('fuel_station')||!traffic.includes('GESTORE')||!html.includes('sceneKind==="fuel_station"'))throw new Error('Fuel-station scenarios must have contextual classification and role labels');
+           if(!traffic.includes('fuel_station')||!traffic.includes('Gestore dell')||!html.includes('sceneKind==="fuel_station"'))throw new Error('Fuel-station scenarios must have contextual classification and role labels');
            if(!traffic.includes('Verifica di prodotti energetici, prezzi esposti e misurazioni')||!traffic.includes('Riscontro economico-contabile'))throw new Error('Fuel-station checks must be fiscal and commercial, not driver/vehicle checks');
 
           console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and density-specific PNG APK icon');
