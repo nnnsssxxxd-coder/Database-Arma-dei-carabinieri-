@@ -200,9 +200,15 @@ jobs:
             if(list.length!==24)throw new Error(name+' should contain 24 ordered official grades, found '+list.length);
             if(new Set(list).size!==list.length)throw new Error(name+' contains duplicate grades');
           }
-          for(const token of ['#d4af37','#0d3b27','applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
-            if(token==='#d4af37'||token==='#0d3b27') { if(!config.includes(token))throw new Error('Missing configured institutional color: '+token); }
-            else if(!html.includes(token))throw new Error('Missing branch identity: '+token);
+          for(const token of ['applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
+            if(!html.includes(token))throw new Error('Missing branch identity: '+token);
+          }
+          const vm=require('vm');const configContext={window:{}};vm.runInNewContext(config,configContext);
+          const corps=configContext.window.CORPS_CONFIG;
+          for(const branch of ['carabinieri','finanza','polizia','esercito','marina','aeronautica']){
+            const item=corps?.[branch];
+            if(!item||item.colors?.length!==5||item.ranks?.length<24||item.departments?.length!==11)throw new Error('Incomplete six-corps configuration: '+branch);
+            if(item.rankGroups?.length!==4||item.qualificationPaths?.length!==4)throw new Error('Missing branch-specific rank groups or qualification paths: '+branch);
           }
           if(!quiz.includes('shuffled.slice(0,5)')||!quiz.includes('answers.length!==5')||!html.includes('DOMANDA 1 / 5'))throw new Error('Rank exam must use five questions end-to-end');
           if(!brevetto.includes('start_vehicle_brevetto_attempt')||!brevetto.includes('answers.length!==8'))throw new Error('Eight-question brevetto flow is incomplete');
