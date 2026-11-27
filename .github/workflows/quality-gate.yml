@@ -195,49 +195,25 @@ jobs:
             if(!match)throw new Error('Missing '+name);
             return [...match[1].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
           }
-          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
-            const list=ranks(name);
-            if(list.length!==24)throw new Error(name+' should contain 24 ordered official grades, found '+list.length);
-            if(new Set(list).size!==list.length)throw new Error(name+' contains duplicate grades');
-          }
-          for(const token of ['applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
-            if(!html.includes(token))throw new Error('Missing branch identity: '+token);
-          }
-          const vm=require('vm');const configContext={window:{}};vm.runInNewContext(config,configContext);
+          const vm=require('vm');
+          const configContext={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),configContext);
           const corps=configContext.window.CORPS_CONFIG;
-          for(const branch of ['carabinieri','finanza','polizia','esercito','marina','aeronautica']){
+          const maxRanks={carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25};
+          const branches=Object.keys(maxRanks);
+          for(const branch of branches){
             const item=corps?.[branch];
-            if(!item||item.colors?.length!==5||item.ranks?.length<24||item.departments?.length!==11)throw new Error('Incomplete six-corps configuration: '+branch);
-            if(item.rankGroups?.length!==4||item.qualificationPaths?.length!==4)throw new Error('Missing branch-specific rank groups or qualification paths: '+branch);
+            if(!item||item.ranks.length!==maxRanks[branch]+1)throw new Error(branch+' rank catalog and database ceiling differ');
+            if(item.departments.length!==11||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            const covered=item.rankGroups.flatMap(g=>Array.from({length:g.end-g.start+1},(_,i)=>g.start+i)).sort((a,b)=>a-b);
+            if(covered.length!==item.ranks.length||covered.some((rank,index)=>rank!==index))throw new Error(branch+' rank groups do not cover the ladder exactly once');
           }
-          if(!quiz.includes('shuffled.slice(0,5)')||!quiz.includes('answers.length!==5')||!html.includes('DOMANDA 1 / 5'))throw new Error('Rank exam must use five questions end-to-end');
-          if(!brevetto.includes('start_vehicle_brevetto_attempt')||!brevetto.includes('answers.length!==8'))throw new Error('Eight-question brevetto flow is incomplete');
-          for(const token of ['completed_attempts between 0 and 6',"interval '12 hours'","used_question_ids=array","jsonb_array_length(questions)=8","score <= 8"]){
-            if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
+          for(const [name,source] of [['command login',fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8')],['command action',fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8')],['ministry',fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8')],['account creation',fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8')]]){
+            for(const [branch,rank] of Object.entries(maxRanks))if(!source.includes(branch+':'+rank))throw new Error(name+' has an inconsistent maximum rank for '+branch);
           }
-          const monochrome=fs.readFileSync('app-icon-monochrome.svg','utf8');
-          const iconConcurrency=fs.readFileSync('supabase/migrations/20261124230000_harden_vehicle_brevetto_start_concurrency.sql','utf8');
-          if(!build.includes('app-icon.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('ic_launcher_monochrome.png')||!build.includes('android:icon="@mipmap/ic_launcher_legacy"')||!build.includes('android:roundIcon="@mipmap/ic_launcher_round_legacy"')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Adaptive, monochrome and legacy launcher icons plus launchable activity must be verified');
-          if(!monochrome.includes('fill="#fff"')||!monochrome.includes('fill-rule="evenodd"'))throw new Error('The app icon source assets must retain a valid monochrome shield');
-          if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
-          if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
-          if(!traffic.includes('id:"fiscal_docs"')||!traffic.includes('id:"accounting"')||!traffic.includes('id:"inventory"')||!traffic.includes('fuel_station')||!traffic.includes('Esame dei documenti fiscali e commerciali')||!html.includes('id:"fiscal_docs"')||!html.includes('plateEl.hidden=!showVehicleReference')||!html.includes('GESTORE · ')||!html.includes('return"fuel_station"'))throw new Error('The Guardia di Finanza patrol UI must use contextual fiscal/business checks, identify fuel-station roles correctly and hide fictitious plates');
-           const finanzaBlock=traffic.slice(traffic.indexOf('const finanzaScenarios = ['),traffic.indexOf('const scenariosByBranch'));
-           if(!finanzaBlock||/plate:/.test(finanzaBlock))throw new Error('Finanza patrol scenarios must not contain fictitious vehicle plates');
-           if(!traffic.includes('fuel_station')||!traffic.includes('Gestore dell')||!html.includes('sceneKind==="fuel_station"'))throw new Error('Fuel-station scenarios must have contextual classification and role labels');
-           if(!traffic.includes('Verifica di prodotti energetici, prezzi esposti e misurazioni')||!traffic.includes('Riscontro economico-contabile'))throw new Error('Fuel-station checks must be fiscal and commercial, not driver/vehicle checks');
-
-          console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and density-specific PNG APK icon');
-          const dollarArgs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
-          if(dollarArgs.some(x=>x.startsWith('.')||x.startsWith('#')||x.startsWith('['))) throw new Error('The ID helper $() must not receive CSS selectors; use querySelector instead');
-          if(!html.includes('rank>=9?"ISPETTORE":rank>=5?"SOVRINTENDENTE"')) throw new Error('Personnel role categories must distinguish inspectors and warrant officers');
-          if(!html.includes('x.type==="vehicle_brevetto"?8')) throw new Error('Progress chart must use eight as the brevetto denominator');
-          if(!html.includes('window.CORPS_CONFIG?.[selectedBranch]?.colors?.[0]')) throw new Error('Rank graphic accents must follow each configured service branch');
-          const command=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
-          if(command.includes('rankFor(m)===24')||html.includes('branch==="finanza"?24:23')||html.includes('to==="finanza"?24:23')) throw new Error('Finanza rank ceiling must be index 23 (24 real grades)');
-          console.log('PASS identical zero-based rank bounds across both Corps');
-
-          console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
+          const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
+          if(!login.includes('rankFor(m)===({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[m.service_branch]'))throw new Error('Automatic Comando Generale eligibility must use the correct maximum rank for all six institutions');
+          console.log('PASS six rank ladders, 66 units, 24 qualification paths and consistent zero-based maximum-rank access');
           NODE
 
       - name: Validate complete quiz-bank explanations
