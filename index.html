@@ -1888,14 +1888,14 @@ function renderVehicleBrevettoUI(){
  const state=getVehicleBrevettoState(),select=$("vehicleBrevettoChoice"),chosen=$("vehicleBrevettoChosen");
  if(vehicleBrevettoLocked||baseRank<minimum){
   choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");
-  if(select){select.innerHTML='<option value="">Catalogo dei veicoli speciali</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.display_name)+'</option>').join("");select.disabled=true;}
+  if(select){select.innerHTML='<option value="">Catalogo dei veicoli speciali</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'" '+(v.bank_ready?"":"disabled")+'>'+esc(v.display_name)+(v.bank_ready?"":" · banca in preparazione")+'</option>').join("");select.disabled=true;}
   const confirmButton=$("vehicleBrevettoConfirm");if(confirmButton)confirmButton.disabled=true;
   const message=$("vehicleBrevettoChoiceMessage");if(message)message.textContent="Percorso disponibile dal grado/qualifica di "+unlockGrade+" o superiore.";
   return;
  }
  if(!state.vehicle){
-  choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");
-  if(select){select.innerHTML='<option value="">Seleziona un veicolo speciale</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.display_name)+'</option>').join("");}
+  choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");const prepMessage=$("vehicleBrevettoChoiceMessage");if(prepMessage)prepMessage.textContent="I mezzi diventano selezionabili solo quando la banca del quiz è completa e verificata.";
+  if(select){select.innerHTML='<option value="">Seleziona un veicolo speciale</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'" '+(v.bank_ready?"":"disabled")+'>'+esc(v.display_name)+(v.bank_ready?"":" · banca in preparazione")+'</option>').join("");}
   const confirmButton=$("vehicleBrevettoConfirm");
   if(confirmButton){confirmButton.disabled=!select?.value;select.onchange=()=>{confirmButton.disabled=!select.value;};confirmButton.onclick=async()=>{
    const v=vehicleBrevettoCatalog.find(x=>x.id===select.value);if(!v)return;
