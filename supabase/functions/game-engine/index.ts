@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
     let body: any = {};
     try { body = await req.json(); } catch { return reply(req, { error: "Richiesta non valida." }, 400); }
     const branch=String(body.service_branch??"");
-    if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
+    if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
     const {data:membership,error:membershipError}=await admin.from("profile_memberships").select("role,initial_rank,matricola").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
     if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
     if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
