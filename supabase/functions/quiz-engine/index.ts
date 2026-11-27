@@ -6,9 +6,19 @@ const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,
 const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
 async function questionPool(category:string,branch:string){
- let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch);
+ let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation").eq("active",true).eq("service_branch",branch);
  if(category!=="Tutte le materie")request=request.eq("category",category);
- return await request.order("sort_order");
+ const {data,error}=await request.order("sort_order");
+ if(error||!data)return {data:null,error};
+ const seen=new Set<string>();
+ const valid=data.every((q:any)=>{
+  const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it"),options=q.options;
+  const ok=prompt.length>=12&&!seen.has(prompt)&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20;
+  if(prompt)seen.add(prompt);
+  return ok;
+ });
+ if(!valid)return {data:[],error:null};
+ return {data:data.map((q:any)=>({id:q.id,prompt:q.prompt,options:q.options,category:q.category,difficulty:q.difficulty})),error:null};
 }
 async function cooldownFor(userId:string,category:string,branch:string){
  const {data:pool,error:poolError}=await questionPool(category,branch);
