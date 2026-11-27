@@ -24,6 +24,10 @@ const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
+function validQuestionRow(q:any){
+ const options=q?.options;
+ return typeof q?.prompt==="string"&&q.prompt.trim().length>=12&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase())).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20;
+}
 const DEPT_RANKS_BY_BRANCH = {
   carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
   finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"],
@@ -379,8 +383,10 @@ Deno.serve(async (req: Request) => {
       }
       if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).eq("service_branch",branch).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
-      const { count: bankCount, error: bankCountError } = await db.from("department_questions").select("id", { count: "exact", head: true }).eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
-      if (bankCountError || (bankCount ?? 0) < 100) return reply(req,{ error: "Banca reparto non completa: sono richiesti 100 quesiti verificati prima di attivare il quiz." }, 409);
+      const { data: bankRows, error: bankCountError } = await db.from("department_questions").select("id,prompt,options,correct_index,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
+      const validBankRows=(bankRows??[]).filter(validQuestionRow);
+      const rankBandCounts=[0,1,2].map(value=>validBankRows.filter((q:any)=>Number(q.rank_band)===value).length);
+      if (bankCountError || (bankRows??[]).length!==100 || validBankRows.length!==100 || rankBandCounts.some(value=>value<4)) return reply(req,{ error: "Banca reparto non completa o non verificata: servono 100 quesiti validi, spiegati e distribuiti su tutti i livelli." }, 409);
       const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
