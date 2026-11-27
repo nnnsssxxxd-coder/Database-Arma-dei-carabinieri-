@@ -141,8 +141,15 @@ const MISSION_BANK:Record<string,MissionScenario[]> = {
    {prompt:"Come si conclude la simulazione?",options:["Con debriefing, registrazione e analisi delle criticità","Cancellando gli eventi","Senza valutazione"],correct_index:0,explanation:"Il debriefing trasforma l'esercitazione in apprendimento."}]}
  ]
 };
+function optionOffset(branch:string,missionId:string,questionIndex:number){
+ const seed=[...(`${branch}:${missionId}`)].reduce((sum,ch)=>sum+ch.charCodeAt(0),0);
+ return (seed+questionIndex*3)%4;
+}
 function publicMissions(branch:string){
- return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>({id,title,scenario,questions:questions.map(({prompt,options})=>({prompt,options}))}));
+ return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>({id,title,scenario,questions:questions.map(({prompt,options},index)=>{
+  const offset=optionOffset(branch,id,index);
+  return {prompt,options:options.map((_,optionIndex)=>options[(optionIndex+offset)%options.length])};
+ })}));
 }
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
@@ -212,7 +219,8 @@ Deno.serve(async (req: Request) => {
       if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) {
         return reply(req, { error: "Completa tutte le valutazioni della missione." }, 400);
       }
-      const score = answers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
+      const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%mission.questions[index].options.length);
+      const score = normalizedAnswers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
       if (score !== mission.questions.length) {
         return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review:mission.questions.map((q,index)=>({prompt:q.prompt,explanation:q.explanation,correct_index:q.correct_index})) });
       }
