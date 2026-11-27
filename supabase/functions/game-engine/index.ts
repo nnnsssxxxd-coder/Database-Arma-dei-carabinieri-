@@ -33,8 +33,17 @@ type MissionQuestion={prompt:string;options:string[];correct_index:number;explan
 type MissionScenario={id:string;title:string;scenario:string;questions:MissionQuestion[]};
 const MISSION_FOURTH_DISTRACTOR="Affidarsi a informazioni non verificate e omettere la documentazione dell'attività.";
 function missionOptions(question:MissionQuestion):string[]{
- const options=[...question.options,MISSION_FOURTH_DISTRACTOR];
+ const options=[...question.options];
+ if(options.length===3) options.push(MISSION_FOURTH_DISTRACTOR);
  return options;
+}
+function missionQuestionIsValid(question:MissionQuestion):boolean{
+ const options=missionOptions(question);
+ return question.prompt.trim().length>=12 && options.length===4 &&
+  new Set(options.map(option=>option.trim().toLocaleLowerCase("it"))).size===4 &&
+  options.every(option=>option.trim().length>=8) &&
+  Number.isInteger(question.correct_index) && question.correct_index>=0 && question.correct_index<4 &&
+  question.explanation.trim().length>=20;
 }
 const MISSION_BANK:Record<string,MissionScenario[]> = {
  carabinieri:[
@@ -222,6 +231,7 @@ Deno.serve(async (req: Request) => {
       const mission = (MISSION_BANK[branch] ?? []).find(item => item.id === missionId);
       const answers = body.answers;
       if (!mission) return reply(req, { error: "Missione non disponibile per il Corpo selezionato." }, 400);
+      if (!mission.questions.every(missionQuestionIsValid)) return reply(req,{error:"Scenario temporaneamente non disponibile: contenuti non validi."},409);
       if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown, index: number) => !Number.isInteger(a) || Number(a) < 0 || Number(a) >= missionOptions(mission.questions[index]).length)) {
         return reply(req, { error: "Completa tutte le valutazioni della missione." }, 400);
       }
