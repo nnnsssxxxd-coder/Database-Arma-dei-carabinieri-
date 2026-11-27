@@ -462,3 +462,20 @@ jobs:
           ])for(const token of tokens)if(!source.includes(token))throw new Error(name+' is missing '+token);
           console.log('PASS promotion exams return and display selected answer, correct answer and explanation');
           NODE
+      - name: Validate strict quiz-bank integrity gates
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const department=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const token of ['validQuestionRow','rankBandCounts.some(value=>value<4)','(bankRows??[]).length!==100','validBankRows.length!==100']) {
+            if(!department.includes(token)) throw new Error('Department quiz integrity guard missing: '+token);
+          }
+          for(const token of ['pool.length!==100','esattamente 100 domande verificate']) {
+            if(!quiz.includes(token)) throw new Error('General quiz exact-count guard missing: '+token);
+          }
+          for(const token of ['validVehicleQuestionRow','count.prompts.size===100','bankCounts.prompts.size!==100','bankCounts.invalid!==0']) {
+            if(!department.includes(token)) throw new Error('Vehicle quiz integrity guard missing: '+token);
+          }
+          console.log('PASS: general, department and vehicle quizzes fail closed on incomplete or malformed banks');
+          NODE
