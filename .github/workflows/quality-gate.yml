@@ -204,7 +204,8 @@ jobs:
           for(const branch of branches){
             const item=corps?.[branch];
             if(!item||item.ranks.length!==maxRanks[branch]+1)throw new Error(branch+' rank catalog and database ceiling differ');
-            if(item.departments.length!==11||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            if(item.departments.length!==11||item.categories.length!==4||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            if(new Set(item.categories).size!==4||new Set(item.departments).size!==11)throw new Error(branch+' catalog contains duplicate banks or units');
             const covered=item.rankGroups.flatMap(g=>Array.from({length:g.end-g.start+1},(_,i)=>g.start+i)).sort((a,b)=>a-b);
             if(covered.length!==item.ranks.length||covered.some((rank,index)=>rank!==index))throw new Error(branch+' rank groups do not cover the ladder exactly once');
           }
