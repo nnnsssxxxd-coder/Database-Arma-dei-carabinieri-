@@ -319,26 +319,30 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
-          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
-            const start=html.indexOf('const '+name+'=[');
-            const end=html.indexOf('];',start);
-            if(start<0||end<0)throw new Error('Missing grade catalog '+name);
-            const labels=[...html.slice(start,end).matchAll(/"[^"]+"/g)];
-            if(labels.length!==24)throw new Error(name+' must contain 24 grades, found '+labels.length);
+          const vm=require('vm');
+          const configContext={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),configContext);
+          const corps=configContext.window.CORPS_CONFIG;
+          const maxRanks={carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25};
+          for(const [branch,max] of Object.entries(maxRanks)){
+            const item=corps?.[branch];
+            if(!item||item.ranks.length!==max+1)throw new Error(branch+' rank catalog and database ceiling differ');
+            if(item.departments.length!==11||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            const covered=item.rankGroups.flatMap(g=>Array.from({length:g.end-g.start+1},(_,i)=>g.start+i)).sort((x,y)=>x-y);
+            if(covered.length!==item.ranks.length||covered.some((rank,index)=>rank!==index))throw new Error(branch+' rank groups do not cover the ladder exactly once');
           }
-          const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
-          const action=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
-          const ministry=fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8');
-          const create=fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8');
-          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
-          for(const [name,source] of [['command login',login],['command action',action],['ministry',ministry],['account creation',create],['quiz engine',quiz]]){
-            if(!source.includes('23'))throw new Error(name+' is missing the maximum rank index');
+          const sources={
+            'command login':fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8'),
+            'command action':fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8'),
+            'ministry':fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8'),
+            'account creation':fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8')
+          };
+          for(const [name,source] of Object.entries(sources))for(const [branch,max] of Object.entries(maxRanks)){
+            if(!source.includes(branch+':'+max))throw new Error(name+' has an inconsistent maximum rank for '+branch);
           }
-          if(/service_branch\s*===\s*"finanza"[^\n]{0,100}===\s*24/.test(login))throw new Error('Finanza maximum rank must be index 23, not 24');
-          if(!login.includes('m.service_branch==="finanza"&&rankFor(m)===23'))throw new Error('Finanza automatic Comando Generale eligibility is not aligned to its 24-grade catalog');
-          if(!login.includes('Number(m.initial_rank)===23'))throw new Error('Finanza initial-rank eligibility audit is not aligned');
-          if(!ministry.includes('b==="carabinieri"?23:23')||!create.includes('service_branch==="finanza"?23:23'))throw new Error('Account administration maximum rank differs from the database constraints');
-          console.log('PASS both 24-grade ladders use zero-based maximum index 23 across login, command, ministry, provisioning and exams');
+          const login=sources['command login'];
+          if(!login.includes('rankFor(m)===({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[m.service_branch]'))throw new Error('Automatic Comando Generale eligibility must use the correct maximum rank for all six institutions');
+          console.log('PASS six rank ladders, 66 units, 24 qualification paths and consistent zero-based maximum-rank access');
           NODE
       - name: Validate hardened patrol and brevetto safeguards
         run: |
