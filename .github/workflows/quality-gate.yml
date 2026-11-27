@@ -421,7 +421,7 @@ jobs:
             'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index]}))',
             'mission_title:mission.title,review'
           ]) if(!game.includes(token)) throw new Error('Mission server validation/review missing: '+token);
-          if(!game.includes('const options=[...question.options,MISSION_FOURTH_DISTRACTOR]')) throw new Error('Mission questions must expose a fourth distinct distractor');
+          for(const token of ['if(options.length===3) options.push(MISSION_FOURTH_DISTRACTOR)','function missionQuestionIsValid(question:MissionQuestion):boolean','new Set(options.map(option=>option.trim().toLocaleLowerCase("it"))).size===4','mission.questions.every(missionQuestionIsValid)']) if(!game.includes(token)) throw new Error('Mission question integrity guard missing: '+token);
           const board=html.slice(html.indexOf('async function loadMissionBoard'),html.indexOf('async function refreshPatrolStatus'));
           for(const token of ['Missione superata · ','Risposta corretta: ','button.textContent="Missione completata"','questions.forEach(q=>q.querySelectorAll("input").forEach(input=>input.disabled=true))']) {
             if(!board.includes(token)) throw new Error('Mission result feedback missing: '+token);
