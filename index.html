@@ -1919,7 +1919,7 @@ function renderVehicleBrevettoUI(){
  }
  if(chosen){chosen.classList.remove("hidden");chosen.innerHTML='<div class="badge">MEZZO SELEZIONATO</div><h4>'+esc(state.vehicle.name)+'</h4>'+renderVehicleBrevettoProfile(state.vehicle);}
  $("vehicleBrevettoSubtitle").textContent="Prova didattica sul veicolo selezionato: caratteristiche costruttive, componenti, impiego, sicurezza e principi fisici. Non rilascia un brevetto o un’abilitazione ufficiale.";
- $("vehicleBrevettoBadge").textContent=state.passed?"BREVETTO SUPERATO":"BREVETTO VEICOLO SPECIALE";
+ const institutionalVehiclePath=["carabinieri","finanza"].includes(selectedBranch);$("vehicleBrevettoBadge").textContent=state.passed?(institutionalVehiclePath?"BREVETTO DIDATTICO SUPERATO":"PERCORSO DIDATTICO COMPLETATO"):(institutionalVehiclePath?"BREVETTO DIDATTICO VEICOLO":"PERCORSO TECNICO-DIDATTICO");
  const startButton=$("vehicleBrevettoStart");if(startButton)startButton.onclick=startVehicleBrevettoQuiz;
  if(vehicleBrevettoCooldownTimer){clearInterval(vehicleBrevettoCooldownTimer);vehicleBrevettoCooldownTimer=null;}
  const updateVehicleBrevettoCooldown=()=>{
