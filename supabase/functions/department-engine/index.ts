@@ -366,6 +366,8 @@ Deno.serve(async (req: Request) => {
       }
       if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).eq("service_branch",branch).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
+      const { count: bankCount, error: bankCountError } = await db.from("department_questions").select("id", { count: "exact", head: true }).eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
+      if (bankCountError || (bankCount ?? 0) < 100) return reply(req,{ error: "Banca reparto non completa: sono richiesti 100 quesiti verificati prima di attivare il quiz." }, 409);
       const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
