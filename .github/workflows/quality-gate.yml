@@ -225,9 +225,12 @@ jobs:
             if(item.ranks[item.vehicleUnlockRank]!==item.vehicleUnlockName)throw new Error(branch+' vehicle pathway unlock grade does not match configured rank');
           }
           const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
-          for(const branch of Object.keys(corps)){
-            const start=game.indexOf(' '+branch+':['),end=game.indexOf('\n ],',start);
-            if(start<0||end<0||((game.slice(start,end).match(/id:"/g)||[]).length)!==4)throw new Error(branch+' must have exactly four branch-specific missions');
+          const branchKeys=Object.keys(corps);
+          for(let index=0;index<branchKeys.length;index++){
+            const branch=branchKeys[index],start=game.indexOf(' '+branch+':[');
+            const next=index<branchKeys.length-1?game.indexOf(' '+branchKeys[index+1]+':[',start+1):game.indexOf('\n};',start);
+            const section=game.slice(start,next<0?undefined:next);
+            if(start<0||((section.match(/id:"/g)||[]).length)!==4)throw new Error(branch+' must have exactly four branch-specific missions');
           }
           const vehicleSeed=fs.readFileSync('supabase/migrations/20261127130000_seed_vehicle_brevetto_catalogues.sql','utf8');
           if((vehicleSeed.match(/'2026-11-27',true,/g)||[]).length!==16)throw new Error('Expected sixteen verified vehicle entries across four new institutions');
