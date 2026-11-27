@@ -31,6 +31,11 @@ const admin = createClient(url, service, { auth: { persistSession: false } });
 
 type MissionQuestion={prompt:string;options:string[];correct_index:number;explanation:string};
 type MissionScenario={id:string;title:string;scenario:string;questions:MissionQuestion[]};
+const MISSION_FOURTH_DISTRACTOR="Affidarsi a informazioni non verificate e omettere la documentazione dell'attività.";
+function missionOptions(question:MissionQuestion):string[]{
+ const options=[...question.options,MISSION_FOURTH_DISTRACTOR];
+ return options;
+}
 const MISSION_BANK:Record<string,MissionScenario[]> = {
  carabinieri:[
   {id:"academy_orientation",title:"Segnalazione di persona vulnerabile",scenario:"Durante un servizio territoriale arriva una segnalazione circostanziata relativa a una persona fragile che non rientra a casa. La priorità è raccogliere informazioni verificabili e coordinare la risposta.",questions:[
@@ -146,9 +151,10 @@ function optionOffset(branch:string,missionId:string,questionIndex:number){
  return (seed+questionIndex*3)%4;
 }
 function publicMissions(branch:string){
- return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>({id,title,scenario,questions:questions.map(({prompt,options},index)=>{
+ return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>({id,title,scenario,questions:questions.map((question,index)=>{
+  const options=missionOptions(question);
   const offset=optionOffset(branch,id,index);
-  return {prompt,options:options.map((_,optionIndex)=>options[(optionIndex+offset)%options.length])};
+  return {prompt:question.prompt,options:options.map((_,optionIndex)=>options[(optionIndex+offset)%options.length])};
  })}));
 }
 Deno.serve(async (req: Request) => {
@@ -216,12 +222,12 @@ Deno.serve(async (req: Request) => {
       const mission = (MISSION_BANK[branch] ?? []).find(item => item.id === missionId);
       const answers = body.answers;
       if (!mission) return reply(req, { error: "Missione non disponibile per il Corpo selezionato." }, 400);
-      if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown, index: number) => !Number.isInteger(a) || Number(a) < 0 || Number(a) >= mission.questions[index].options.length)) {
+      if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown, index: number) => !Number.isInteger(a) || Number(a) < 0 || Number(a) >= missionOptions(mission.questions[index]).length)) {
         return reply(req, { error: "Completa tutte le valutazioni della missione." }, 400);
       }
-      const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%mission.questions[index].options.length);
+      const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%missionOptions(mission.questions[index]).length);
       const score = normalizedAnswers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
-      const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:q.options[q.correct_index]}));
+      const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index]}));
       if (score !== mission.questions.length) {
         return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review });
       }
