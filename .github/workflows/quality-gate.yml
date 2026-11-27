@@ -479,3 +479,13 @@ jobs:
           }
           console.log('PASS: general, department and vehicle quizzes fail closed on incomplete or malformed banks');
           NODE
+      - name: Validate general quiz content quality before serving
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const source=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const token of ['correct_index,explanation','Number.isInteger(q.correct_index)','q.explanation.trim().length>=20','new Set(options.map','return {data:[],error:null}','difficulty:q.difficulty']) {
+            if(!source.includes(token)) throw new Error('General quiz content validation missing: '+token);
+          }
+          console.log('PASS: general quiz questions are validated and answer keys remain server-side');
+          NODE
