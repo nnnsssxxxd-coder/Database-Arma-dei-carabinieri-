@@ -2092,7 +2092,7 @@ async function loadMissionBoard(){
     try{
      const {data,error}=await db.functions.invoke("game-engine",{body:{action:"mission_complete",service_branch:selectedBranch,mission_id:missionId,answers}});
      if(error)throw error;
-     if(!data?.passed){if(feedback)feedback.textContent=data?.message||"Missione non superata. Rivedi le risposte e riprova.";button.disabled=false;return;}
+     if(!data?.passed){if(feedback){const review=Array.isArray(data?.review)?data.review:[];feedback.innerHTML='<strong>Esito: '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong>'+review.map((item,index)=>'<p><strong>'+(index+1)+'. '+esc(item.prompt)+'</strong><br>Risposta attesa: '+esc(item.correct_option||"")+'<br>'+esc(item.explanation||"")+'</p>').join("")+'<p>Correggi le risposte e riprova.</p>';}button.disabled=false;return;}
      if(feedback)feedback.textContent="Missione completata. EXP registrata correttamente.";
      await loadMissionBoard();
      const progressResult=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",selectedBranch).maybeSingle();
