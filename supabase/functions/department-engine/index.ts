@@ -83,6 +83,12 @@ Deno.serve(async (req: Request) => {
            db.from("department_vehicle_brevetti").select("vehicle_id,vehicle_name,vehicle_type,selected_at").eq("user_id",user.id).eq("service_branch",branch).maybeSingle()
          ]);
          if(catalogError||chosenError)return reply(req,{error:"Impossibile caricare catalogo o scelta brevetto."},500);
+         const vehicleIds=(catalog??[]).map((item:any)=>item.id);
+         const {data:bankRows,error:bankStatusError}=vehicleIds.length?await db.from("vehicle_brevetto_question_bank").select("vehicle_id,category").in("vehicle_id",vehicleIds).eq("active",true):{data:[],error:null};
+         if(bankStatusError)return reply(req,{error:"Impossibile verificare la completezza dei quiz veicolo."},500);
+         const bankCounts=new Map<string,{total:number;physics:number;technical:number;regulations:number}>();
+         for(const row of bankRows??[]){const count=bankCounts.get(row.vehicle_id)??{total:0,physics:0,technical:0,regulations:0};count.total++;if(row.category==="physics")count.physics++;if(row.category==="technical")count.technical++;if(row.category==="regulations")count.regulations++;bankCounts.set(row.vehicle_id,count);}
+         const catalogWithReadiness=(catalog??[]).map((item:any)=>{const count=bankCounts.get(item.id)??{total:0,physics:0,technical:0,regulations:0};return {...item,bank_total:count.total,bank_ready:count.total===100&&count.physics===30&&count.technical===40&&count.regulations===30};});
          const {data:cycle,error:cycleError}=await db.from("vehicle_brevetto_cycles").select("completed_attempts,cooldown_until,cycle_number").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(cycleError)return reply(req,{error:"Impossibile caricare il ciclo del brevetto."},500);
          const storedCooldown=cycle?.cooldown_until??null;
@@ -92,14 +98,18 @@ Deno.serve(async (req: Request) => {
          const completed=cooldownExpired?0:Number(cycle?.completed_attempts??0);
          const cooldownUntil=cooldownExpired?null:storedCooldown;
          const cycleNumber=Number(cycle?.cycle_number??1)+(cooldownExpired?1:0);
-         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
+         return reply(req,{catalog:catalogWithReadiness,brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
        }
        if(locked)return reply(req,{error:"Il percorso tecnico del mezzo si sblocca dal grado/qualifica di "+(VEHICLE_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_choose"){
          const vehicleId=String(body.vehicle_id??"");
          const {data:vehicle,error:vehicleError}=await db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain").eq("id",vehicleId).eq("service_branch",branch).eq("active",true).maybeSingle();
          if(vehicleError)return reply(req,{error:"Impossibile verificare il veicolo."},500);
-         if(!vehicle)return reply(req,{error:"Veicolo non presente nel catalogo ufficiale del Corpo."},400);
+         if(!vehicle)return reply(req,{error:"Veicolo non presente nel catalogo del Corpo."},400);
+         const {data:vehicleBank,error:vehicleBankError}=await db.from("vehicle_brevetto_question_bank").select("category").eq("vehicle_id",vehicleId).eq("active",true);
+         if(vehicleBankError)return reply(req,{error:"Impossibile verificare la banca del veicolo."},500);
+         const bankCounts=(vehicleBank??[]).reduce((count:any,row:any)=>{count.total++;if(row.category==="physics")count.physics++;if(row.category==="technical")count.technical++;if(row.category==="regulations")count.regulations++;return count;},{total:0,physics:0,technical:0,regulations:0});
+         if(bankCounts.total!==100||bankCounts.physics!==30||bankCounts.technical!==40||bankCounts.regulations!==30)return reply(req,{error:"Il quiz di questo mezzo è in preparazione: sarà selezionabile quando la banca verificata sarà completa (30 fisica, 40 tecnica, 30 normativa)."},409);
          const {data:existing,error:existingError}=await db.from("department_vehicle_brevetti").select("vehicle_id").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(existingError)return reply(req,{error:"Impossibile verificare la scelta già registrata."},500);
          if(existing)return reply(req,{error:"Hai già scelto il brevetto: la scelta è unica e non modificabile."},409);
