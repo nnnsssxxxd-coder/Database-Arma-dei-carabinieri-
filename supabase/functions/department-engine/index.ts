@@ -33,7 +33,10 @@ const DEPT_RANKS_BY_BRANCH = {
   aeronautica: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di team", "Vice responsabile di sezione", "Responsabile di sezione", "Referente di gruppo", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
-const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Assistente Capo Coordinatore",esercito:"Graduato Capo",marina:"Sottocapo di Prima Classe",aeronautica:"Primo Aviere Capo"};
+const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Vice Sovrintendente",esercito:"Sergente",marina:"Sergente",aeronautica:"Sergente"};
+const DEPARTMENT_UNLOCK_RANK:Record<string,number>={carabinieri:5,finanza:5,polizia:6,esercito:7,marina:8,aeronautica:7};
+const VEHICLE_UNLOCK_RANK:Record<string,number>={carabinieri:2,finanza:2,polizia:3,esercito:2,marina:3,aeronautica:2};
+const VEHICLE_UNLOCK_GRADE:Record<string,string>={carabinieri:"Appuntato",finanza:"Appuntato",polizia:"Assistente",esercito:"Graduato",marina:"Sottocapo di Terza Classe",aeronautica:"Primo Aviere"};
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
@@ -72,7 +75,7 @@ Deno.serve(async (req: Request) => {
        const rankRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
        if(rankRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
        const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankRow.data?.payload?.rank)||0);
-       const minimumRank=2;
+       const minimumRank=VEHICLE_UNLOCK_RANK[branch]??2;
        const locked=baseRank<minimumRank;
        if(action==="vehicle_brevetto_status"){
          const [{data:catalog,error:catalogError},{data:chosen,error:chosenError}]=await Promise.all([
@@ -91,7 +94,7 @@ Deno.serve(async (req: Request) => {
          const cycleNumber=Number(cycle?.cycle_number??1)+(cooldownExpired?1:0);
          return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
        }
-       if(locked)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
+       if(locked)return reply(req,{error:"Il percorso tecnico del mezzo si sblocca dal grado/qualifica di "+(VEHICLE_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_choose"){
          const vehicleId=String(body.vehicle_id??"");
          const {data:vehicle,error:vehicleError}=await db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain").eq("id",vehicleId).eq("service_branch",branch).eq("active",true).maybeSingle();
@@ -199,7 +202,7 @@ Deno.serve(async (req: Request) => {
       const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
-      const minimumRank = branch === "finanza" ? 5 : 5;
+      const minimumRank = DEPARTMENT_UNLOCK_RANK[branch]??5;
       if (personalRank < minimumRank) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado/qualifica di "+(DEPARTMENT_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
