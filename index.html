@@ -1524,14 +1524,16 @@ function applyServiceBranding(branch){
 
  const homeEyebrow=document.querySelector("#home .eyebrow");if(homeEyebrow)homeEyebrow.textContent=name+" · AREA PERSONALE";
  const quizTitle=$("quiz")?.querySelector("h2");if(quizTitle)quizTitle.textContent="Esercitazione generale · "+name;
- const patrolTitle=$("patrol")?.querySelector("h2"),patrolEyebrow=$("patrol")?.querySelector(".eyebrow"),patrolLead=$("patrol")?.querySelector(".row p"),patrolIntroTitle=$("patrol")?.querySelector(".patrol-intro strong"),patrolIntroText=$("patrol")?.querySelector(".patrol-intro p"),patrolStart=$("patrolStart"),patrolBadge=$("patrol")?.querySelector(".row .badge");
- if(patrolTitle)patrolTitle.textContent=finanza?"Controllo economico-finanziario":"esercitazione di servizio di pattuglia";
- if(patrolEyebrow)patrolEyebrow.textContent=finanza?"ADDESTRAMENTO · SCENARI DIDATTICI · GdF":"ADDESTRAMENTO · SCENARI DIDATTICI";
- if(patrolLead)patrolLead.textContent=finanza?"Scenari pratici di verifica economico-finanziaria: documenti fiscali, trasporti, merci, carburanti, dogane e controlli in mare.":"Scenari pratici di servizio: sicurezza stradale, veicoli, trasporto merci, documenti, assistenza e situazioni sul territorio.";
+ const cfgOperation=window.CORPS_CONFIG?.[branch]||{},missionMode=branch==="polizia"||cfgOperation.operationMode==="military",patrolTitle=$("patrol")?.querySelector("h2"),patrolEyebrow=$("patrol")?.querySelector(".eyebrow"),patrolLead=$("patrol")?.querySelector(".row p"),patrolIntroTitle=$("patrol")?.querySelector(".patrol-intro strong"),patrolIntroText=$("patrol")?.querySelector(".patrol-intro p"),patrolStart=$("patrolStart"),patrolBadge=$("patrol")?.querySelector(".row .badge"),missionTitle=$("missionModeTitle"),missionDescription=$("missionModeDescription");
+ if(patrolTitle)patrolTitle.textContent=missionMode?(cfgOperation.operationLabel==="Missioni"?"Missioni addestrative":"Servizi operativi"):(finanza?"Controllo economico-finanziario":"Esercitazioni di servizio di pattuglia");
+ if(patrolEyebrow)patrolEyebrow.textContent="ADDESTRAMENTO · SCENARI DIDATTICI · "+(cfgOperation.short||cfgOperation.name||branch.toUpperCase());
+ if(patrolLead)patrolLead.textContent=missionMode?"Scenari specifici del Corpo su sicurezza, coordinamento, documentazione e supporto. Simulazioni didattiche, non ordini o procedure operative reali.":(finanza?"Scenari pratici di verifica economico-finanziaria: documenti fiscali, trasporti, merci, carburanti, dogane e controlli in mare.":"Scenari pratici di servizio: sicurezza stradale, veicoli, trasporto merci, documenti, assistenza e situazioni sul territorio.");
  if(patrolIntroTitle)patrolIntroTitle.textContent=finanza?"Controllo economico-finanziario sul campo":"Intervento e controllo sul territorio";
  if(patrolIntroText)patrolIntroText.textContent=finanza?"Valuta documenti, registrazioni, carichi, provenienza delle merci e circostanze; distingui ciò che è accertato da ciò che richiede approfondimenti.":"Valuta la situazione, esegui i controlli disponibili e scegli una risposta proporzionata; distingui sempre i fatti osservati dai semplici sospetti.";
  if(patrolStart)patrolStart.textContent=finanza?"Inizia controllo":"Inizia servizio";
- if(patrolBadge)patrolBadge.textContent=finanza?"GdF · CONTROLLO":"CONTROLLO";
+ if(patrolBadge)patrolBadge.textContent=finanza?"GdF · CONTROLLO":(cfgOperation.operationLabel||"CONTROLLO").toUpperCase();
+ if(missionTitle)missionTitle.textContent=(cfgOperation.operationLabel==="Missioni"?"Missioni addestrative · ":"Servizi operativi · ")+(cfgOperation.name||"Corpo selezionato");
+ if(missionDescription)missionDescription.textContent=cfgOperation.operationLabel==="Missioni"?"Scenari militari didattici su sicurezza, logistica, coordinamento e supporto secondo il Corpo selezionato. Non sono ordini né procedure operative reali.":"Scenari didattici specifici della Polizia di Stato, con valutazioni su sicurezza pubblica, assistenza e documentazione.";
 
  const quizCategory=$("quizCategory");
  if(quizCategory){
@@ -1629,9 +1631,9 @@ function render(){
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
- $("homeRank").textContent=RANKS[rank];renderDepartmentUI();const vehicleBrevettoSupported=["carabinieri","finanza"].includes(profile.service_branch);["vehicleBrevettoChoicePanel","vehicleBrevettoQuizPanel"].forEach(id=>$(id)?.classList.toggle("hidden",!vehicleBrevettoSupported));
- 
- $("adminTab").classList.toggle("hidden",profile.role!=="istruttore");const patrolTab=document.querySelector('[data-tab="patrol"]');if(patrolTab)patrolTab.classList.toggle("hidden",!["carabinieri","finanza"].includes(profile.service_branch));
+ $("homeRank").textContent=RANKS[rank];renderDepartmentUI();const vehicleBrevettoSupported=true;["vehicleBrevettoChoicePanel","vehicleBrevettoQuizPanel"].forEach(id=>$(id)?.classList.toggle("hidden",!vehicleBrevettoSupported));
+ const cfg=window.CORPS_CONFIG?.[profile.service_branch]||{},missionMode=profile.service_branch==="polizia"||cfg.operationMode==="military";const patrolTab=document.querySelector('[data-tab="patrol"]');if(patrolTab)patrolTab.textContent=cfg.operationLabel||"Pattuglia";const missionPanel=$("missionModePanel");if(missionPanel)missionPanel.classList.toggle("hidden",!missionMode);["patrolStart","patrolSession","patrolResult"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("hidden",missionMode);});const patrolIntro=$("patrol")?.querySelector(".patrol-intro");if(patrolIntro)patrolIntro.classList.toggle("hidden",missionMode);
+ $("adminTab").classList.toggle("hidden",profile.role!=="istruttore");
  $("quizCount").textContent=progress.quizCount||0;$("correctCount").textContent=progress.correct||0;$("exp").textContent=exp+" / "+(Number(progress.totalExp)||0);$("streak").textContent=progress.streak||0;renderPerformanceChart();
  const pct=rank>=RANKS.length-1?100:Math.min(100,exp/need*100);const examReady=rank<RANKS.length-1&&exp>=need;if($("rankExamInfo"))$("rankExamInfo").textContent=rank>=RANKS.length-1?"Hai raggiunto il grado massimo del percorso.":examReady?"Requisiti raggiunti: puoi sostenere l’esame per il grado "+(rank+2)+". La prova è composta da 5 domande e richiede almeno 4 risposte corrette.":"Per sbloccare l’esame per il grado "+(rank+2)+" servono "+Math.max(0,need-exp)+" EXP. Difficoltà e argomenti vengono adeguati alla tua progressione.";if($("startRankExam"))$("startRankExam").disabled=!examReady;const insignia=$("rankInsignia");if(insignia){insignia.setAttribute("aria-label","Simbolo grafico illustrativo del grado "+RANKS[rank]+", non distintivo ufficiale");insignia.innerHTML=rankSymbolSvg(rank);}if($("rankShowcaseName"))$("rankShowcaseName").textContent=RANKS[rank];if($("rankShowcasePercent"))$("rankShowcasePercent").textContent=Math.round(pct)+"%";if($("rankShowcaseProgress"))$("rankShowcaseProgress").style.width=pct+"%";if($("rankShowcaseNext"))$("rankShowcaseNext").textContent=rank>=RANKS.length-1?"Hai raggiunto il grado massimo.":"Prossimo traguardo: "+RANKS[rank+1]+" · "+Math.max(0,need-exp)+" EXP mancanti.";
  $("rankName").textContent=RANKS[rank];$("rankProgressText").textContent=rank>=RANKS.length-1?"grado massimo":exp+" / "+need+" EXP";
@@ -2065,6 +2067,41 @@ function brevettoSceneSvg(q){
 }
 let patrolCooldownUntil=null,patrolCooldownTimer=null;
 function startPatrolCooldown(until){patrolCooldownUntil=until;if(patrolCooldownTimer)clearInterval(patrolCooldownTimer);const tick=()=>{const left=patrolCooldownUntil?Date.parse(patrolCooldownUntil)-Date.now():0,box=$("patrolCooldown"),btn=$("patrolStart");if(left>0){if(box){box.classList.remove("hidden");box.textContent="SERVIZIO IN RIPRISTINO · "+formatRemaining(left)+" · Nuovi scenari disponibili al termine.";}if(btn)btn.disabled=true;}else{patrolCooldownUntil=null;if(box){box.classList.add("hidden");box.textContent="";}if(btn)btn.disabled=false;if(patrolCooldownTimer){clearInterval(patrolCooldownTimer);patrolCooldownTimer=null;}}};tick();if(patrolCooldownUntil)patrolCooldownTimer=setInterval(tick,1000);}
+async function loadMissionBoard(){
+ const list=$("missionList"),message=$("missionMessage");if(!list||!user||!selectedBranch)return;
+ list.innerHTML='<p class="small muted">Caricamento delle missioni…</p>';if(message)message.textContent="";
+ try{
+  const {data,error}=await db.functions.invoke("game-engine",{body:{action:"status",service_branch:selectedBranch}});
+  if(error)throw error;
+  const missions=Array.isArray(data?.missions)?data.missions:[],completed=new Set((data?.completed_missions||[]).map(x=>x.mission_id));
+  if(!missions.length){list.innerHTML='<div class="notice2">Nessuna missione disponibile per questo Corpo.</div>';return;}
+  list.innerHTML=missions.map(m=>{
+   const done=completed.has(m.id);
+   const questions=(m.questions||[]).map((q,i)=>'<fieldset class="mission-question" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0"><legend><strong>'+(i+1)+'. '+esc(q.prompt)+'</strong></legend>'+(q.options||[]).map((option,j)=>'<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0"><input type="radio" name="mission-'+esc(m.id)+'-'+i+'" value="'+j+'" '+(done?'disabled':'')+'><span>'+esc(option)+'</span></label>').join("")+'</fieldset>').join("");
+   return '<article class="notice2 mission-card" style="margin-bottom:10px"><div class="row between"><h3>'+esc(m.title)+'</h3><span class="badge">'+(done?"COMPLETATA":"3 VALUTAZIONI")+'</span></div><p class="small muted">'+esc(m.scenario)+'</p>'+questions+(done?'<p class="small">Missione già completata · EXP registrata</p>':'<button type="button" class="primary" data-mission-submit="'+esc(m.id)+'">Conferma valutazioni</button><p class="small muted" data-mission-feedback="'+esc(m.id)+'" role="status" aria-live="polite"></p>')+'</article>';
+  }).join("");
+  if(!list.dataset.bound){
+   list.dataset.bound="1";
+   list.addEventListener("click",async event=>{
+    const button=event.target.closest("[data-mission-submit]");if(!button)return;
+    const missionId=button.dataset.missionSubmit,card=button.closest(".mission-card"),questions=card?.querySelectorAll(".mission-question")||[];
+    const answers=[...questions].map(q=>{const checked=q.querySelector("input:checked");return checked?Number(checked.value):-1;});
+    const feedback=card?.querySelector("[data-mission-feedback]");
+    if(answers.some(x=>x<0)){if(feedback)feedback.textContent="Seleziona una risposta per ciascuna valutazione.";return;}
+    button.disabled=true;if(feedback)feedback.textContent="Verifica delle risposte…";
+    try{
+     const {data,error}=await db.functions.invoke("game-engine",{body:{action:"mission_complete",service_branch:selectedBranch,mission_id:missionId,answers}});
+     if(error)throw error;
+     if(!data?.passed){if(feedback)feedback.textContent=data?.message||"Missione non superata. Rivedi le risposte e riprova.";button.disabled=false;return;}
+     if(feedback)feedback.textContent="Missione completata. EXP registrata correttamente.";
+     await loadMissionBoard();
+     const progressResult=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",selectedBranch).maybeSingle();
+     if(!progressResult.error&&progressResult.data?.payload){progress={...progress,...progressResult.data.payload};render();}
+    }catch(error){if(feedback)feedback.textContent=await functionError(error,"Impossibile registrare la missione. Riprova.");button.disabled=false;}
+   });
+  }
+ }catch(error){list.innerHTML='<div class="notice2 error">Missioni non disponibili. Verifica la connessione e riprova.</div>';console.warn("Mission board",error);}
+}
 async function refreshPatrolStatus(){if(!user||!selectedBranch)return;try{const {data,error}=await db.functions.invoke("traffic-control-engine",{body:{action:"status",service_branch:selectedBranch}});if(error)throw error;if(data?.cooldown_until)startPatrolCooldown(data.cooldown_until);else startPatrolCooldown(null);}catch(e){console.warn("Stato ripristino pattuglia non disponibile",e);}}
 let patrolSession=null,patrolTimer=null;
 function renderPatrolSession(){
