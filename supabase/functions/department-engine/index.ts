@@ -35,8 +35,8 @@ const DEPT_RANKS_BY_BRANCH = {
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
 const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Vice Sovrintendente",esercito:"Sergente",marina:"Sergente",aeronautica:"Sergente"};
 const DEPARTMENT_UNLOCK_RANK:Record<string,number>={carabinieri:5,finanza:5,polizia:6,esercito:7,marina:8,aeronautica:7};
-const VEHICLE_UNLOCK_RANK:Record<string,number>={carabinieri:2,finanza:2,polizia:3,esercito:2,marina:3,aeronautica:2};
-const VEHICLE_UNLOCK_GRADE:Record<string,string>={carabinieri:"Appuntato",finanza:"Appuntato",polizia:"Assistente",esercito:"Graduato",marina:"Sottocapo di Terza Classe",aeronautica:"Primo Aviere"};
+const VEHICLE_UNLOCK_RANK:Record<string,number>={carabinieri:2,finanza:2,polizia:3,esercito:2,marina:2,aeronautica:2};
+const VEHICLE_UNLOCK_GRADE:Record<string,string>={carabinieri:"Appuntato",finanza:"Appuntato",polizia:"Assistente",esercito:"Graduato",marina:"Comune di Prima Classe",aeronautica:"Primo Aviere"};
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
