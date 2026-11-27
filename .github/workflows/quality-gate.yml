@@ -234,7 +234,6 @@ jobs:
           }
           const vehicleSeed=fs.readFileSync('supabase/migrations/20261127130000_seed_vehicle_brevetto_catalogues.sql','utf8');
           if((vehicleSeed.match(/'2026-11-27',true,/g)||[]).length!==16)throw new Error('Expected sixteen verified vehicle entries across four new institutions');
-          const html=fs.readFileSync('index.html','utf8');
           const deptEngine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const quizEngine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
           if(!html.includes('async function loadMissionBoard')||!html.includes('id="missionModePanel"'))throw new Error('Mission assessment UI is incomplete');
