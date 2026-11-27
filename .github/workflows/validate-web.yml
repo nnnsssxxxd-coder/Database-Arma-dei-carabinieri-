@@ -36,6 +36,21 @@ jobs:
           }
           console.log('Configurazione sei Corpi: OK');
           NODE
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Supabase Edge Functions
+        run: |
+          deno check supabase/functions/username-login/index.ts
+          deno check supabase/functions/admin-create-user/index.ts
+          deno check supabase/functions/quiz-engine/index.ts
+          deno check supabase/functions/department-engine/index.ts
+          deno check supabase/functions/game-engine/index.ts
+          deno check supabase/functions/command-general-login/index.ts
+          deno check supabase/functions/command-general-action/index.ts
+          deno check supabase/functions/ministry-admin-action/index.ts
+          deno check supabase/functions/admin-user-action/index.ts
+          deno check supabase/functions/audit-event/index.ts
       - name: Check inline JavaScript syntax
         run: |
           python - <<'PY'
