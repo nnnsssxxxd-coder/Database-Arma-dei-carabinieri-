@@ -5,7 +5,7 @@ function reply(req:Request,data:unknown,status=200){return new Response(JSON.str
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
-async function questionPool(category:string,branch:"carabinieri"|"finanza"){
+async function questionPool(category:string,branch:string){
  let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch);
  if(category!=="Tutte le materie")request=request.eq("category",category);
  return await request.order("sort_order");
@@ -40,18 +40,17 @@ Deno.serve(async(req)=>{
   if(profileError)return reply(req,{error:"Impossibile verificare il profilo."},500);
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account non attivo"},403);
   const requestedBranch=String((await req.clone().json().catch(()=>({}))).service_branch??"");
-  const branch=requestedBranch==="finanza"||requestedBranch==="carabinieri"?requestedBranch:null;
+  const branch=["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(requestedBranch)?requestedBranch:null;
   if(!branch)return reply(req,{error:"Corpo selezionato non valido."},400);
   const {data:membership,error:membershipError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
   if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
   if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
   const body=await req.json();
-  const allowed=branch==="finanza"
-   ? ["Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"]
-   : ["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
+  const CATEGORY_BY_BRANCH:Record<string,string[]>={carabinieri:["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"],finanza:["Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"],polizia:["Ordinamento e servizi di polizia","Diritto penale e procedura","Sicurezza pubblica"],esercito:["Ordinamento militare","Storia e organizzazione","Addestramento e sicurezza"],marina:["Ordinamento militare navale","Organizzazione della Marina","Sicurezza e navigazione"],aeronautica:["Ordinamento militare aeronautico","Organizzazione dell’Aeronautica","Sicurezza aeronautica"]};
+  const allowed=CATEGORY_BY_BRANCH[branch]??[];
   const category=String(body.category??"Tutte le materie");
   if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida per il Corpo selezionato."},400);
-  const maxRank=branch==="finanza"?23:23;
+  const maxRank=({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[branch]??23;
   if(body.action==="rank_exam_start"){
    const {data:row,error:progressError}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
    const {data:prof,error:rankError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
@@ -61,9 +60,7 @@ Deno.serve(async(req)=>{
    const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
-   const bands=branch==="finanza"
-    ? (rank<4?["Ordinamento e compiti"]:rank<15?["Ordinamento e compiti","Diritto tributario"]:allowed)
-    : (rank<5?["Arma e ordinamento"]:rank<14?["Arma e ordinamento","Costituzione e istituzioni"]:allowed);
+   const bands=rank<5?allowed.slice(0,1):rank<14?allowed.slice(0,2):allowed;
    const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch).in("category",bands);
    if(error||!pool||pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},500);
    const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,5);
