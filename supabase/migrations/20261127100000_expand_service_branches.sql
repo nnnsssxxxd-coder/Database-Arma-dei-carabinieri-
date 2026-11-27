@@ -30,17 +30,17 @@ $$;
 
 -- Preserve existing CC-/GF- matricole and allow a distinct prefix for each new body.
 alter table public.profiles
-  drop constraint if exists profiles_matricola_check;
+  drop constraint if exists profiles_matricola_format;
 
 alter table public.profiles
-  add constraint profiles_matricola_check
+  add constraint profiles_matricola_format
   check (
     matricola is null
     or matricola ~ '^(CC|GF|PS|EI|MM|AM)-[0-9]{7}$'
   ) not valid;
 
 alter table public.profiles
-  validate constraint profiles_matricola_check;
+  validate constraint profiles_matricola_format;
 
 comment on column public.profiles.service_branch is
   'Isolated service environment: carabinieri, finanza, polizia, esercito, marina, aeronautica.';
