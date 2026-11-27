@@ -448,3 +448,17 @@ jobs:
           }
           console.log('PASS: all six quiz engines expose exactly the four categories configured in the website');
           NODE
+      - name: Validate promotion exam answer explanations
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const migration=fs.readFileSync('supabase/migrations/20261127120000_expand_service_rpc_functions.sql','utf8');
+          const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const [name,source,tokens] of [
+            ['SQL exam result',migration,["'review',coalesce(v_review,'[]'::jsonb)","'correct_option',q.options->>q.correct_index","'explanation',coalesce(nullif(trim(q.explanation),''),'Spiegazione non disponibile.')"]],
+            ['exam interface',html,['const review=Array.isArray(data.review)?data.review:[]','Risposta corretta:','Spiegazione:','Correzione commentata']],
+            ['exam backend',engine,['action==="rank_exam_submit"','db.rpc("complete_rank_exam"']]
+          ])for(const token of tokens)if(!source.includes(token))throw new Error(name+' is missing '+token);
+          console.log('PASS promotion exams return and display selected answer, correct answer and explanation');
+          NODE
