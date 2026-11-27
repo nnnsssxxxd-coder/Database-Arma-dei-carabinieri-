@@ -389,8 +389,10 @@ Deno.serve(async (req: Request) => {
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
       const { data: bankRows, error: bankCountError } = await db.from("department_questions").select("id,prompt,options,correct_index,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
       const validBankRows=(bankRows??[]).filter(validQuestionRow);
+      const normalizedPrompts=validBankRows.map((q:any)=>String(q.prompt??"").trim().replace(/\\s+/g," ").toLocaleLowerCase("it"));
+      const uniquePromptCount=new Set(normalizedPrompts).size;
       const rankBandCounts=[0,1,2].map(value=>validBankRows.filter((q:any)=>Number(q.rank_band)===value).length);
-      if (bankCountError || (bankRows??[]).length!==100 || validBankRows.length!==100 || rankBandCounts.some(value=>value<4)) return reply(req,{ error: "Banca reparto non completa o non verificata: servono 100 quesiti validi, spiegati e distribuiti su tutti i livelli." }, 409);
+      if (bankCountError || (bankRows??[]).length!==100 || validBankRows.length!==100 || uniquePromptCount!==100 || rankBandCounts.some(value=>value<4)) return reply(req,{ error: "Banca reparto non completa o non verificata: servono 100 quesiti distinti, validi, spiegati e distribuiti su tutti i livelli." }, 409);
       const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
