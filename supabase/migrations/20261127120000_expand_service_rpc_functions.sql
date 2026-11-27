@@ -20,6 +20,7 @@ declare
  v_need integer;
  v_pass boolean;
  v_correct jsonb;
+ v_review jsonb;
  v_initial integer;
  v_max_rank integer;
 begin
@@ -86,12 +87,20 @@ begin
   values(p_user_id,a.service_branch,v_payload,now())
   on conflict(user_id,service_branch) do update set payload=excluded.payload,updated_at=excluded.updated_at;
  update public.rank_exam_attempts set score=v_score,completed_at=now() where id=p_attempt_id;
- select jsonb_agg(q.correct_index order by x.ord) into v_correct
+ select jsonb_agg(q.correct_index order by x.ord),
+        jsonb_agg(jsonb_build_object(
+          'prompt',q.prompt,
+          'options',q.options,
+          'correct_index',q.correct_index,
+          'correct_option',q.options->>q.correct_index,
+          'explanation',coalesce(nullif(trim(q.explanation),''),'Spiegazione non disponibile.')
+        ) order by x.ord)
+  into v_correct,v_review
   from unnest(a.question_ids) with ordinality x(id,ord)
   join public.quiz_questions q on q.id=x.id and q.service_branch=a.service_branch;
  return jsonb_build_object('score',v_score,'total',5,'passed',v_pass,
   'new_rank',case when v_pass then v_rank+1 else v_rank end,
-  'progress',v_payload,'correct_answers',v_correct,'service_branch',a.service_branch);
+  'progress',v_payload,'correct_answers',v_correct,'review',coalesce(v_review,'[]'::jsonb),'service_branch',a.service_branch);
 end;
 $function$;
 
