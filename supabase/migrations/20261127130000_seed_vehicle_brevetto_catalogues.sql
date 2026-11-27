@@ -24,7 +24,7 @@ values
 ('am-c130j','aeronautica','C-130J Hercules II','air','Velivolo da trasporto e aviolancio in servizio presso la 46ª Brigata Aerea, secondo la scheda ufficiale.','https://www.aeronautica.difesa.it/2024/06/21/c-130j-hercules-ii/','2026-11-27',true,1),
 ('am-t346a','aeronautica','T-346A','air','Velivolo addestratore pre-operativo utilizzato per la fase avanzata di formazione dei piloti.','https://www.aeronautica.difesa.it/2024/06/19/t-346a/','2026-11-27',true,2),
 ('am-eurofighter','aeronautica','Eurofighter F-2000 Typhoon','air','Velivolo da combattimento per la difesa aerea, presente nel catalogo ufficiale degli aeromobili dell’Aeronautica.','https://www.aeronautica.difesa.it/maf-pagina-velivoli/','2026-11-27',true,3),
-('am-hh139','aeronautica','HH-139','air','Elicottero multiruolo impiegato per il soccorso aereo e altre attività istituzionali.','https://www.aeronautica.difesa.it/home/noi-siamo-l-am/personale-e-mezzi/','2026-11-27',true,4)
+('am-hh139','aeronautica','HH-139','air','Elicottero multiruolo impiegato per il soccorso aereo e altre attività istituzionali.','https://www.aeronautica.difesa.it/maf-pagina-velivoli/','2026-11-27',true,4)
 on conflict (id) do nothing;
 
 commit;
