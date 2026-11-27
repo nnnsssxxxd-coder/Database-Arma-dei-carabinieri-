@@ -222,7 +222,7 @@ Deno.serve(async (req: Request) => {
       const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%mission.questions[index].options.length);
       const score = normalizedAnswers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
       if (score !== mission.questions.length) {
-        return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review:mission.questions.map((q,index)=>({prompt:q.prompt,explanation:q.explanation,correct_index:q.correct_index})) });
+        return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review:mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:q.options[q.correct_index]})) });
       }
       const { data, error } = await admin.rpc("complete_game_mission", {
         p_user_id: user.id,
