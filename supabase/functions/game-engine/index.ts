@@ -216,13 +216,14 @@ Deno.serve(async (req: Request) => {
       const mission = (MISSION_BANK[branch] ?? []).find(item => item.id === missionId);
       const answers = body.answers;
       if (!mission) return reply(req, { error: "Missione non disponibile per il Corpo selezionato." }, 400);
-      if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown) => !Number.isInteger(a) || Number(a) < 0 || Number(a) > 3)) {
+      if (!Array.isArray(answers) || answers.length !== mission.questions.length || answers.some((a: unknown, index: number) => !Number.isInteger(a) || Number(a) < 0 || Number(a) >= mission.questions[index].options.length)) {
         return reply(req, { error: "Completa tutte le valutazioni della missione." }, 400);
       }
       const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%mission.questions[index].options.length);
       const score = normalizedAnswers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
+      const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:q.options[q.correct_index]}));
       if (score !== mission.questions.length) {
-        return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review:mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:q.options[q.correct_index]})) });
+        return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review });
       }
       const { data, error } = await admin.rpc("complete_game_mission", {
         p_user_id: user.id,
@@ -233,7 +234,7 @@ Deno.serve(async (req: Request) => {
         console.error("game-engine mission completion:", error.message);
         return reply(req, { error: "Non è stato possibile registrare la missione. Riprova." }, 500);
       }
-      return reply(req, { ...data,passed:true,score,total:mission.questions.length,mission_title:mission.title });
+      return reply(req, { ...data,passed:true,score,total:mission.questions.length,mission_title:mission.title,review });
     }
 
     return reply(req, { error: "Azione non riconosciuta." }, 400);
