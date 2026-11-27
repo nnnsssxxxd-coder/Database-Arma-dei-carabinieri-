@@ -1,0 +1,72 @@
+name: Deploy web app to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'manifest.webmanifest'
+      - 'app-icon*.svg'
+      - 'app-hero.svg'
+      - 'service-worker.js'
+      - 'package.json'
+      - '.github/workflows/pages.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare website
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          cp index.html manifest.webmanifest service-worker.js app-icon.svg app-icon-foreground.svg app-icon-monochrome.svg app-hero.svg site/
+          test -s site/index.html
+          test -s site/manifest.webmanifest
+          test -s site/service-worker.js
+          test -s node_modules/@supabase/supabase-js/dist/umd/supabase.js
+          cp node_modules/@supabase/supabase-js/dist/umd/supabase.js site/supabase.js
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -w 192 -h 192 app-icon.svg -o site/app-icon-192.png
+          rsvg-convert -w 512 -h 512 app-icon.svg -o site/app-icon-512.png
+          test -s site/supabase.js
+          test -s site/app-icon-192.png
+          test -s site/app-icon-512.png
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
