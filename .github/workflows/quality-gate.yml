@@ -239,7 +239,7 @@ jobs:
           if(!html.includes('async function loadMissionBoard')||!html.includes('id="missionModePanel"'))throw new Error('Mission assessment UI is incomplete');
           if(!deptEngine.includes('DEPARTMENT_UNLOCK_RANK')||!deptEngine.includes('VEHICLE_UNLOCK_RANK'))throw new Error('Branch-specific access controls are missing');
           for(const token of ['count.total===100','count.physics===30','count.technical===40','count.regulations===30','bankCounts.total!==100'])if(!deptEngine.includes(token))throw new Error('Vehicle bank completeness guard missing: '+token);
-          if(!deptEngine.includes('Banca reparto non completa: sono richiesti 100 quesiti verificati'))throw new Error('Department quiz must fail closed until 100 questions exist');
+          if(!deptEngine.includes('bankRows??[]).length!==100')||!deptEngine.includes('validBankRows.length!==100')||!deptEngine.includes('rankBandCounts.some(value=>value<4)'))throw new Error('Department quiz must require exactly 100 valid explained questions across all rank bands');
           if(!quizEngine.includes('pool.length<100')||!quizEngine.includes('100 domande verificate per questo Corpo'))throw new Error('General quiz must fail closed on incomplete banks');
           if(!game.includes('normalizedAnswers')||!game.includes('mission_complete'))throw new Error('Mission answers must be graded server-side');
           console.log('PASS six rank ladders, 66 units, 24 qualification paths, 24 mission scenarios, 24 specialist platforms and fail-closed quiz banks');
