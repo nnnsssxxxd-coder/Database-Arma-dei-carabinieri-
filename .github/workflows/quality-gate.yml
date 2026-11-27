@@ -426,3 +426,25 @@ jobs:
           if(board.includes('await loadMissionBoard();')) throw new Error('Mission success must not erase the explanation panel immediately');
           console.log('PASS mission option bounds, server-side grading, explanations on success and persistent feedback');
           NODE
+      - name: Validate quiz category parity across all six institutions
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const vm=require('vm');
+          const context={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),context);
+          const config=context.window.CORPS_CONFIG;
+          const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const match=engine.match(/const CATEGORY_BY_BRANCH:Record<string,string\[]>=(\{[\s\S]*?\});/);
+          if(!match)throw new Error('Quiz engine category map missing');
+          const literal=match[1].replace(/ as Record<string,string\[]>/g,'');
+          const categories=Function('"use strict"; return ('+literal+');')();
+          for(const [branch,item] of Object.entries(config)){
+            const expected=[...item.categories].sort();
+            const actual=[...(categories[branch]||[])].sort();
+            if(expected.length!==4||actual.length!==4||expected.some((value,index)=>value!==actual[index])){
+              throw new Error(branch+' quiz categories do not match the four categories displayed by the site');
+            }
+          }
+          console.log('PASS: all six quiz engines expose exactly the four categories configured in the website');
+          NODE
