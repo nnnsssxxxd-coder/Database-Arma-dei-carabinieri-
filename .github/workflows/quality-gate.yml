@@ -184,6 +184,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
+          const config=fs.readFileSync('corps-config.js','utf8');
           const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
           const brevetto=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const traffic=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
@@ -200,7 +201,8 @@ jobs:
             if(new Set(list).size!==list.length)throw new Error(name+' contains duplicate grades');
           }
           for(const token of ['#d4af37','#0d3b27','applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
-            if(!html.includes(token))throw new Error('Missing branch identity: '+token);
+            if(token==='#d4af37'||token==='#0d3b27') { if(!config.includes(token))throw new Error('Missing configured institutional color: '+token); }
+            else if(!html.includes(token))throw new Error('Missing branch identity: '+token);
           }
           if(!quiz.includes('shuffled.slice(0,5)')||!quiz.includes('answers.length!==5')||!html.includes('DOMANDA 1 / 5'))throw new Error('Rank exam must use five questions end-to-end');
           if(!brevetto.includes('start_vehicle_brevetto_attempt')||!brevetto.includes('answers.length!==8'))throw new Error('Eight-question brevetto flow is incomplete');
@@ -224,7 +226,7 @@ jobs:
           if(dollarArgs.some(x=>x.startsWith('.')||x.startsWith('#')||x.startsWith('['))) throw new Error('The ID helper $() must not receive CSS selectors; use querySelector instead');
           if(!html.includes('rank>=9?"ISPETTORE":rank>=5?"SOVRINTENDENTE"')) throw new Error('Personnel role categories must distinguish inspectors and warrant officers');
           if(!html.includes('x.type==="vehicle_brevetto"?8')) throw new Error('Progress chart must use eight as the brevetto denominator');
-          if(!html.includes('selectedBranch==="finanza"?"#d4af37":"#d71930"')) throw new Error('Rank graphic accents must follow the selected service branch');
+          if(!html.includes('window.CORPS_CONFIG?.[selectedBranch]?.colors?.[0]')) throw new Error('Rank graphic accents must follow each configured service branch');
           const command=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
           if(command.includes('rankFor(m)===24')||html.includes('branch==="finanza"?24:23')||html.includes('to==="finanza"?24:23')) throw new Error('Finanza rank ceiling must be index 23 (24 real grades)');
           console.log('PASS identical zero-based rank bounds across both Corps');
