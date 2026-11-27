@@ -2092,9 +2092,13 @@ async function loadMissionBoard(){
     try{
      const {data,error}=await db.functions.invoke("game-engine",{body:{action:"mission_complete",service_branch:selectedBranch,mission_id:missionId,answers}});
      if(error)throw error;
-     if(!data?.passed){if(feedback){const review=Array.isArray(data?.review)?data.review:[];feedback.innerHTML='<strong>Esito: '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong>'+review.map((item,index)=>'<p><strong>'+(index+1)+'. '+esc(item.prompt)+'</strong><br>Risposta attesa: '+esc(item.correct_option||"")+'<br>'+esc(item.explanation||"")+'</p>').join("")+'<p>Correggi le risposte e riprova.</p>';}button.disabled=false;return;}
-     if(feedback)feedback.textContent="Missione completata. EXP registrata correttamente.";
-     await loadMissionBoard();
+     const review=Array.isArray(data?.review)?data.review:[];
+     const reviewMarkup=review.map((item,index)=>'<p><strong>'+(index+1)+'. '+esc(item.prompt)+'</strong><br>Risposta corretta: '+esc(item.correct_option||"")+'<br>'+esc(item.explanation||"")+'</p>').join("");
+     if(!data?.passed){if(feedback)feedback.innerHTML='<strong>Esito: '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong>'+reviewMarkup+'<p>Correggi le risposte e riprova.</p>';button.disabled=false;return;}
+     if(feedback)feedback.innerHTML='<strong>Missione superata · '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong><p>EXP registrata correttamente. Ecco la revisione delle risposte:</p>'+reviewMarkup;
+     const completedBadge=card?.querySelector(".badge");if(completedBadge)completedBadge.textContent="COMPLETATA";
+     button.textContent="Missione completata";button.disabled=true;
+     questions.forEach(q=>q.querySelectorAll("input").forEach(input=>input.disabled=true));
      const progressResult=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",selectedBranch).maybeSingle();
      if(!progressResult.error&&progressResult.data?.payload){progress={...progress,...progressResult.data.payload};render();}
     }catch(error){if(feedback)feedback.textContent=await functionError(error,"Impossibile registrare la missione. Riprova.");button.disabled=false;}
