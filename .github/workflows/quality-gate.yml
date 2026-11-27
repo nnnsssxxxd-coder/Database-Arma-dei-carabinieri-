@@ -484,7 +484,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const source=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
-          for(const token of ['correct_index,explanation','Number.isInteger(q.correct_index)','q.explanation.trim().length>=20','new Set(options.map','return {data:[],error:null}','difficulty:q.difficulty']) {
+          for(const token of ['correct_index,explanation','Number.isInteger(q.correct_index)','q.explanation.trim().length>=20','new Set(options.map','return {data:[],error:null}','difficulty:q.difficulty','genericExplanation','templatePrompt','canonicalPrompt','!seen.has(canonicalPrompt)']) {
             if(!source.includes(token)) throw new Error('General quiz content validation missing: '+token);
           }
           console.log('PASS: general quiz questions are validated and answer keys remain server-side');
