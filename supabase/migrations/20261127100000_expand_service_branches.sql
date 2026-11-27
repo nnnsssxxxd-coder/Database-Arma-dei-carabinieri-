@@ -42,6 +42,24 @@ alter table public.profiles
 alter table public.profiles
   validate constraint profiles_matricola_format;
 
+-- The longest official rank ladders in the new environments contain 28 entries.
+-- Increase only the permitted index range; existing rank values are untouched.
+alter table public.profiles
+  drop constraint if exists profiles_initial_rank_check;
+alter table public.profiles
+  add constraint profiles_initial_rank_check
+  check (initial_rank >= 0 and initial_rank <= 27) not valid;
+alter table public.profiles
+  validate constraint profiles_initial_rank_check;
+
+alter table public.profile_memberships
+  drop constraint if exists profile_memberships_initial_rank_check;
+alter table public.profile_memberships
+  add constraint profile_memberships_initial_rank_check
+  check (initial_rank >= 0 and initial_rank <= 27) not valid;
+alter table public.profile_memberships
+  validate constraint profile_memberships_initial_rank_check;
+
 comment on column public.profiles.service_branch is
   'Isolated service environment: carabinieri, finanza, polizia, esercito, marina, aeronautica.';
 
