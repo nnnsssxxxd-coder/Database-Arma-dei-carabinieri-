@@ -215,9 +215,11 @@ jobs:
           const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
           if(!login.includes('rankFor(m)===({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[m.service_branch]'))throw new Error('Automatic Comando Generale eligibility must use the correct maximum rank for all six institutions');
           const departmentEngine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
-          const unlockMatch=departmentEngine.match(/const DEPARTMENT_UNLOCK_GRADE:Record<string,string>=\\{([^}]+)\\}/);
-          if(!unlockMatch)throw new Error('Department unlock-grade map is missing');
-          const unlockGrades=Object.fromEntries([...unlockMatch[1].matchAll(/(\\w+):"([^"]+)"/g)].map(m=>[m[1],m[2]]));
+          const unlockStart=departmentEngine.indexOf('const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={');
+          const unlockEnd=departmentEngine.indexOf('};',unlockStart);
+          if(unlockStart<0||unlockEnd<0)throw new Error('Department unlock-grade map is missing');
+          const unlockBody=departmentEngine.slice(unlockStart,unlockEnd).split('={')[1];
+          const unlockGrades=Object.fromEntries(unlockBody.split(',').map(pair=>{const [key,value]=pair.split(':');return [key.trim(),value.trim().replaceAll('"','')];}));
           for(const [branch,item] of Object.entries(corps))if(unlockGrades[branch]!==item.ranks[5])throw new Error(branch+' department unlock grade does not match rank index 5');
           console.log('PASS six rank ladders, 66 units, 24 qualification paths, max-rank access and department unlock-grade parity');
           NODE
