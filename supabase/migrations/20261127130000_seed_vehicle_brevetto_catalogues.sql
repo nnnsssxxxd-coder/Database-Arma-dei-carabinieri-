@@ -7,7 +7,7 @@ insert into public.vehicle_brevetto_catalog
 values
 -- Polizia di Stato
 ('ps-alfa-tonale','polizia','Alfa Romeo Tonale · veicolo di servizio','land','Autovettura assegnata a servizi della Polizia di Stato; la fonte istituzionale documenta l’assegnazione di nuove auto Tonale.','https://questure.poliziadistato.it/it/Rovigo/articolo/3317698722e87e80c877181599','2026-11-27',true,1),
-('ps-lamborghini-temerario','polizia','Lamborghini Temerario · veicolo speciale','land','Vettura destinata a servizi di elevato valore sociale, incluso il trasporto urgente di organi e materiale sanitario.','https://questure.poliziadistato.it/it/Bologna/articolo/33616aa10a07583e0165901125/','2026-11-27',true,2),
+('ps-fiat-fullback','polizia','Fiat Fullback · mezzo per sopralluoghi','land','Mezzo speciale indicato dalla Questura per i sopralluoghi sulle scene del crimine.','https://questure.poliziadistato.it/it/Caltanissetta/articolo/79460eff5c7a2177203794202','2026-11-27',true,2),
 ('ps-lamborghini-huracan','polizia','Lamborghini Huracán · veicolo speciale','land','Vettura della Polizia Stradale impiegata anche per trasporto urgente di sangue e organi e servizi di sicurezza stradale.','https://questure.poliziadistato.it/it/MonzaedellaBrianza/articolo/223164f3237049fdc799963101','2026-11-27',true,3),
 ('ps-pullman-azzurro','polizia','Pullman Azzurro · unità mobile educativa','land','Automezzo mobile per educazione stradale e attività di sensibilizzazione della Polizia Stradale.','https://questure.poliziadistato.it/it/Milano/articolo/11946aeae26b3dd9d791436720','2026-11-27',true,4),
 -- Esercito Italiano
@@ -18,7 +18,7 @@ values
 -- Marina Militare
 ('mm-sirio','marina','Pattugliatore classe Sirio','naval','Unità navale per vigilanza marittima, tutela ambientale e concorso al soccorso in mare.','https://www.marina.difesa.it/noi-siamo-la-marina/pilastro-operativo/mezzi/forze-navali/Pagine/sirio.aspx','2026-11-27',true,1),
 ('mm-fremm-carabiniere','marina','Fregata FREMM Carabiniere','naval','Fregata della classe Bergamini, versione antisommergibile, descritta nella scheda ufficiale della Marina Militare.','https://www.marina.difesa.it/noi-siamo-la-marina/pilastro-operativo/mezzi/forze-navali/Pagine/Carabiniere.aspx','2026-11-27',true,2),
-('mm-ppa','marina','Pattugliatore Polivalente d’Altura (PPA)','naval','Piattaforma navale multiruolo per sorveglianza marittima, tutela ambientale e concorso al soccorso.','https://www.marina.difesa.it/noi-siamo-la-marina/pilastro-operativo/mezzi/nuovi_progetti_2/Pagine/pattugliatore_polivalente.aspx','2026-11-27',true,3),
+('mm-cavour','marina','Portaerei Cavour','naval','Nave ammiraglia della Marina Militare, piattaforma per operazioni navali e supporto umanitario.','https://www.marina.difesa.it/noi-siamo-la-marina/pilastro-operativo/mezzi/forze-aeree/Pagine/aviazionenavaleoggi.aspx','2026-11-27',true,3),
 ('mm-sommergibile-scire','marina','Sommergibile Scirè · classe Todaro U212A','naval','Unità subacquea convenzionale della classe Todaro; percorso limitato a conoscenza generale e sicurezza, senza contenuti operativi riservati.','https://www.marina.difesa.it/noi-siamo-la-marina/pilastro-operativo/mezzi/sottomarini/Pagine/Scir%C3%A8.aspx','2026-11-27',true,4),
 -- Aeronautica Militare
 ('am-c130j','aeronautica','C-130J Hercules II','air','Velivolo da trasporto e aviolancio in servizio presso la 46ª Brigata Aerea, secondo la scheda ufficiale.','https://www.aeronautica.difesa.it/2024/06/21/c-130j-hercules-ii/','2026-11-27',true,1),
