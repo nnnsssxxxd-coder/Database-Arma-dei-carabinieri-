@@ -33,7 +33,7 @@ const DEPT_RANKS_BY_BRANCH = {
   aeronautica: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di team", "Vice responsabile di sezione", "Responsabile di sezione", "Referente di gruppo", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
-const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Assistente Capo Coordinatore",esercito:"Graduato Capo",marina:"Sottocapo di Seconda Classe",aeronautica:"Primo Aviere Capo"};
+const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Assistente Capo Coordinatore",esercito:"Graduato Capo",marina:"Sottocapo di Prima Classe",aeronautica:"Primo Aviere Capo"};
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
