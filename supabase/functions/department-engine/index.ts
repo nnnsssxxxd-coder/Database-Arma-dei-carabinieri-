@@ -26,7 +26,11 @@ const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
 const DEPT_RANKS_BY_BRANCH = {
   carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
-  finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"]
+  finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"],
+  polizia: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di servizio", "Vice responsabile", "Responsabile di squadra", "Referente di ufficio", "Vice responsabile di reparto", "Responsabile di reparto"],
+  esercito: ["Operatore di unità", "Operatore qualificato", "Capo squadra", "Vice comandante di plotone", "Comandante di plotone", "Referente di compagnia", "Vice comandante di reparto", "Comandante di reparto"],
+  marina: ["Operatore di bordo", "Operatore qualificato", "Capo componente", "Vice responsabile di servizio", "Responsabile di servizio", "Referente di unità", "Vice comandante di reparto", "Comandante di reparto"],
+  aeronautica: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di team", "Vice responsabile di sezione", "Responsabile di sezione", "Referente di gruppo", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
 async function getUser(req: Request) {
@@ -54,7 +58,7 @@ Deno.serve(async (req: Request) => {
     if (!user) return reply(req,{ error: "Sessione non valida" }, 401);
     const body = await req.json();
     const branch=String(body.service_branch??"");
-    if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
+    if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
     const { data: profile, error: profileError } = await db.from("profiles").select("active,deleted").eq("id", user.id).maybeSingle();
     if (profileError) return reply(req,{error:"Impossibile verificare il profilo."},500);
     if (!profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
