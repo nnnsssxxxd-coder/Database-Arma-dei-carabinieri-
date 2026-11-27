@@ -1883,14 +1883,14 @@ function saveVehicleBrevettoState(state){try{localStorage.setItem(vehicleBrevett
 function renderVehicleBrevettoUI(){
  const choicePanel=$("vehicleBrevettoChoicePanel"),quizPanel=$("vehicleBrevettoQuizPanel");
  if(!choicePanel||!quizPanel)return;
- const baseRank=Math.max(Number(progress?.rank)||0,Number(profile?.initial_rank)||0),minimum=2;
+ const baseRank=Math.max(Number(progress?.rank)||0,Number(profile?.initial_rank)||0),cfg=window.CORPS_CONFIG?.[selectedBranch]||{},minimum=Number(cfg.vehicleUnlockRank??2),unlockGrade=RANKS[minimum]||cfg.vehicleUnlockName||"grado previsto";
  if(!user){choicePanel.classList.add("hidden");quizPanel.classList.add("hidden");return;}
  const state=getVehicleBrevettoState(),select=$("vehicleBrevettoChoice"),chosen=$("vehicleBrevettoChosen");
  if(vehicleBrevettoLocked||baseRank<minimum){
   choicePanel.classList.remove("hidden");quizPanel.classList.add("hidden");
   if(select){select.innerHTML='<option value="">Catalogo dei veicoli speciali</option>'+vehicleBrevettoCatalog.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.display_name)+'</option>').join("");select.disabled=true;}
   const confirmButton=$("vehicleBrevettoConfirm");if(confirmButton)confirmButton.disabled=true;
-  const message=$("vehicleBrevettoChoiceMessage");if(message)message.textContent="";
+  const message=$("vehicleBrevettoChoiceMessage");if(message)message.textContent="Percorso disponibile dal grado/qualifica di "+unlockGrade+" o superiore.";
   return;
  }
  if(!state.vehicle){
