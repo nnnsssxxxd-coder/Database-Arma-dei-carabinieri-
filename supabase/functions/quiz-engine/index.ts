@@ -12,9 +12,11 @@ async function questionPool(category:string,branch:string){
  if(error||!data)return {data:null,error};
  const seen=new Set<string>();
  const valid=data.every((q:any)=>{
-  const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it"),options=q.options;
-  const ok=prompt.length>=12&&!seen.has(prompt)&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20;
-  if(prompt)seen.add(prompt);
+  const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it"),canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\\s*/i,"").trim(),options=q.options,explanation=String(q.explanation??"").trim().toLocaleLowerCase("it");
+  const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+  const templatePrompt=prompt.startsWith("seleziona l'alternativa corretta:");
+  const ok=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20;
+  if(canonicalPrompt)seen.add(canonicalPrompt);
   return ok;
  });
  if(!valid)return {data:[],error:null};
