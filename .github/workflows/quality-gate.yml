@@ -407,3 +407,22 @@ jobs:
           if(!create.includes('@account.databaseforzeordine.invalid'))throw new Error('Neutral internal account alias missing');
           console.log('PASS: professional interface language, explicit non-official status and clearly qualified didactic data');
           NODE
+
+      - name: Validate mission answer bounds and explanations
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const token of [
+            'Number(a) >= mission.questions[index].options.length',
+            'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:q.options[q.correct_index]}))',
+            'mission_title:mission.title,review'
+          ]) if(!game.includes(token)) throw new Error('Mission server validation/review missing: '+token);
+          const board=html.slice(html.indexOf('async function loadMissionBoard'),html.indexOf('async function refreshPatrolStatus'));
+          for(const token of ['Missione superata · ','Risposta corretta: ','button.textContent="Missione completata"','questions.forEach(q=>q.querySelectorAll("input").forEach(input=>input.disabled=true))']) {
+            if(!board.includes(token)) throw new Error('Mission result feedback missing: '+token);
+          }
+          if(board.includes('await loadMissionBoard();')) throw new Error('Mission success must not erase the explanation panel immediately');
+          console.log('PASS mission option bounds, server-side grading, explanations on success and persistent feedback');
+          NODE
