@@ -1393,7 +1393,7 @@ footer{padding:14px 8px 22px;font-size:10px}
 <form id="centralCreateUser" class="rankrow" style="display:none;gap:10px;flex-wrap:wrap;align-items:end;margin:12px 0">
 <label>Username<input id="centralNewUsername" required minlength="3" maxlength="24" pattern="[a-z0-9_-]+" autocomplete="off"></label>
 <label>Nome visualizzato<input id="centralNewName" required minlength="2" maxlength="60"></label>
-<label>Corpo<select id="centralNewBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label>
+<label>Corpo<select id="centralNewBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option><option value="polizia">Polizia di Stato</option><option value="esercito">Esercito Italiano</option><option value="marina">Marina Militare</option><option value="aeronautica">Aeronautica Militare</option></select></label>
 <label>Grado iniziale<select id="centralNewRank" required></select></label>
 <label>Password iniziale<input id="centralNewPassword" type="password" minlength="12" maxlength="72" required autocomplete="new-password"></label>
 <button class="primary" type="submit" id="centralCreateSubmit">Crea account</button><p id="centralCreateMsg" class="small" role="status" aria-live="polite"></p></form>
@@ -1537,9 +1537,15 @@ function applyServiceBranding(branch){
  if(finanza){
   const groups=[["Ufficiali",FINANZA_RANKS.slice(15)],["Ispettori",FINANZA_RANKS.slice(9,15)],["Sovrintendenti",FINANZA_RANKS.slice(5,9)],["Appuntati e finanzieri",FINANZA_RANKS.slice(0,5)]];
   $("grades").innerHTML='<div class="eyebrow">ORDINAMENTO GERARCHICO · GUARDIA DI FINANZA</div><h2>Ruoli, gradi e qualifiche</h2><p class="small muted">Elenco organizzato per ruoli. “Luogotenente Cariche Speciali” indica una qualifica del grado di Luogotenente. La progressione EXP è interna all’applicazione e non attribuisce gradi o qualifiche ufficiali.</p>'+groups.map(([title,items])=>'<article class="grade-group"><h3>'+title+'</h3><div class="grade-list">'+items.slice().reverse().map(rank=>'<div class="grade-item"><span class="grade-symbol"><span class="badge">GdF</span></span><strong>'+rank+'</strong></div>').join("")+'</div></article>').join("")+'<p class="rank-source small muted">Riferimenti: <a href="https://www.gdf.gov.it/it/chi-siamo/organizzazione/uniformi-e-gradi/gradi/ispettori" target="_blank" rel="noopener noreferrer">Guardia di Finanza · Gradi</a> e <a href="https://www.normattiva.it/atto/caricaDettaglioAtto?atto.codiceRedazionale=099G0078" target="_blank" rel="noopener noreferrer">D.P.R. 29 gennaio 1999, n. 34</a>.</p>';
-  }else{
+  }else if(branch==="carabinieri"){
   $("grades").innerHTML=CARABINIERI_GRADES_HTML;
   $("units").innerHTML=CARABINIERI_UNITS_HTML;
+ }else{
+  const groupTitle=branch==="polizia"?"Qualifiche e ruoli": "Gradi e categorie";
+  const split=Math.max(1,Math.floor(RANKS.length*0.68));
+  const groups=[{title:"Personale non direttivo / categorie di base",items:RANKS.slice(0,split)},{title:"Ruoli superiori e ufficiali / dirigenti",items:RANKS.slice(split)}];
+  $("grades").innerHTML='<div class="eyebrow">'+esc(cfg.short)+' · ORDINAMENTO</div><h2>'+groupTitle+'</h2><p class="small muted">Catalogo informativo. La progressione EXP è una meccanica didattica interna e non attribuisce qualifiche, gradi, incarichi o abilitazioni ufficiali.</p>'+groups.map(g=>'<article class="grade-group"><h3>'+g.title+'</h3><div class="grade-list">'+g.items.slice().reverse().map(rank=>'<div class="grade-item"><span class="grade-symbol"><span class="badge">'+esc(cfg.prefix)+'</span></span><strong>'+esc(rank)+'</strong></div>').join("")+'</div></article>').join("")+'<p class="rank-source small muted">Fonte istituzionale: <a href="'+esc(cfg.source)+'" target="_blank" rel="noopener noreferrer">'+esc(cfg.name)+'</a></p>';
+  $("units").innerHTML='<div class="eyebrow">'+esc(cfg.short)+' · ARTICOLAZIONE</div><h2>Reparti, comandi e specialità</h2><p class="small muted">Catalogo di riferimento con denominazioni e tipologie proprie dell’istituzione.</p><div class="unit-catalog">'+cfg.departments.map((unit,i)=>'<article class="panel"><div class="small muted">UNITÀ '+String(i+1).padStart(2,"0")+'</div><strong>'+esc(unit)+'</strong><p class="small muted">Riferimento organizzativo istituzionale.</p><a href="'+esc(cfg.source)+'" target="_blank" rel="noopener noreferrer">Fonte ufficiale</a></article>').join("")+'</div>';
  }
  $("departmentCareerTab").classList.toggle("hidden",!departmentMembership);
  $("assignedExercisesTab").classList.toggle("hidden",!departmentMembership);
