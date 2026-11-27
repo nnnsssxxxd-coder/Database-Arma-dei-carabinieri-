@@ -5,6 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'corps-config.js'
+      - 'service-worker.js'
       - 'supabase/functions/**'
       - 'supabase/migrations/**'
       - '.github/workflows/validate-web.yml'
