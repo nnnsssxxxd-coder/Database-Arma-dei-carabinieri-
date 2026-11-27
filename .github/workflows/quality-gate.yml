@@ -234,7 +234,16 @@ jobs:
           }
           const vehicleSeed=fs.readFileSync('supabase/migrations/20261127130000_seed_vehicle_brevetto_catalogues.sql','utf8');
           if((vehicleSeed.match(/'2026-11-27',true,/g)||[]).length!==16)throw new Error('Expected sixteen verified vehicle entries across four new institutions');
-          console.log('PASS six rank ladders, 66 units, 24 qualification paths, max-rank access and department unlock-grade parity');
+          const html=fs.readFileSync('index.html','utf8');
+          const deptEngine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const quizEngine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          if(!html.includes('async function loadMissionBoard')||!html.includes('id="missionModePanel"'))throw new Error('Mission assessment UI is incomplete');
+          if(!deptEngine.includes('DEPARTMENT_UNLOCK_RANK')||!deptEngine.includes('VEHICLE_UNLOCK_RANK'))throw new Error('Branch-specific access controls are missing');
+          for(const token of ['count.total===100','count.physics===30','count.technical===40','count.regulations===30','bankCounts.total!==100'])if(!deptEngine.includes(token))throw new Error('Vehicle bank completeness guard missing: '+token);
+          if(!deptEngine.includes('Banca reparto non completa: sono richiesti 100 quesiti verificati'))throw new Error('Department quiz must fail closed until 100 questions exist');
+          if(!quizEngine.includes('bankCount')||!quizEngine.includes('100'))throw new Error('General quiz must fail closed on incomplete banks');
+          if(!game.includes('normalizedAnswers')||!game.includes('mission_complete'))throw new Error('Mission answers must be graded server-side');
+          console.log('PASS six rank ladders, 66 units, 24 qualification paths, 24 mission scenarios, 24 specialist platforms and fail-closed quiz banks');
           NODE
 
       - name: Validate complete quiz-bank explanations
