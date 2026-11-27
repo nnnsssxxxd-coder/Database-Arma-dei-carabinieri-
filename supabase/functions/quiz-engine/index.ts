@@ -13,7 +13,7 @@ async function questionPool(category:string,branch:string){
 async function cooldownFor(userId:string,category:string,branch:string){
  const {data:pool,error:poolError}=await questionPool(category,branch);
  if(poolError||!pool)return {error:true,available:0,cooldown_until:null};
- if(pool.length<4||(category==="Tutte le materie"&&pool.length<100))return {error:false,available:pool.length,too_few:true,required:category==="Tutte le materie"?100:4,cooldown_until:null};
+ if(pool.length<4||(category==="Tutte le materie"&&pool.length!==100))return {error:false,available:pool.length,too_few:true,required:category==="Tutte le materie"?100:4,cooldown_until:null};
  const since=new Date(Date.now()-WINDOW_MS).toISOString();
  const {data:recent,error}=await db.from("quiz_attempts").select("question_ids,completed_at")
   .eq("user_id",userId).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since).order("completed_at",{ascending:true});
@@ -98,7 +98,7 @@ Deno.serve(async(req)=>{
    }
    const {data:pool,error:poolError}=await questionPool(category,branch);
    if(poolError||!pool)return reply(req,{error:"Errore nel caricamento delle domande"},500);
-   if(pool.length<4||(category==="Tutte le materie"&&pool.length<100))return reply(req,{error:category==="Tutte le materie"?"La banca generale deve contenere almeno 100 domande verificate per questo Corpo.":"Non ci sono abbastanza domande per questa materia",required:category==="Tutte le materie"?100:4,available:pool.length},422);
+   if(pool.length<4||(category==="Tutte le materie"&&pool.length!==100))return reply(req,{error:category==="Tutte le materie"?"La banca generale deve contenere esattamente 100 domande verificate per questo Corpo.":"Non ci sono abbastanza domande per questa materia",required:category==="Tutte le materie"?100:4,available:pool.length},422);
    const status=await cooldownFor(user.id,category,branch);
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
    if(status.available<4)return reply(req,{error:"Le domande recenti sono in ripristino",cooldown_until:status.cooldown_until,available:status.available});
