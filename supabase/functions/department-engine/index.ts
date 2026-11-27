@@ -33,6 +33,7 @@ const DEPT_RANKS_BY_BRANCH = {
   aeronautica: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di team", "Vice responsabile di sezione", "Responsabile di sezione", "Referente di gruppo", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
+const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Assistente Capo Coordinatore",esercito:"Graduato Capo",marina:"Sottocapo di Seconda Classe",aeronautica:"Primo Aviere Capo"};
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
@@ -199,7 +200,7 @@ Deno.serve(async (req: Request) => {
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
       const minimumRank = branch === "finanza" ? 5 : 5;
-      if (personalRank < minimumRank) return reply(req,{ error: branch === "finanza" ? "La Carriera Reparto si sblocca dal grado di Vice Brigadiere." : "La Carriera Reparto si sblocca dal grado di Vicebrigadiere." }, 403);
+      if (personalRank < minimumRank) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado/qualifica di "+(DEPARTMENT_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
       if (departmentError) return reply(req,{error:"Impossibile verificare il reparto."},500);
