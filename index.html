@@ -1346,6 +1346,10 @@ footer{padding:14px 8px 22px;font-size:10px}
  <div class="service-choice-grid">
   <article class="service-choice-card carabinieri-choice"><div class="service-choice-emblem">CC</div><h3>CARABINIERI</h3><p>Ambiente dedicato con gradi, progressione, quiz e percorsi formativi.</p><button class="primary" type="button" data-enter-service="carabinieri" onclick="window.enterService('carabinieri')">ENTRA NELL’ARMA</button></article>
   <article class="service-choice-card finanza-choice"><div class="service-choice-emblem">GdF</div><h3>GUARDIA DI FINANZA</h3><p>Ambiente dedicato con ruoli, gradi, progressione, quiz e percorsi formativi.</p><button class="primary" type="button" data-enter-service="finanza" onclick="window.enterService('finanza')">ENTRA IN FINANZA</button></article>
+  <article class="service-choice-card"><div class="service-choice-emblem">PS</div><h3>POLIZIA DI STATO</h3><p>Ruoli, qualifiche, specialità e percorsi professionali distinti.</p><button class="primary" type="button" onclick="window.enterService('polizia')">ENTRA IN POLIZIA</button></article>
+  <article class="service-choice-card"><div class="service-choice-emblem">EI</div><h3>ESERCITO ITALIANO</h3><p>Gradi, reggimenti, specialità e formazione militare.</p><button class="primary" type="button" onclick="window.enterService('esercito')">ENTRA NELL’ESERCITO</button></article>
+  <article class="service-choice-card"><div class="service-choice-emblem">MM</div><h3>MARINA MILITARE</h3><p>Gradi navali, comandi, unità e specialità.</p><button class="primary" type="button" onclick="window.enterService('marina')">ENTRA IN MARINA</button></article>
+  <article class="service-choice-card"><div class="service-choice-emblem">AM</div><h3>AERONAUTICA MILITARE</h3><p>Gradi, stormi, gruppi e specialità aeronautiche.</p><button class="primary" type="button" onclick="window.enterService('aeronautica')">ENTRA IN AERONAUTICA</button></article>
  </div>
 </div>
 <div id="credentialPanel" class="panel hidden login-card">
@@ -1477,7 +1481,7 @@ footer{padding:14px 8px 22px;font-size:10px}
 <section id="admin" class="panel hidden"><div class="row between"><div><h2>Area istruttore</h2><p class="muted small">Gestione degli account e delle abilitazioni del personale.</p></div><span class="badge">Istruttore</span></div><h3>Crea account operatore</h3><div class="grid"><label>Username<input id="newUsername" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false"></label><label>Nome visualizzato<input id="newName" minlength="2" maxlength="60"></label><label>Password iniziale<input id="newPassword" type="password" minlength="12" maxlength="72"></label><label>Corpo<select id="newBranch"><option value="carabinieri">Carabinieri</option><option value="finanza">Guardia di Finanza</option></select></label><label>grado iniziale<select id="newRank"></select></label></div><button id="createUser" class="primary">Crea account operatore</button><p id="adminMsg" class="small" role="status"></p><h3>Account registrati</h3><button id="refreshUsers">Aggiorna elenco</button><div id="userList"></div></section>
 </div></div>
 </section></main><footer class="legal-note">Informazioni istituzionali: <span>Progetto dimostrativo indipendente</span></footer>
-<script src="./supabase.js"></script><script>
+<script src="./supabase.js"></script><script src="./corps-config.js"></script><script>
 const CARABINIERI_RANKS=["Carabiniere","Carabiniere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Q.S.","Vicebrigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Q.S.","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Maggiore","Luogotenente","Luogotenente C.S.","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
 const FINANZA_RANKS=["Finanziere","Finanziere Scelto","Appuntato","Appuntato Scelto","Appuntato Scelto Qualifica Speciale","Vice Brigadiere","Brigadiere","Brigadiere Capo","Brigadiere Capo Qualifica Speciale","Maresciallo","Maresciallo Ordinario","Maresciallo Capo","Maresciallo Aiutante","Luogotenente","Luogotenente Cariche Speciali","Sottotenente","Tenente","Capitano","Maggiore","Tenente Colonnello","Colonnello","Generale di Brigata","Generale di Divisione","Generale di Corpo d’Armata"];
 let RANKS=CARABINIERI_RANKS;
@@ -1498,20 +1502,14 @@ function retireLegacyPushWorker(){
 void retireLegacyPushWorker();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function applyServiceBranding(branch){
- const finanza=branch==="finanza",name=finanza?"GUARDIA DI FINANZA":"ARMA DEI CARABINIERI";
+ const cfg=window.CORPS_CONFIG?.[branch];if(!cfg)throw new Error("Configurazione Corpo non disponibile.");const finanza=branch==="finanza",name=cfg.name;
  document.documentElement.dataset.service=branch;
- document.documentElement.style.setProperty("--gold",finanza?"#d4af37":"#d71930");
- document.documentElement.style.setProperty("--gold2",finanza?"#f6d365":"#ff5360");
- document.documentElement.style.setProperty("--line",finanza?"#355844":"#3a3a3a");
- document.documentElement.style.setProperty("--surface",finanza?"#102018":"#111111");
- document.documentElement.style.setProperty("--surface2",finanza?"#193326":"#1a1a1a");
- document.documentElement.style.setProperty("--bg",finanza?"#06140d":"#050505");
- document.querySelector('meta[name="theme-color"]')?.setAttribute("content",finanza?"#0d3b27":"#8f1425");
- RANKS=finanza?FINANZA_RANKS:CARABINIERI_RANKS;
+ document.documentElement.style.setProperty("--gold",cfg.colors[0]);document.documentElement.style.setProperty("--gold2",cfg.colors[1]);document.documentElement.style.setProperty("--line",cfg.colors[2]);document.documentElement.style.setProperty("--surface",cfg.colors[3]);document.documentElement.style.setProperty("--surface2",cfg.colors[3]);document.documentElement.style.setProperty("--bg",cfg.colors[4]);document.querySelector('meta[name="theme-color"]')?.setAttribute("content",cfg.colors[3]);
+ RANKS=cfg.ranks;
  $("brandTitle").textContent="DATABASE FORZE DELL’ORDINE";document.title="Database Forze dell’Ordine · "+name;
- $("selectedServiceBadge").textContent=finanza?"GUARDIA DI FINANZA · AREA RISERVATA":"CARABINIERI · AREA RISERVATA";
- $("loginHeading").textContent=finanza?"Accesso Guardia di Finanza":"Accesso Carabinieri";
- $("loginDescription").textContent=finanza?"Accedi con le credenziali assegnate per l’ambiente Guardia di Finanza.":"Accedi con le credenziali assegnate per l’ambiente Carabinieri.";
+ $("selectedServiceBadge").textContent=cfg.short+" · AREA RISERVATA";
+ $("loginHeading").textContent="Accesso · "+name;
+ $("loginDescription").textContent="Accedi con le credenziali assegnate per l’ambiente "+name+".";
  const cardBrand=document.querySelector(".service-card-mark span:nth-child(2)");if(cardBrand)cardBrand.textContent=name;
  const crest=document.querySelector(".crest");
  if(crest){crest.innerHTML=finanza?'<svg viewBox="0 0 64 64" role="img" aria-label="Emblema grafico Guardia di Finanza"><path d="M32 4 54 12v17c0 14-9 24-22 31C19 53 10 43 10 29V12z" fill="#173b22" stroke="#d5b45b" stroke-width="3"/><path d="M20 39 27 21l5 10 5-10 7 18M23 43h18" fill="none" stroke="#f1d88a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="8" width="48" height="48" rx="10" fill="#263543" stroke="#9aa8b5" stroke-width="2"/><path d="M19 22h26M19 31h26M19 40h18" stroke="#eef2f6" stroke-width="3" stroke-linecap="round"/><circle cx="45" cy="45" r="4" fill="#c8d1da"/></svg>';}
@@ -1532,7 +1530,7 @@ function applyServiceBranding(branch){
 
  const quizCategory=$("quizCategory");
  if(quizCategory){
-  const categories=finanza?["Tutte le materie","Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"]:["Tutte le materie","Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
+  const categories=["Tutte le materie",...(cfg.categories||[])];
   const previous=quizCategory.value;quizCategory.replaceChildren();categories.forEach(c=>quizCategory.add(new Option(c,c)));quizCategory.value=categories.includes(previous)?previous:"Tutte le materie";
  }
  const rankSelect=$("newRank");if(rankSelect){rankSelect.replaceChildren();RANKS.forEach((r,i)=>rankSelect.add(new Option(r,i)));}
@@ -1550,7 +1548,7 @@ function applyServiceBranding(branch){
 const threshold=i=>Math.round((250+i*60+i*i*4)/10)*10;
 let selectedBranch=null,user=null,profile=null,progress={rank:0,exp:0,totalExp:0,quizCount:0,correct:0,streak:0,history:[]},quiz=null,answerIndex=null,cooldownUntil=null,cooldownTimer=null,sessionTimer=null;
 function enterService(branch){
- if(!["carabinieri","finanza"].includes(branch))return;
+ if(!window.CORPS_CONFIG?.[branch])return;
  selectedBranch=branch;
  document.documentElement.dataset.service=branch;
  try{localStorage.setItem("selectedServiceBranch",branch);}catch(_){}
@@ -1643,7 +1641,7 @@ async function loadProfile(u){
  const nextProfile=p.data;
  if(!nextProfile)throw new Error("Profilo non trovato per l’identità autenticata. Contatta l’istruttore.");
  if(!nextProfile.active||nextProfile.deleted)throw new Error("Account sospeso o disattivato.");
- if(!["carabinieri","finanza"].includes(selectedBranch))throw new Error("Seleziona il Corpo prima dell'accesso.");
+ if(!window.CORPS_CONFIG?.[selectedBranch])throw new Error("Seleziona il Corpo prima dell'accesso.");
  const membership=await db.from("profile_memberships").select("role,initial_rank,matricola,active").eq("user_id",u.id).eq("service_branch",selectedBranch).eq("active",true).maybeSingle();
  if(membership.error)throw new Error("Verifica appartenenza al Corpo non riuscita (codice "+(membership.error.code||"DB")+"). Riprova o contatta l’istruttore.");
  if(!membership.data||!membership.data.active)throw new Error("Account non abilitato per il Corpo selezionato. Contatta l’istruttore.");
