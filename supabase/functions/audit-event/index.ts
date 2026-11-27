@@ -18,7 +18,7 @@ Deno.serve(async(req)=>{
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account sospeso"},403);
   const body=await req.json();if(!allowed.has(body.event))return reply(req,{error:"Evento non consentito"},400);
   const service_branch=String(body.service_branch??"");
-  if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Corpo non valido"},400);
+  if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(service_branch))return reply(req,{error:"Corpo non valido"},400);
   const {data:membership,error:membershipError}=await adminClient.from("profile_memberships").select("user_id").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();
   if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
   if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo"},403);
