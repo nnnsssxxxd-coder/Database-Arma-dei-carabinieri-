@@ -1624,7 +1624,7 @@ function render(){
  $("headUser").textContent=profile.username;
  $("userMeta").textContent=(profile.matricola||"Matricola in assegnazione")+" · "+profile.username;
  $("homeMatricola").textContent=profile.matricola||"In assegnazione";
- $("homeRank").textContent=RANKS[rank];renderDepartmentUI();
+ $("homeRank").textContent=RANKS[rank];renderDepartmentUI();const vehicleBrevettoSupported=["carabinieri","finanza"].includes(profile.service_branch);["vehicleBrevettoChoicePanel","vehicleBrevettoQuizPanel"].forEach(id=>$(id)?.classList.toggle("hidden",!vehicleBrevettoSupported));
  
  $("adminTab").classList.toggle("hidden",profile.role!=="istruttore");const patrolTab=document.querySelector('[data-tab="patrol"]');if(patrolTab)patrolTab.classList.toggle("hidden",!["carabinieri","finanza"].includes(profile.service_branch));
  $("quizCount").textContent=progress.quizCount||0;$("correctCount").textContent=progress.correct||0;$("exp").textContent=exp+" / "+(Number(progress.totalExp)||0);$("streak").textContent=progress.streak||0;renderPerformanceChart();
