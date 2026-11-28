@@ -505,7 +505,7 @@ jobs:
           for(const token of ['add column if not exists source_url','add column if not exists source_note','quiz_questions_source_pair_check','department_questions_source_pair_check','create or replace function public.complete_quiz_attempt','create or replace function public.complete_rank_exam','create or replace function public.complete_department_quiz',"'review',v_review"]){
             if(!migration.includes(token))throw new Error('Source-traceability migration missing: '+token);
           }
-          for(const token of ['function validGeneralQuestion','source_url,source_note','questionPool("Tutte le materie",branch)','100 quesiti completi, distinti e corredati da fonti verificabili']){
+          for(const token of ['function validGeneralQuestion','source_url,source_note','const valid=data.length===100&&data.every((q:any)=>validGeneralQuestion(q,seen))','category==="Tutte le materie"?data:data.filter','questionPool("Tutte le materie",branch)','100 quesiti completi, distinti e corredati da fonti verificabili']){
             if(!quiz.includes(token))throw new Error('General quiz source gate missing: '+token);
           }
           for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','fonte verificabile.']){
