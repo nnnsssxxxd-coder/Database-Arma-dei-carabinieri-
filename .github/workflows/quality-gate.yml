@@ -418,7 +418,7 @@ jobs:
             'MISSION_FOURTH_DISTRACTOR=',
             'function missionOptions(question:MissionQuestion):string[]',
             'Number(a) >= missionOptions(mission.questions[index]).length',
-            'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index]}))',
+            'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index],source_url:q.source_url,source_note:q.source_note}))',
             'mission_title:mission.title,review'
           ]) if(!game.includes(token)) throw new Error('Mission server validation/review missing: '+token);
           for(const token of ['if(options.length===3) options.push(MISSION_FOURTH_DISTRACTOR)','function missionQuestionIsValid(question:MissionQuestion):boolean','new Set(options.map(option=>option.trim().toLocaleLowerCase("it"))).size===4','mission.questions.every(missionQuestionIsValid)']) if(!game.includes(token)) throw new Error('Mission question integrity guard missing: '+token);
