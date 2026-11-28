@@ -254,7 +254,7 @@ jobs:
           if(ids.length!==38)throw new Error('Expected 38 individually explained Carabinieri questions, found '+ids.length);
           if(!migration.includes("where service_branch='carabinieri'"))throw new Error('Explanation migration must be scoped to Carabinieri');
           const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
-          if(!engine.includes('if(error||!pool||pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete question bank');
+          if(!engine.includes('verifiedBank.length!==100')||!engine.includes('if(pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete or unverified question bank');
           console.log('PASS 38 missing explanations are supplied and rank exam bank guard remains enabled');
           NODE
       - name: Validate sourced brevetto bank seed and progress feedback
