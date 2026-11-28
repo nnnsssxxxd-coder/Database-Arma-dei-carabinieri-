@@ -5,20 +5,25 @@ function reply(req:Request,data:unknown,status=200){return new Response(JSON.str
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
+function validGeneralQuestion(q:any,seen:Set<string>){
+ const rawPrompt=String(q.prompt??"").trim(),prompt=rawPrompt.toLocaleLowerCase("it");
+ const canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\\s*/i,"").trim();
+ const options=q.options,explanation=String(q.explanation??"").trim().toLocaleLowerCase("it");
+ const source=String(q.source_url??"").trim(),sourceNote=String(q.source_note??"").trim();
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=prompt.startsWith("seleziona l'alternativa corretta:");
+ const distinctOptions=Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4;
+ const valid=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&distinctOptions&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20&&/^https:\\/\\/[^\\s]+$/i.test(source)&&sourceNote.length>=20;
+ if(canonicalPrompt)seen.add(canonicalPrompt);
+ return valid;
+}
 async function questionPool(category:string,branch:string){
- let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation").eq("active",true).eq("service_branch",branch);
+ let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation,source_url,source_note").eq("active",true).eq("service_branch",branch);
  if(category!=="Tutte le materie")request=request.eq("category",category);
  const {data,error}=await request.order("sort_order");
  if(error||!data)return {data:null,error};
  const seen=new Set<string>();
- const valid=data.every((q:any)=>{
-  const prompt=String(q.prompt??"").trim().toLocaleLowerCase("it"),canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\\s*/i,"").trim(),options=q.options,explanation=String(q.explanation??"").trim().toLocaleLowerCase("it");
-  const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
-  const templatePrompt=prompt.startsWith("seleziona l'alternativa corretta:");
-  const ok=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20;
-  if(canonicalPrompt)seen.add(canonicalPrompt);
-  return ok;
- });
+ const valid=data.every((q:any)=>validGeneralQuestion(q,seen));
  if(!valid)return {data:[],error:null};
  return {data:data.map((q:any)=>({id:q.id,prompt:q.prompt,options:q.options,category:q.category,difficulty:q.difficulty})),error:null};
 }
@@ -73,8 +78,10 @@ Deno.serve(async(req)=>{
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
    const bands=rank<5?allowed.slice(0,1):rank<14?allowed.slice(0,2):allowed;
-   const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch).in("category",bands);
-   if(error||!pool||pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},500);
+   const {data:verifiedBank,error:bankError}=await questionPool("Tutte le materie",branch);
+   if(bankError||!verifiedBank||verifiedBank.length!==100)return reply(req,{error:"La banca generale non contiene 100 quesiti completi, distinti e corredati da fonti verificabili."},409);
+   const pool=verifiedBank.filter((q:any)=>bands.includes(q.category));
+   if(pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},409);
    const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,5);
    const {data:attempt,error:insertError}=await db.from("rank_exam_attempts").insert({user_id:user.id,service_branch:branch,from_rank:rank,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
    if(insertError)return reply(req,{error:"Impossibile avviare l'esame."},500);
@@ -100,9 +107,9 @@ Deno.serve(async(req)=>{
      .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
     if(openError)return reply(req,{error:"Impossibile recuperare la sessione quiz."},500);
     if(open){
-    const {data:rows,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").in("id",open.question_ids);
-    if(error||!rows)return reply(req,{error:"Impossibile riprendere il quiz"},500);
-    const byId=new Map(rows.map(q=>[q.id,q]));
+    const {data:verifiedBank,error:bankError}=await questionPool("Tutte le materie",branch);
+    if(bankError||!verifiedBank||verifiedBank.length!==100)return reply(req,{error:"La banca generale non è più completa o verificata; la sessione non può essere ripresa."},409);
+    const byId=new Map(verifiedBank.map((q:any)=>[q.id,q]));
     const questions=open.question_ids.map((id:string)=>byId.get(id)).filter(Boolean);
     if(questions.length!==4)return reply(req,{error:"Sessione quiz non più disponibile"},409);
     if(category!=="Tutte le materie"&&questions.some((q:{category:string})=>q.category!==category))return reply(req,{error:"Hai già un quiz in corso. Completa quello aperto prima di iniziarne un altro."},409);
