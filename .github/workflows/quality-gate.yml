@@ -36,6 +36,8 @@ jobs:
             supabase/functions/ministry-login/index.ts \
             supabase/functions/site/index.ts \
             supabase/functions/traffic-control-engine/index.ts
+      - name: Test mission question validation
+        run: deno test --no-config --no-lock supabase/functions/game-engine/mission-validation.test.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
@@ -413,15 +415,24 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const validation=fs.readFileSync('supabase/functions/game-engine/mission-validation.ts','utf8');
+          const tests=fs.readFileSync('supabase/functions/game-engine/mission-validation.test.ts','utf8');
           const html=fs.readFileSync('index.html','utf8');
           for(const token of [
-            'MISSION_FOURTH_DISTRACTOR=',
-            'function missionOptions(question:MissionQuestion):string[]',
+            'missionOptions, missionQuestionIsValid',
             'Number(a) >= missionOptions(mission.questions[index]).length',
             'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index],source_url:q.source_url,source_note:q.source_note}))',
             'mission_title:mission.title,review'
           ]) if(!game.includes(token)) throw new Error('Mission server validation/review missing: '+token);
-          for(const token of ['if(options.length===3) options.push(MISSION_FOURTH_DISTRACTOR)','function missionQuestionIsValid(question:MissionQuestion):boolean','new Set(options.map(option=>option.trim().toLocaleLowerCase("it"))).size===4','mission.questions.every(missionQuestionIsValid)']) if(!game.includes(token)) throw new Error('Mission question integrity guard missing: '+token);
+          for(const token of [
+            'return Array.isArray(question?.options) ? [...question.options] : []',
+            'options.length === 4',
+            'new Set(options.map((option) => option.trim().toLocaleLowerCase("it"))).size === 4',
+            'source.protocol === "https:"',
+            'sourceNote.length >= 20'
+          ]) if(!validation.includes(token)) throw new Error('Mission question integrity guard missing: '+token);
+          for(const token of ['does not invent a fourth option','rejects duplicated options','rejects invalid answer indexes','rejects missing, non-HTTPS']) if(!tests.includes(token)) throw new Error('Mission validation regression test missing: '+token);
+          if(game.includes('MISSION_FOURTH_DISTRACTOR')||validation.includes('options.push(')) throw new Error('Mission questions must never receive a fabricated fourth option');
           const board=html.slice(html.indexOf('async function loadMissionBoard'),html.indexOf('async function refreshPatrolStatus'));
           for(const token of ['Missione superata · ','Risposta corretta: ','button.textContent="Missione completata"','questions.forEach(q=>q.querySelectorAll("input").forEach(input=>input.disabled=true))']) {
             if(!board.includes(token)) throw new Error('Mission result feedback missing: '+token);
