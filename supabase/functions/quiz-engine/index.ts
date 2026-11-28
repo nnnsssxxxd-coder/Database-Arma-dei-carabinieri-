@@ -18,14 +18,13 @@ function validGeneralQuestion(q:any,seen:Set<string>){
  return valid;
 }
 async function questionPool(category:string,branch:string){
- let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation,source_url,source_note").eq("active",true).eq("service_branch",branch);
- if(category!=="Tutte le materie")request=request.eq("category",category);
- const {data,error}=await request.order("sort_order");
+ const {data,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation,source_url,source_note").eq("active",true).eq("service_branch",branch).order("sort_order");
  if(error||!data)return {data:null,error};
  const seen=new Set<string>();
- const valid=data.every((q:any)=>validGeneralQuestion(q,seen));
+ const valid=data.length===100&&data.every((q:any)=>validGeneralQuestion(q,seen));
  if(!valid)return {data:[],error:null};
- return {data:data.map((q:any)=>({id:q.id,prompt:q.prompt,options:q.options,category:q.category,difficulty:q.difficulty})),error:null};
+ const selected=category==="Tutte le materie"?data:data.filter((q:any)=>q.category===category);
+ return {data:selected.map((q:any)=>({id:q.id,prompt:q.prompt,options:q.options,category:q.category,difficulty:q.difficulty})),error:null};
 }
 async function cooldownFor(userId:string,category:string,branch:string){
  const {data:pool,error:poolError}=await questionPool(category,branch);
