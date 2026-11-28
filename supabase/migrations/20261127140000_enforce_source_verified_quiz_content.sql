@@ -95,6 +95,8 @@ begin
     and length(btrim(coalesce(q.explanation,'')))>=20
     and q.source_url ~ '^https://[^[:space:]]+$'
     and length(btrim(coalesce(q.source_note,'')))>=20
+    and lower(btrim(q.prompt)) not like 'seleziona l''alternativa corretta:%'
+    and lower(btrim(q.explanation)) not like '%la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento%'
     and case when jsonb_typeof(q.options)='array' then
       (select count(distinct lower(btrim(option)))
        from jsonb_array_elements_text(q.options) as options(option))=4
@@ -287,6 +289,8 @@ begin
    and length(btrim(coalesce(q.explanation,'')))>=20
    and q.source_url ~ '^https://[^[:space:]]+$'
    and length(btrim(coalesce(q.source_note,'')))>=20
+   and lower(btrim(q.prompt)) not like 'seleziona l''alternativa corretta:%'
+   and lower(btrim(q.explanation)) not like '%la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento%'
    and case when jsonb_typeof(q.options)='array' then
      (select count(distinct lower(btrim(option)))
       from jsonb_array_elements_text(q.options) as options(option))=4
