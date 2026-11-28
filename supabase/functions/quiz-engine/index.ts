@@ -7,13 +7,13 @@ const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
 function validGeneralQuestion(q:any,seen:Set<string>){
  const rawPrompt=String(q.prompt??"").trim(),prompt=rawPrompt.toLocaleLowerCase("it");
- const canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\\s*/i,"").trim();
+ const canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\s*/i,"").trim();
  const options=q.options,explanation=String(q.explanation??"").trim().toLocaleLowerCase("it");
  const source=String(q.source_url??"").trim(),sourceNote=String(q.source_note??"").trim();
  const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
  const templatePrompt=prompt.startsWith("seleziona l'alternativa corretta:");
  const distinctOptions=Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4;
- const valid=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&distinctOptions&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20&&/^https:\\/\\/[^\\s]+$/i.test(source)&&sourceNote.length>=20;
+ const valid=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&distinctOptions&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
  if(canonicalPrompt)seen.add(canonicalPrompt);
  return valid;
 }
