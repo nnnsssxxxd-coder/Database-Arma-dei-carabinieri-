@@ -508,7 +508,7 @@ jobs:
           for(const token of ['function validGeneralQuestion','source_url,source_note','questionPool("Tutte le materie",branch)','100 quesiti completi, distinti e corredati da fonti verificabili']){
             if(!quiz.includes(token))throw new Error('General quiz source gate missing: '+token);
           }
-          for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','con fonte verificabile']){
+          for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','fonte verificabile.']){
             if(!department.includes(token))throw new Error('Department quiz source gate missing: '+token);
           }
           for(const token of ['sourceNote.length>=20','questions.every(missionQuestionIsValid)','blocked_reason','available,blocked_reason']){
