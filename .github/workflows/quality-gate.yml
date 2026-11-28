@@ -268,6 +268,10 @@ jobs:
           const technical=fs.readFileSync('supabase/migrations/20261124190200_seed_vehicle_technical_40.sql','utf8');
           const engine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const balance=fs.readFileSync('supabase/migrations/20261124190300_balance_physics_answer_positions.sql','utf8');
+          const sourceRefinement=fs.readFileSync('supabase/migrations/20261127150000_refine_carabinieri_vehicle_physics_sources.sql','utf8');
+          for(const token of ['v_inertia_count<>4','v_curve_count<>12','v_energy_count<>8','v_momentum_count<>4','v_incline_count<>4','newtons-laws-of-motion','centripetal-acceleration','kinetic-energy-and-the-work-energy-theorem','linear-momentum-and-force','chapter/friction/']){
+            if(!sourceRefinement.includes(token))throw new Error('Carabinieri physics source backfill missing: '+token);
+          }
           if((physics.match(/"prompt":/g)||[]).length!==44)throw new Error('Physics seed must contain 22 land and 22 naval source questions');
           if((rules.match(/"prompt":/g)||[]).length!==60)throw new Error('Regulations seed must contain 30 road and 30 COLREG questions');
           if((technical.match(/"prompt":/g)||[]).length!==80)throw new Error('Technical seed must contain 40 land and 40 naval system questions');
