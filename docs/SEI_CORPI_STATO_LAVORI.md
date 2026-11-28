@@ -1,67 +1,78 @@
 # Stato lavori — sito Database Forze dell’Ordine
 
-**Ultimo audit:** 28 novembre 2026  
+**Audit:** 28 novembre 2026  
 **Ramo:** `feat/expansione-sei-corpi`  
-**PR:** [#4 — Espansione sito a sei ambienti istituzionali](https://github.com/nnnsssxxxd/Database-Arma-dei-carabinieri-/pull/4)  
-**Ultimo commit di codice verificato:** `90ca4a38be060ccfbae15787b47a9c3abc87bf27`
+**PR:** [#4 — Espansione sito a sei ambienti istituzionali](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/pull/4)  
+**Ultimo commit applicativo verificato:** `55c8fa2e8c67e329f4ba30df0a97c5b9dae3850a`
 
 ## Stato della pubblicazione
 
-La PR è ancora in bozza, non è stata unita e la versione a sei ambienti non è pubblicata su GitHub Pages. Le migrazioni non sono state applicate a Supabase e le Edge Functions non sono state distribuite. Nessun account o progresso personale è stato modificato.
+La PR è ancora **DRAFT**, non è stata unita e la versione a sei ambienti non è pubblicata su GitHub Pages. Le migrazioni del ramo non sono state applicate a produzione e le Edge Functions non sono state distribuite. Nessun account o progresso personale è stato modificato.
 
-## Modifiche di questo avanzamento
+## Modifiche verificate in questo avanzamento
 
-- Aggiunta la migrazione `20261127140000_enforce_source_verified_quiz_content.sql`: introduce `source_url` e `source_note` per ogni quesito generale e di reparto, con vincoli di coerenza.
-- Le funzioni server-side di quiz generale, esame di avanzamento e quiz di reparto rifiutano quesiti privi di fonte HTTPS, nota specifica, quattro opzioni distinte o spiegazione sufficiente.
-- La correzione server-side restituisce una revisione con risposta corretta, spiegazione e fonte; l'interfaccia mostra i collegamenti alla fonte.
-- Gli scenari di missione/servizio non vengono più presentati come completabili se le singole domande non hanno fonte e nota verificabile. Le 24 schede restano visibili come **IN REVISIONE** finché le 72 domande non saranno documentate.
-- Aggiunti controlli automatici per impedire regressioni sulla tracciabilità delle fonti.
+- Le domande delle missioni non ricevono più una quarta opzione artificiale: il server restituisce esclusivamente le opzioni effettivamente redatte.
+- La validazione missioni è stata estratta in `supabase/functions/game-engine/mission-validation.ts`; sono richieste esattamente quattro opzioni esplicite e distinte, un indice corretto valido, una spiegazione sufficiente e una fonte HTTPS con nota specifica.
+- Aggiunti test Deno per domande complete, tre opzioni, duplicati, indice fuori intervallo, fonte assente/non HTTPS/nota insufficiente e spiegazioni brevi.
+- Il controllo qualità esegue ora i test Deno e impedisce la reintroduzione di opzioni inventate.
+- Le 24 schede missione restano **IN REVISIONE**: le 72 domande attuali non hanno ancora fonti e note individuali e presentano tre opzioni, quindi il server le blocca correttamente.
 
 ## Verifiche automatiche
 
-Sul commit `90ca4a38be060ccfbae15787b47a9c3abc87bf27`:
+Sul commit `55c8fa2e8c67e329f4ba30df0a97c5b9dae3850a`:
 
-- **App quality gate:** SUCCESS — run [550](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46126414408).
-- **Validate six-corps website:** SUCCESS — run [150](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46126414402).
-- Type-check delle Edge Functions, parsing JavaScript, riferimenti DOM, isolamento dei Corpi, controlli missione e test di tracciabilità superati.
+- [App quality gate — SUCCESS, run 560](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46127663219).
+  - Type-check di tutte le Edge Functions: SUCCESS.
+  - Test Deno della validazione missioni: SUCCESS.
+  - Tutti i controlli statici e di regressione, compresa la tracciabilità delle fonti: SUCCESS.
+- [Validate six-corps website — SUCCESS, run 167](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46127663270).
 
-Questi sono controlli statici e di regressione: non equivalgono a un test end-to-end autenticato su un ambiente Supabase di staging.
+Il precedente run 559 aveva segnalato un'asserzione del workflow che cercava la validazione nel vecchio file dopo l'estrazione del modulo. Il controllo è stato aggiornato e il run 560 è passato integralmente.
 
-## Audit dei contenuti su Supabase (sola lettura)
+Questi workflow sono controlli statici e unitari; **non** equivalgono a test end-to-end autenticati su Supabase staging.
 
-| Area | Stato verificato |
-|---|---|
-| Quiz generale | 100 Carabinieri + 100 Finanza. Carabinieri: 30 prompt-template e 60 spiegazioni generiche; Finanza supera i controlli strutturali. |
-| Quiz di reparto | 4 banche Carabinieri + 11 Finanza, 100 quesiti ciascuna; struttura valida e distribuzione 33/33/34. |
-| Quiz veicolo | 4 percorsi per Carabinieri + 4 per Finanza, 100 quesiti ciascuno; struttura 30 fisica / 40 tecnica / 30 normativa. Le banche contengono rispettivamente 86 e 94 URL distinti; la qualità sostanziale delle fonti deve ancora essere verificata. |
-| Cataloghi reparti | In produzione risultano 4 reparti Carabinieri e 11 Finanza; le migrazioni di ramo completano gli 11 per tutti e sei i Corpi. |
-| Cataloghi veicoli | In produzione risultano 4 mezzi Carabinieri e 4 Finanza; il ramo aggiunge i 16 percorsi degli altri quattro Corpi. |
-| Missioni | 24 scenari e 72 domande statiche; nessuna domanda ha ancora fonte e nota specifica. Sono quindi bloccate dal controllo fail-closed. |
+## Audit Supabase di produzione — sola lettura
 
-### Contenuti ancora mancanti
+### Banche dati
+
+- **Quiz generali:** 100 domande attive per Carabinieri e 100 per Guardia di Finanza. La banca Carabinieri presenta 30 prompt-template e 60 spiegazioni generiche: non è pubblicabile. La banca Finanza è strutturalmente valida, ma manca ancora la tracciabilità puntuale delle fonti.
+- **Quiz di reparto:** 4 banche Carabinieri e 11 Finanza, tutte da 100 domande e strutturalmente valide (opzioni/indici/spiegazioni e prompt distinti). Le colonne `source_url` e `source_note` non esistono ancora in produzione per queste tabelle: saranno aggiunte dalla migrazione del ramo e dovranno poi essere valorizzate.
+- **Quiz veicolo:** 4 percorsi Carabinieri e 4 Finanza, ciascuno con 100 domande e rapporto 30 fisica / 40 tecnica / 30 normativa. Ogni banca ha 17–18 URL distinti; il numero di URL non dimostra che ogni riferimento sostenga la domanda specifica. La revisione qualitativa di ogni quesito e fonte resta obbligatoria.
+- **Catalogo reparti in produzione:** 4 Carabinieri e 11 Finanza.
+- **Catalogo veicoli in produzione:** 4 Carabinieri e 4 Finanza.
+- Le migrazioni del ramo preparano i cataloghi degli altri quattro Corpi e completano a 11 i reparti Carabinieri; non sono ancora applicate.
+
+### Contenuti ancora mancanti o da bonificare
 
 - 400 quesiti generali per Polizia, Esercito, Marina e Aeronautica.
 - 51 banche di reparto da 100 quesiti: 5.100 quesiti.
 - 16 banche veicolo da 100 quesiti: 1.600 quesiti.
-- **Totale: 7.100 quesiti mancanti**, senza contare la bonifica dei contenuti esistenti.
-- Fonte e nota specifica da associare a 1.700 quesiti già presenti (200 generali e 1.500 di reparto).
-- Bonifica dei 30 prompt-template e delle 60 spiegazioni generiche del quiz generale Carabinieri.
-- Fonti istituzionali/normative per tutte le 72 domande di missione.
+- **Totale: 7.100 quesiti da redigere e verificare**, senza segnaposto o duplicati.
+- Associare fonte e nota specifica ai 200 quesiti generali e ai 1.500 quesiti di reparto già presenti.
+- Bonificare i 30 prompt-template e le 60 spiegazioni generiche del quiz generale Carabinieri.
+- Documentare con fonti puntuali e quattro opzioni specifiche le 72 domande dei 24 scenari di missione.
+- Verificare che ogni fonte dei quiz veicolo sia istituzionale/normativa o accademica autorevole e supporti proprio il contenuto della domanda.
 
-I dati non verificati non vengono completati con segnaposto o risposte inventate. I controlli server-side impediscono di usare le banche incomplete.
+I controlli server-side restano fail-closed: le banche incomplete o non documentate non devono essere somministrate né assegnare EXP.
 
-## Sicurezza e passaggi amministrativi
+## Sicurezza e compatibilità
 
-- RLS risulta attiva su tutte le 30 tabelle pubbliche esaminate; le policy lette non concedono accesso client diretto alle tabelle operative. La nuova migrazione non modifica le policy.
-- Supabase Security Advisor segnala disattivata la protezione delle password compromesse.
-- La documentazione Supabase indica che la protezione è disponibile dal piano Pro in su. Non è disponibile un'azione del connettore per cambiare questa impostazione: l'amministratore deve aprire **Supabase Dashboard → Authentication → Password security** e attivare **Prevent the use of leaked passwords**. Se il progetto è sul piano Free, occorre prima passare a Pro o superiore. [Documentazione Supabase](https://supabase.com/docs/guides/auth/password-security).
-- Non applicare le migrazioni o distribuire le Edge Functions finché non è disponibile un ambiente di test per verificare schema, RPC, RLS e flussi end-to-end.
+- RLS è attiva su tutte le 30 tabelle pubbliche esaminate; le policy lette non concedono accesso client diretto alle tabelle operative. La verifica va ripetuta sul database di staging dopo le migrazioni.
+- Il Security Advisor segnala disattivata la protezione delle password compromesse. Supabase documenta che la funzione è disponibile dal piano Pro in su. L'amministratore deve verificare il piano e, se supportato, aprire **Supabase Dashboard → Authentication → Password security** e attivare **Prevent the use of leaked passwords**. [Documentazione ufficiale Supabase](https://supabase.com/docs/guides/auth/password-security).
+- I log Edge interrogati non mostrano richieste con risposta HTTP 4xx/5xx nel campione restituito; questo non sostituisce test autenticati.
+- Non sono stati distribuiti aggiornamenti alle Edge Functions e non è stata applicata alcuna migrazione di produzione.
+
+## Blocco per i test end-to-end su staging
+
+Non esiste un branch Supabase di staging. La creazione del branch di test è stata fermata perché Supabase richiede una conferma esplicita del costo: **0,01344 USD/ora** di compute. Nessun branch è stato creato e nessun costo è stato avviato. Serve l'approvazione dell'amministratore prima di creare `pr4-staging-20261128`, applicare le migrazioni del ramo e provare RPC, RLS e flussi autenticati su un ambiente separato.
 
 ## Prossime attività
 
-1. Completare e verificare le 7.100 domande mancanti con fonti puntuali; bonificare le banche esistenti.
-2. Associare fonte e nota a tutti i 1.700 quesiti generali/di reparto già presenti e alle 72 domande di missione.
-3. Verificare qualitativamente i riferimenti dei quiz veicolo e i cataloghi istituzionali.
-4. Eseguire migrazioni e test RPC su staging, poi verificare login, separazione dei Corpi, salvataggi, progressione, missioni e interfaccia mobile/desktop.
-5. Abilitare la protezione password compromesse tramite l'amministratore.
-6. Solo dopo il superamento di tutti i controlli: applicare le migrazioni di produzione, distribuire le Edge Functions, unire la PR, attendere GitHub Pages e verificare il sito pubblico su mobile e desktop.
+1. Ottenere l'approvazione del costo per il branch Supabase staging e creare l'ambiente isolato.
+2. Applicare le migrazioni del ramo soltanto su staging; verificare vincoli, cataloghi, RPC, RLS e compatibilità senza toccare account o progressi di produzione.
+3. Eseguire test E2E autenticati per i sei Corpi: login separato, autorizzazioni, salvataggi, EXP, esami, reparti, missioni/servizi e interfaccia mobile/desktop.
+4. Completare e verificare le 7.100 domande mancanti e bonificare le banche esistenti con fonti puntuali.
+5. Ottenere l'intervento dell'amministratore per la protezione password compromesse, se il piano lo consente.
+6. Solo dopo il superamento di tutti i criteri: migrare produzione, distribuire le Edge Functions, unire la PR, attendere GitHub Pages e verificare il sito pubblico su mobile e desktop.
+
+La PR rimane in bozza. Non verrà unita o pubblicata con banche quiz incomplete, fonti non verificate, test E2E mancanti o vulnerabilità note.
