@@ -512,6 +512,7 @@ jobs:
           const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
           const department=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const missionValidation=fs.readFileSync('supabase/functions/game-engine/mission-validation.ts','utf8');
           const html=fs.readFileSync('index.html','utf8');
           for(const token of ['add column if not exists source_url','add column if not exists source_note','quiz_questions_source_pair_check','department_questions_source_pair_check','create or replace function public.complete_quiz_attempt','create or replace function public.complete_rank_exam','create or replace function public.complete_department_quiz',"'review',v_review"]){
             if(!migration.includes(token))throw new Error('Source-traceability migration missing: '+token);
@@ -522,8 +523,11 @@ jobs:
           for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','fonte verificabile.']){
             if(!department.includes(token))throw new Error('Department quiz source gate missing: '+token);
           }
-          for(const token of ['sourceNote.length>=20','questions.every(missionQuestionIsValid)','blocked_reason','available,blocked_reason']){
+          for(const token of ['questions.every(missionQuestionIsValid)','blocked_reason','available,blocked_reason']){
             if(!game.includes(token))throw new Error('Mission source gate missing: '+token);
+          }
+          for(const token of ['sourceNote.length >= 20','source.protocol === "https:"','options.length === 4','Number.isInteger(question.correct_index)']){
+            if(!missionValidation.includes(token))throw new Error('Mission validation module is missing: '+token);
           }
           for(const token of ['Apri la fonte istituzionale o normativa','Apri la fonte','IN REVISIONE']){
             if(!html.includes(token))throw new Error('Source link or unavailable-state UI missing: '+token);
