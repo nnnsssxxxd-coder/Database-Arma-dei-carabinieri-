@@ -2101,9 +2101,11 @@ async function loadMissionBoard(){
   const missions=Array.isArray(data?.missions)?data.missions:[],completed=new Set((data?.completed_missions||[]).map(x=>x.mission_id));
   if(!missions.length){list.innerHTML='<div class="notice2">Nessuna missione disponibile per questo Corpo.</div>';return;}
   list.innerHTML=missions.map(m=>{
-   const done=completed.has(m.id);
-   const questions=(m.questions||[]).map((q,i)=>'<fieldset class="mission-question" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0"><legend><strong>'+(i+1)+'. '+esc(q.prompt)+'</strong></legend>'+(q.options||[]).map((option,j)=>'<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0"><input type="radio" name="mission-'+esc(m.id)+'-'+i+'" value="'+j+'" '+(done?'disabled':'')+'><span>'+esc(option)+'</span></label>').join("")+'</fieldset>').join("");
-   return '<article class="notice2 mission-card" style="margin-bottom:10px"><div class="row between"><h3>'+esc(m.title)+'</h3><span class="badge">'+(done?"COMPLETATA":"3 VALUTAZIONI")+'</span></div><p class="small muted">'+esc(m.scenario)+'</p>'+questions+(done?'<p class="small">Missione già completata · EXP registrata</p>':'<button type="button" class="primary" data-mission-submit="'+esc(m.id)+'">Conferma valutazioni</button><p class="small muted" data-mission-feedback="'+esc(m.id)+'" role="status" aria-live="polite"></p>')+'</article>';
+   const done=completed.has(m.id),available=m.available!==false;
+   const questions=available?(m.questions||[]).map((q,i)=>'<fieldset class="mission-question" style="border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0"><legend><strong>'+(i+1)+'. '+esc(q.prompt)+'</strong></legend>'+(q.options||[]).map((option,j)=>'<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0"><input type="radio" name="mission-'+esc(m.id)+'-'+i+'" value="'+j+'" '+(done?'disabled':'')+'><span>'+esc(option)+'</span></label>').join("")+'</fieldset>').join(""):"";
+   const state=done?"COMPLETATA":available?"3 VALUTAZIONI":"IN REVISIONE";
+   const action=done?'<p class="small">Missione già completata · EXP registrata</p>':!available?'<p class="small muted">Non disponibile: '+esc(m.blocked_reason||"mancano le fonti verificabili per le domande.")+'</p>':'<button type="button" class="primary" data-mission-submit="'+esc(m.id)+'">Conferma valutazioni</button><p class="small muted" data-mission-feedback="'+esc(m.id)+'" role="status" aria-live="polite"></p>';
+   return '<article class="notice2 mission-card" style="margin-bottom:10px"><div class="row between"><h3>'+esc(m.title)+'</h3><span class="badge">'+state+'</span></div><p class="small muted">'+esc(m.scenario)+'</p>'+questions+action+'</article>';
   }).join("");
   if(!list.dataset.bound){
    list.dataset.bound="1";
@@ -2118,7 +2120,7 @@ async function loadMissionBoard(){
      const {data,error}=await db.functions.invoke("game-engine",{body:{action:"mission_complete",service_branch:selectedBranch,mission_id:missionId,answers}});
      if(error)throw error;
      const review=Array.isArray(data?.review)?data.review:[];
-     const reviewMarkup=review.map((item,index)=>'<p><strong>'+(index+1)+'. '+esc(item.prompt)+'</strong><br>Risposta corretta: '+esc(item.correct_option||"")+'<br>'+esc(item.explanation||"")+'</p>').join("");
+     const reviewMarkup=review.map((item,index)=>'<p><strong>'+(index+1)+'. '+esc(item.prompt)+'</strong><br>Risposta corretta: '+esc(item.correct_option||"")+'<br>'+esc(item.explanation||"")+(item.source_note?'<br>'+esc(item.source_note):"")+(item.source_url?'<br><a href="'+esc(item.source_url)+'" target="_blank" rel="noopener noreferrer">Apri la fonte</a>':"")+'</p>').join("");
      if(!data?.passed){if(feedback)feedback.innerHTML='<strong>Esito: '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong>'+reviewMarkup+'<p>Correggi le risposte e riprova.</p>';button.disabled=false;return;}
      if(feedback)feedback.innerHTML='<strong>Missione superata · '+Number(data?.score||0)+' / '+Number(data?.total||3)+'</strong><p>EXP registrata correttamente. Ecco la revisione delle risposte:</p>'+reviewMarkup;
      const completedBadge=card?.querySelector(".badge");if(completedBadge)completedBadge.textContent="COMPLETATA";
