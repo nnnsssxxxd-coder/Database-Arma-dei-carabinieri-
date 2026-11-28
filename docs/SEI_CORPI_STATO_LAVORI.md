@@ -3,7 +3,7 @@
 **Audit:** 28 novembre 2026  
 **Ramo:** `feat/expansione-sei-corpi`  
 **PR:** [#4 — Espansione sito a sei ambienti istituzionali](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/pull/4)  
-**Ultimo commit applicativo verificato:** `72e1a5459ece867fbe21fd41d2ddc4faf1ee51cb`
+**Ultimo head del ramo verificato:** `4175d3edecc31d9abe20e9320c0075c16fa4244e`
 
 ## Stato della pubblicazione
 
@@ -21,11 +21,11 @@ La PR è ancora **DRAFT**, non è stata unita e la versione a sei ambienti non �
 
 Sul commit `55c8fa2e8c67e329f4ba30df0a97c5b9dae3850a`:
 
-- [App quality gate — SUCCESS, run 564](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128163631).
+- [App quality gate — SUCCESS, run 565](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128233035).
   - Type-check di tutte le Edge Functions: SUCCESS.
   - Test Deno della validazione missioni: SUCCESS.
   - Tutti i controlli statici e di regressione, compresa la tracciabilità delle fonti: SUCCESS.
-- [Validate six-corps website — SUCCESS, run 172](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128163638).
+- [Validate six-corps website — SUCCESS, run 173](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128233023).
 
 Il precedente run 559 aveva segnalato un'asserzione del workflow che cercava la validazione nel vecchio file dopo l'estrazione del modulo. Il controllo è stato aggiornato e il run 560 è passato integralmente.
 
