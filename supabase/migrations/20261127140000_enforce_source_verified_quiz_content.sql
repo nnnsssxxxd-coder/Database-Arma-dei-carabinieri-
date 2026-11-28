@@ -96,8 +96,8 @@ begin
     and q.source_url ~ '^https://[^[:space:]]+$'
     and length(btrim(coalesce(q.source_note,'')))>=20
     and case when jsonb_typeof(q.options)='array' then
-      (select count(distinct lower(btrim(option_value)))
-       from jsonb_array_elements_text(q.options) as option_value)=4
+      (select count(distinct lower(btrim(option)))
+       from jsonb_array_elements_text(q.options) as options(option))=4
       else false end
     and lower(btrim(q.prompt)) not like 'seleziona l''alternativa corretta:%'
     and lower(btrim(q.explanation)) not like '%la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento%';
@@ -200,8 +200,8 @@ begin
     and q.source_url ~ '^https://[^[:space:]]+$'
     and length(btrim(coalesce(q.source_note,'')))>=20
     and case when jsonb_typeof(q.options)='array' then
-      (select count(distinct lower(btrim(option_value)))
-       from jsonb_array_elements_text(q.options) as option_value)=4
+      (select count(distinct lower(btrim(option)))
+       from jsonb_array_elements_text(q.options) as options(option))=4
       else false end;
   if not found then raise exception 'Domanda non disponibile o priva di fonte verificabile' using errcode='P0002'; end if;
   if (p_answers->>v_idx)::integer=v_key then v_score:=v_score+1; end if;
@@ -288,8 +288,8 @@ begin
    and q.source_url ~ '^https://[^[:space:]]+$'
    and length(btrim(coalesce(q.source_note,'')))>=20
    and case when jsonb_typeof(q.options)='array' then
-     (select count(distinct lower(btrim(option_value)))
-      from jsonb_array_elements_text(q.options) as option_value)=4
+     (select count(distinct lower(btrim(option)))
+      from jsonb_array_elements_text(q.options) as options(option))=4
      else false end;
  if jsonb_array_length(v_correct)<>4 then raise exception 'Banca reparto non verificata o priva di fonte'; end if;
  select count(*) into v_score from generate_series(0,3) i
