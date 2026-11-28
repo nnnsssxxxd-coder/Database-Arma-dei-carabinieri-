@@ -492,3 +492,30 @@ jobs:
           }
           console.log('PASS: general quiz questions are validated and answer keys remain server-side');
           NODE
+
+      - name: Validate per-question source traceability
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const migration=fs.readFileSync('supabase/migrations/20261127140000_enforce_source_verified_quiz_content.sql','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const department=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const token of ['add column if not exists source_url','add column if not exists source_note','quiz_questions_source_pair_check','department_questions_source_pair_check','create or replace function public.complete_quiz_attempt','create or replace function public.complete_rank_exam','create or replace function public.complete_department_quiz',"'review',v_review"]){
+            if(!migration.includes(token))throw new Error('Source-traceability migration missing: '+token);
+          }
+          for(const token of ['function validGeneralQuestion','source_url,source_note','questionPool("Tutte le materie",branch)','100 quesiti completi, distinti e corredati da fonti verificabili']){
+            if(!quiz.includes(token))throw new Error('General quiz source gate missing: '+token);
+          }
+          for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','con fonte verificabile']){
+            if(!department.includes(token))throw new Error('Department quiz source gate missing: '+token);
+          }
+          for(const token of ['sourceNote.length>=20','questions.every(missionQuestionIsValid)','blocked_reason','available,blocked_reason']){
+            if(!game.includes(token))throw new Error('Mission source gate missing: '+token);
+          }
+          for(const token of ['Apri la fonte istituzionale o normativa','Apri la fonte','IN REVISIONE']){
+            if(!html.includes(token))throw new Error('Source link or unavailable-state UI missing: '+token);
+          }
+          console.log('PASS: general, rank, department and mission questions fail closed without an HTTPS source and a specific citation note; successful reviews expose the reference');
+          NODE
