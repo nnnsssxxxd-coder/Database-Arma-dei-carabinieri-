@@ -29,7 +29,7 @@ const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(url, service, { auth: { persistSession: false } });
 
-type MissionQuestion={prompt:string;options:string[];correct_index:number;explanation:string};
+type MissionQuestion={prompt:string;options:string[];correct_index:number;explanation:string;source_url?:string;source_note?:string};
 type MissionScenario={id:string;title:string;scenario:string;questions:MissionQuestion[]};
 const MISSION_FOURTH_DISTRACTOR="Affidarsi a informazioni non verificate e omettere la documentazione dell'attività.";
 function missionOptions(question:MissionQuestion):string[]{
@@ -38,12 +38,12 @@ function missionOptions(question:MissionQuestion):string[]{
  return options;
 }
 function missionQuestionIsValid(question:MissionQuestion):boolean{
- const options=missionOptions(question);
+ const options=missionOptions(question),source=String(question.source_url??"").trim(),sourceNote=String(question.source_note??"").trim();
  return question.prompt.trim().length>=12 && options.length===4 &&
   new Set(options.map(option=>option.trim().toLocaleLowerCase("it"))).size===4 &&
   options.every(option=>option.trim().length>=8) &&
   Number.isInteger(question.correct_index) && question.correct_index>=0 && question.correct_index<4 &&
-  question.explanation.trim().length>=20;
+  question.explanation.trim().length>=20 && /^https:\/\/[^\s]+$/i.test(source) && sourceNote.length>=20;
 }
 const MISSION_BANK:Record<string,MissionScenario[]> = {
  carabinieri:[
@@ -160,11 +160,13 @@ function optionOffset(branch:string,missionId:string,questionIndex:number){
  return (seed+questionIndex*3)%4;
 }
 function publicMissions(branch:string){
- return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>({id,title,scenario,questions:questions.map((question,index)=>{
-  const options=missionOptions(question);
-  const offset=optionOffset(branch,id,index);
-  return {prompt:question.prompt,options:options.map((_,optionIndex)=>options[(optionIndex+offset)%options.length])};
- })}));
+ return (MISSION_BANK[branch]??[]).map(({id,title,scenario,questions})=>{
+  const available=questions.every(missionQuestionIsValid);
+  return {id,title,scenario,available,blocked_reason:available?null:"Fonti istituzionali o normative non ancora associate a ogni domanda.",questions:available?questions.map((question,index)=>{
+   const options=missionOptions(question),offset=optionOffset(branch,id,index);
+   return {prompt:question.prompt,options:options.map((_,optionIndex)=>options[(optionIndex+offset)%options.length])};
+  }):[]};
+ });
 }
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
@@ -237,7 +239,7 @@ Deno.serve(async (req: Request) => {
       }
       const normalizedAnswers=answers.map((answer:number,index:number)=>(answer+optionOffset(branch,missionId,index))%missionOptions(mission.questions[index]).length);
       const score = normalizedAnswers.reduce((sum:number,answer:number,index:number)=>sum+(answer===mission.questions[index].correct_index?1:0),0);
-      const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index]}));
+      const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index],source_url:q.source_url,source_note:q.source_note}));
       if (score !== mission.questions.length) {
         return reply(req, { completed:false,passed:false,score,total:mission.questions.length,message:"Missione non superata. Consulta le spiegazioni e riprova.",review });
       }
