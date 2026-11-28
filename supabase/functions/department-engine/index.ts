@@ -25,12 +25,16 @@ const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
 function validVehicleQuestionRow(q:any){
- const options=q?.options, prompt=String(q?.prompt??"").trim(), source=String(q?.source_url??"").trim(), note=String(q?.source_note??"").trim(), explanation=String(q?.explanation??"").trim();
- return prompt.length>=12&&/^https:\/\//i.test(source)&&note.length>=12&&explanation.length>=20&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q?.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&["physics","technical","regulations"].includes(q?.category);
+ const options=q?.options,prompt=String(q?.prompt??"").trim(),normalizedPrompt=prompt.toLocaleLowerCase("it"),source=String(q?.source_url??"").trim(),note=String(q?.source_note??"").trim(),explanation=String(q?.explanation??"").trim().toLocaleLowerCase("it");
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=normalizedPrompt.startsWith("seleziona l'alternativa corretta:");
+ return prompt.length>=12&&!templatePrompt&&!genericExplanation&&/^https:\/\/[^\s]+$/i.test(source)&&note.length>=20&&explanation.length>=20&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q?.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&["physics","technical","regulations"].includes(q?.category);
 }
 function validQuestionRow(q:any){
- const options=q?.options,source=String(q?.source_url??"").trim(),sourceNote=String(q?.source_note??"").trim();
- return typeof q?.prompt==="string"&&q.prompt.trim().length>=12&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
+ const options=q?.options,prompt=String(q?.prompt??"").trim(),normalizedPrompt=prompt.toLocaleLowerCase("it"),source=String(q?.source_url??"").trim(),sourceNote=String(q?.source_note??"").trim(),explanation=String(q?.explanation??"").trim().toLocaleLowerCase("it");
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=normalizedPrompt.startsWith("seleziona l'alternativa corretta:");
+ return typeof q?.prompt==="string"&&prompt.length>=12&&!templatePrompt&&!genericExplanation&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&explanation.length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
 }
 const DEPT_RANKS_BY_BRANCH = {
   carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
