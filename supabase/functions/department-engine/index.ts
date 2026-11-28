@@ -29,8 +29,8 @@ function validVehicleQuestionRow(q:any){
  return prompt.length>=12&&/^https:\/\//i.test(source)&&note.length>=12&&explanation.length>=20&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q?.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&["physics","technical","regulations"].includes(q?.category);
 }
 function validQuestionRow(q:any){
- const options=q?.options;
- return typeof q?.prompt==="string"&&q.prompt.trim().length>=12&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase())).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20;
+ const options=q?.options,source=String(q?.source_url??"").trim(),sourceNote=String(q?.source_note??"").trim();
+ return typeof q?.prompt==="string"&&q.prompt.trim().length>=12&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&typeof q.explanation==="string"&&q.explanation.trim().length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
 }
 const DEPT_RANKS_BY_BRANCH = {
   carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
@@ -378,22 +378,22 @@ Deno.serve(async (req: Request) => {
       const { data: open, error: openError } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id", user.id).eq("department_id", membership.department_id).eq("service_branch",branch).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle();
       if (openError) return reply(req,{ error: "Impossibile verificare la sessione reparto" }, 500);
       if (open && new Date(open.started_at).getTime() >= Date.now() - SESSION_MS) {
-        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id", open.question_ids).eq("service_branch",branch);
+        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").in("id", open.question_ids).eq("service_branch",branch);
         if (error || !rows) return reply(req,{ error: "Impossibile riprendere il quiz reparto" }, 500);
         const byId = new Map(rows.map(q => [q.id, q]));
         const questions = open.question_ids.map((id: string) => byId.get(id)).filter(Boolean);
-        if (questions.length !== 4) return reply(req,{ error: "Sessione reparto non più disponibile" }, 409);
+        if (questions.length !== 4 || !questions.every(validQuestionRow)) return reply(req,{ error: "Sessione reparto non più disponibile: una o più domande non hanno una fonte verificabile." }, 409);
         return reply(req,{ attempt_id: open.id, questions, answers: open.answers ?? [], expires_at: new Date(new Date(open.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
       }
       if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).eq("service_branch",branch).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
-      const { data: bankRows, error: bankCountError } = await db.from("department_questions").select("id,prompt,options,correct_index,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
+      const { data: bankRows, error: bankCountError } = await db.from("department_questions").select("id,prompt,options,correct_index,explanation,rank_band,source_url,source_note").eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
       const validBankRows=(bankRows??[]).filter(validQuestionRow);
       const normalizedPrompts=validBankRows.map((q:any)=>String(q.prompt??"").trim().replace(/\\s+/g," ").toLocaleLowerCase("it"));
       const uniquePromptCount=new Set(normalizedPrompts).size;
       const rankBandCounts=[0,1,2].map(value=>validBankRows.filter((q:any)=>Number(q.rank_band)===value).length);
       if (bankCountError || (bankRows??[]).length!==100 || validBankRows.length!==100 || uniquePromptCount!==100 || rankBandCounts.some(value=>value<4)) return reply(req,{ error: "Banca reparto non completa o non verificata: servono 100 quesiti distinti, validi, spiegati e distribuiti su tutti i livelli." }, 409);
-      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
+      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
       const rotationWindow = 24 * 60 * 60 * 1000;
@@ -426,11 +426,11 @@ Deno.serve(async (req: Request) => {
         if (insertError.code === "23505") {
           const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
           if (concurrent) {
-            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids).eq("service_branch",branch);
+            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").in("id",concurrent.question_ids).eq("service_branch",branch);
             if (!concurrentError && concurrentRows) {
               const concurrentById = new Map(concurrentRows.map(q => [q.id,q]));
               const concurrentQuestions = concurrent.question_ids.map((id: string) => concurrentById.get(id)).filter(Boolean);
-              if (concurrentQuestions.length === 4) return reply(req,{ attempt_id: concurrent.id, questions: concurrentQuestions, answers: concurrent.answers ?? [], expires_at: new Date(new Date(concurrent.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
+              if (concurrentQuestions.length === 4 && concurrentQuestions.every(validQuestionRow)) return reply(req,{ attempt_id: concurrent.id, questions: concurrentQuestions, answers: concurrent.answers ?? [], expires_at: new Date(new Date(concurrent.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
             }
           }
         }
