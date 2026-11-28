@@ -42,9 +42,9 @@ Deno.serve(async(req)=>{
   if(!/^[a-z0-9_-]{3,24}$/.test(username))return reply(req,{error:"Username non valido: usa 3-24 caratteri minuscoli, numeri, _ o -.",field:"username"},400);
   if(display_name.length<2||display_name.length>60)return reply(req,{error:"Nome visualizzato non valido: inserisci da 2 a 60 caratteri.",field:"display_name"},400);
   if(password.length<12||password.length>72)return reply(req,{error:"Password iniziale non valida: servono 12-72 caratteri.",field:"password"},400);
-  if(!["carabinieri","finanza"].includes(service_branch))return reply(req,{error:"Seleziona un Corpo valido.",field:"service_branch"},400);
+  if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(service_branch))return reply(req,{error:"Seleziona un Corpo valido.",field:"service_branch"},400);
   if(rankRaw===undefined||rankRaw===null||String(rankRaw).trim()==="")return reply(req,{error:"Seleziona il grado iniziale.",field:"initial_rank"},400);
-  const initial_rank=Number(rankRaw),maxRank=service_branch==="finanza"?23:23;
+  const initial_rank=Number(rankRaw),maxRank=({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[service_branch];
   if(!Number.isInteger(initial_rank)||initial_rank<0||initial_rank>maxRank)return reply(req,{error:"Grado non valido per il Corpo selezionato (indice 0-"+maxRank+").",field:"initial_rank"},400);
   const {data:creatorMembership,error:cm}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",service_branch).eq("active",true).maybeSingle();if(cm)throw cm;if(!creatorMembership||!["istruttore","admin"].includes(creatorMembership.role))return reply(req,{error:"La creazione è riservata agli amministratori e agli istruttori attivi del Corpo selezionato."},403);
   const {data:exists,error:ex}=await db.from("profiles").select("id").eq("username",username).maybeSingle();if(ex)throw ex;if(exists)return reply(req,{error:"Username già utilizzato."},409);
@@ -55,7 +55,7 @@ Deno.serve(async(req)=>{
   try{
    const {data:profile,error:pr}=await db.from("profiles").select("id").eq("id",uid).maybeSingle();if(pr)throw pr;if(!profile)throw new Error("Il trigger Auth non ha creato il profilo.");
    const {data:serial,error:se}=await db.from("matricole").insert({user_id:uid}).select("id").single();if(se||!serial)throw se??new Error("Matricola non assegnata.");
-   const matricola=(service_branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
+   const matricola=(({carabinieri:"CC-",finanza:"GF-",polizia:"PS-",esercito:"EI-",marina:"MM-",aeronautica:"AM-"} as Record<string,string>)[service_branch])+String(serial.id).padStart(7,"0");
    const {data:updated,error:ue}=await db.from("profiles").update({display_name,service_branch,initial_rank,matricola}).eq("id",uid).select("id").maybeSingle();if(ue)throw ue;if(!updated)throw new Error("Profilo non aggiornato.");
    const {error:me}=await db.from("profile_memberships").insert({user_id:uid,service_branch,role:"user",initial_rank,matricola,active:true});if(me)throw me;
    const {error:pg}=await db.from("progress").upsert({user_id:uid,service_branch:service_branch,payload:{rank:initial_rank,exp:0,totalExp:0,streak:0,correct:0,history:[],quizCount:0},updated_at:new Date().toISOString()},{onConflict:"user_id,service_branch"});if(pg)throw pg;

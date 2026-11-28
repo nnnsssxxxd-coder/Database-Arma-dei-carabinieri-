@@ -36,6 +36,8 @@ jobs:
             supabase/functions/ministry-login/index.ts \
             supabase/functions/site/index.ts \
             supabase/functions/traffic-control-engine/index.ts
+      - name: Test mission question validation
+        run: deno test --no-config --no-lock supabase/functions/game-engine/mission-validation.test.ts
       - name: Validate manifest and application shell
         run: |
           node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.webmanifest','utf8')); if(!m.name || !m.start_url || !Array.isArray(m.icons) || !m.icons.length) process.exit(1); for(const f of ['index.html','service-worker.js','app-icon.svg']) if(!fs.existsSync(f)) throw new Error('Missing '+f);"
@@ -184,6 +186,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
+          const config=fs.readFileSync('corps-config.js','utf8');
           const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
           const brevetto=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const traffic=fs.readFileSync('supabase/functions/traffic-control-engine/index.ts','utf8');
@@ -194,42 +197,54 @@ jobs:
             if(!match)throw new Error('Missing '+name);
             return [...match[1].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
           }
-          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
-            const list=ranks(name);
-            if(list.length!==24)throw new Error(name+' should contain 24 ordered official grades, found '+list.length);
-            if(new Set(list).size!==list.length)throw new Error(name+' contains duplicate grades');
+          const vm=require('vm');
+          const configContext={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),configContext);
+          const corps=configContext.window.CORPS_CONFIG;
+          const maxRanks={carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25};
+          const branches=Object.keys(maxRanks);
+          for(const branch of branches){
+            const item=corps?.[branch];
+            if(!item||item.ranks.length!==maxRanks[branch]+1)throw new Error(branch+' rank catalog and database ceiling differ');
+            if(item.departments.length!==11||item.categories.length!==4||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            if(new Set(item.categories).size!==4||new Set(item.departments).size!==11)throw new Error(branch+' catalog contains duplicate banks or units');
+            const covered=item.rankGroups.flatMap(g=>Array.from({length:g.end-g.start+1},(_,i)=>g.start+i)).sort((a,b)=>a-b);
+            if(covered.length!==item.ranks.length||covered.some((rank,index)=>rank!==index))throw new Error(branch+' rank groups do not cover the ladder exactly once');
           }
-          for(const token of ['#d4af37','#0d3b27','applyServiceBranding','FINANZA_RANKS','CARABINIERI_RANKS']){
-            if(!html.includes(token))throw new Error('Missing branch identity: '+token);
+          for(const [name,source] of [['command login',fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8')],['command action',fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8')],['ministry',fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8')],['account creation',fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8')]]){
+            for(const [branch,rank] of Object.entries(maxRanks))if(!source.includes(branch+':'+rank))throw new Error(name+' has an inconsistent maximum rank for '+branch);
           }
-          if(!quiz.includes('shuffled.slice(0,5)')||!quiz.includes('answers.length!==5')||!html.includes('DOMANDA 1 / 5'))throw new Error('Rank exam must use five questions end-to-end');
-          if(!brevetto.includes('start_vehicle_brevetto_attempt')||!brevetto.includes('answers.length!==8'))throw new Error('Eight-question brevetto flow is incomplete');
-          for(const token of ['completed_attempts between 0 and 6',"interval '12 hours'","used_question_ids=array","jsonb_array_length(questions)=8","score <= 8"]){
-            if(!migration.includes(token))throw new Error('Brevetto migration missing safeguard: '+token);
+          const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
+          if(!login.includes('rankFor(m)===({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[m.service_branch]'))throw new Error('Automatic Comando Generale eligibility must use the correct maximum rank for all six institutions');
+          const departmentEngine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const unlockStart=departmentEngine.indexOf('const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={');
+          const unlockEnd=departmentEngine.indexOf('};',unlockStart);
+          if(unlockStart<0||unlockEnd<0)throw new Error('Department unlock-grade map is missing');
+          const unlockBody=departmentEngine.slice(unlockStart,unlockEnd).split('={')[1];
+          const unlockGrades=Object.fromEntries(unlockBody.split(',').map(pair=>{const [key,value]=pair.split(':');return [key.trim(),value.trim().replaceAll('"','')];}));
+          for(const [branch,item] of Object.entries(corps)){
+            if(unlockGrades[branch]!==item.ranks[item.departmentUnlockRank])throw new Error(branch+' department unlock grade does not match configured rank');
+            if(item.ranks[item.vehicleUnlockRank]!==item.vehicleUnlockName)throw new Error(branch+' vehicle pathway unlock grade does not match configured rank');
           }
-          const monochrome=fs.readFileSync('app-icon-monochrome.svg','utf8');
-          const iconConcurrency=fs.readFileSync('supabase/migrations/20261124230000_harden_vehicle_brevetto_start_concurrency.sql','utf8');
-          if(!build.includes('app-icon.svg')||!build.includes('mipmap-anydpi-v26/ic_launcher.xml')||!build.includes('ic_launcher_monochrome.png')||!build.includes('android:icon="@mipmap/ic_launcher_legacy"')||!build.includes('android:roundIcon="@mipmap/ic_launcher_round_legacy"')||!build.includes('launchable-activity:')||!build.includes('application-icon-160:'))throw new Error('Adaptive, monochrome and legacy launcher icons plus launchable activity must be verified');
-          if(!monochrome.includes('fill="#fff"')||!monochrome.includes('fill-rule="evenodd"'))throw new Error('The app icon source assets must retain a valid monochrome shield');
-          if(!iconConcurrency.includes('pg_advisory_xact_lock')||!iconConcurrency.includes("NOTIFY pgrst, 'reload schema'"))throw new Error('Brevetto start must serialize concurrent attempts and refresh PostgREST RPC metadata');
-          if(!traffic.includes('const finanzaScenarios')||!traffic.includes('scenarioPool=scenariosByBranch[branch as keyof typeof scenariosByBranch]'))throw new Error('The Guardia di Finanza needs its own economic-financial control scenarios');
-          if(!traffic.includes('id:"fiscal_docs"')||!traffic.includes('id:"accounting"')||!traffic.includes('id:"inventory"')||!traffic.includes('fuel_station')||!traffic.includes('Esame dei documenti fiscali e commerciali')||!html.includes('id:"fiscal_docs"')||!html.includes('plateEl.hidden=!showVehicleReference')||!html.includes('GESTORE · ')||!html.includes('return"fuel_station"'))throw new Error('The Guardia di Finanza patrol UI must use contextual fiscal/business checks, identify fuel-station roles correctly and hide fictitious plates');
-           const finanzaBlock=traffic.slice(traffic.indexOf('const finanzaScenarios = ['),traffic.indexOf('const scenariosByBranch'));
-           if(!finanzaBlock||/plate:/.test(finanzaBlock))throw new Error('Finanza patrol scenarios must not contain fictitious vehicle plates');
-           if(!traffic.includes('fuel_station')||!traffic.includes('Gestore dell')||!html.includes('sceneKind==="fuel_station"'))throw new Error('Fuel-station scenarios must have contextual classification and role labels');
-           if(!traffic.includes('Verifica di prodotti energetici, prezzi esposti e misurazioni')||!traffic.includes('Riscontro economico-contabile'))throw new Error('Fuel-station checks must be fiscal and commercial, not driver/vehicle checks');
-
-          console.log('PASS official rank lists, separate corps branding, five-question promotion exam, eight-question brevetto, six-attempt cooldown and density-specific PNG APK icon');
-          const dollarArgs=[...html.matchAll(/\\$\\(["']([^"']+)["']\\)/g)].map(x=>x[1]);
-          if(dollarArgs.some(x=>x.startsWith('.')||x.startsWith('#')||x.startsWith('['))) throw new Error('The ID helper $() must not receive CSS selectors; use querySelector instead');
-          if(!html.includes('rank>=9?"ISPETTORE":rank>=5?"SOVRINTENDENTE"')) throw new Error('Personnel role categories must distinguish inspectors and warrant officers');
-          if(!html.includes('x.type==="vehicle_brevetto"?8')) throw new Error('Progress chart must use eight as the brevetto denominator');
-          if(!html.includes('selectedBranch==="finanza"?"#d4af37":"#d71930"')) throw new Error('Rank graphic accents must follow the selected service branch');
-          const command=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
-          if(command.includes('rankFor(m)===24')||html.includes('branch==="finanza"?24:23')||html.includes('to==="finanza"?24:23')) throw new Error('Finanza rank ceiling must be index 23 (24 real grades)');
-          console.log('PASS identical zero-based rank bounds across both Corps');
-
-          console.log('PASS selector safety, real personnel-role grouping, mixed quiz score chart and branch-specific grade graphics');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const branchKeys=Object.keys(corps);
+          for(let index=0;index<branchKeys.length;index++){
+            const branch=branchKeys[index],start=game.indexOf(' '+branch+':[');
+            const next=index<branchKeys.length-1?game.indexOf(' '+branchKeys[index+1]+':[',start+1):game.indexOf('\n};',start);
+            const section=game.slice(start,next<0?undefined:next);
+            if(start<0||((section.match(/id:"/g)||[]).length)!==4)throw new Error(branch+' must have exactly four branch-specific missions');
+          }
+          const vehicleSeed=fs.readFileSync('supabase/migrations/20261127130000_seed_vehicle_brevetto_catalogues.sql','utf8');
+          if((vehicleSeed.match(/'2026-11-27',true,/g)||[]).length!==16)throw new Error('Expected sixteen verified vehicle entries across four new institutions');
+          const deptEngine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const quizEngine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          if(!html.includes('async function loadMissionBoard')||!html.includes('id="missionModePanel"'))throw new Error('Mission assessment UI is incomplete');
+          if(!deptEngine.includes('DEPARTMENT_UNLOCK_RANK')||!deptEngine.includes('VEHICLE_UNLOCK_RANK'))throw new Error('Branch-specific access controls are missing');
+          for(const token of ['count.total===100','count.physics===30','count.technical===40','count.regulations===30','bankCounts.total!==100'])if(!deptEngine.includes(token))throw new Error('Vehicle bank completeness guard missing: '+token);
+          if(!deptEngine.includes('bankRows??[]).length!==100')||!deptEngine.includes('validBankRows.length!==100')||!deptEngine.includes('rankBandCounts.some(value=>value<4)'))throw new Error('Department quiz must require exactly 100 valid explained questions across all rank bands');
+          if(!quizEngine.includes('pool.length!==100')||!quizEngine.includes('100 domande verificate per questo Corpo')||!quizEngine.includes('correct_index')||!quizEngine.includes('explanation.length>=20')||!quizEngine.includes('genericExplanation')||!quizEngine.includes('canonicalPrompt'))throw new Error('General quiz must require exactly 100 distinct, non-template and explained questions');
+          if(!game.includes('normalizedAnswers')||!game.includes('mission_complete'))throw new Error('Mission answers must be graded server-side');
+          console.log('PASS six rank ladders, 66 units, 24 qualification paths, 24 mission scenarios, 24 specialist platforms and fail-closed quiz banks');
           NODE
 
       - name: Validate complete quiz-bank explanations
@@ -241,7 +256,7 @@ jobs:
           if(ids.length!==38)throw new Error('Expected 38 individually explained Carabinieri questions, found '+ids.length);
           if(!migration.includes("where service_branch='carabinieri'"))throw new Error('Explanation migration must be scoped to Carabinieri');
           const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
-          if(!engine.includes('if(error||!pool||pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete question bank');
+          if(!engine.includes('verifiedBank.length!==100')||!engine.includes('if(pool.length<5)'))throw new Error('Rank exam must fail closed on incomplete or unverified question bank');
           console.log('PASS 38 missing explanations are supplied and rank exam bank guard remains enabled');
           NODE
       - name: Validate sourced brevetto bank seed and progress feedback
@@ -253,6 +268,10 @@ jobs:
           const technical=fs.readFileSync('supabase/migrations/20261124190200_seed_vehicle_technical_40.sql','utf8');
           const engine=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
           const balance=fs.readFileSync('supabase/migrations/20261124190300_balance_physics_answer_positions.sql','utf8');
+          const sourceRefinement=fs.readFileSync('supabase/migrations/20261127150000_refine_carabinieri_vehicle_physics_sources.sql','utf8');
+          for(const token of ['v_inertia_count<>4','v_curve_count<>12','v_energy_count<>8','v_momentum_count<>4','v_incline_count<>4','newtons-laws-of-motion','centripetal-acceleration','kinetic-energy-and-the-work-energy-theorem','linear-momentum-and-force','chapter/friction/']){
+            if(!sourceRefinement.includes(token))throw new Error('Carabinieri physics source backfill missing: '+token);
+          }
           if((physics.match(/"prompt":/g)||[]).length!==44)throw new Error('Physics seed must contain 22 land and 22 naval source questions');
           if((rules.match(/"prompt":/g)||[]).length!==60)throw new Error('Regulations seed must contain 30 road and 30 COLREG questions');
           if((technical.match(/"prompt":/g)||[]).length!==80)throw new Error('Technical seed must contain 40 land and 40 naval system questions');
@@ -335,26 +354,30 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
-          for(const name of ['CARABINIERI_RANKS','FINANZA_RANKS']){
-            const start=html.indexOf('const '+name+'=[');
-            const end=html.indexOf('];',start);
-            if(start<0||end<0)throw new Error('Missing grade catalog '+name);
-            const labels=[...html.slice(start,end).matchAll(/"[^"]+"/g)];
-            if(labels.length!==24)throw new Error(name+' must contain 24 grades, found '+labels.length);
+          const vm=require('vm');
+          const configContext={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),configContext);
+          const corps=configContext.window.CORPS_CONFIG;
+          const maxRanks={carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25};
+          for(const [branch,max] of Object.entries(maxRanks)){
+            const item=corps?.[branch];
+            if(!item||item.ranks.length!==max+1)throw new Error(branch+' rank catalog and database ceiling differ');
+            if(item.departments.length!==11||item.rankGroups.length!==4||item.qualificationPaths.length!==4)throw new Error(branch+' catalog is incomplete');
+            const covered=item.rankGroups.flatMap(g=>Array.from({length:g.end-g.start+1},(_,i)=>g.start+i)).sort((x,y)=>x-y);
+            if(covered.length!==item.ranks.length||covered.some((rank,index)=>rank!==index))throw new Error(branch+' rank groups do not cover the ladder exactly once');
           }
-          const login=fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8');
-          const action=fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8');
-          const ministry=fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8');
-          const create=fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8');
-          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
-          for(const [name,source] of [['command login',login],['command action',action],['ministry',ministry],['account creation',create],['quiz engine',quiz]]){
-            if(!source.includes('23'))throw new Error(name+' is missing the maximum rank index');
+          const sources={
+            'command login':fs.readFileSync('supabase/functions/command-general-login/index.ts','utf8'),
+            'command action':fs.readFileSync('supabase/functions/command-general-action/index.ts','utf8'),
+            'ministry':fs.readFileSync('supabase/functions/ministry-admin-action/index.ts','utf8'),
+            'account creation':fs.readFileSync('supabase/functions/admin-create-user/index.ts','utf8')
+          };
+          for(const [name,source] of Object.entries(sources))for(const [branch,max] of Object.entries(maxRanks)){
+            if(!source.includes(branch+':'+max))throw new Error(name+' has an inconsistent maximum rank for '+branch);
           }
-          if(/service_branch\s*===\s*"finanza"[^\n]{0,100}===\s*24/.test(login))throw new Error('Finanza maximum rank must be index 23, not 24');
-          if(!login.includes('m.service_branch==="finanza"&&rankFor(m)===23'))throw new Error('Finanza automatic Comando Generale eligibility is not aligned to its 24-grade catalog');
-          if(!login.includes('Number(m.initial_rank)===23'))throw new Error('Finanza initial-rank eligibility audit is not aligned');
-          if(!ministry.includes('b==="carabinieri"?23:23')||!create.includes('service_branch==="finanza"?23:23'))throw new Error('Account administration maximum rank differs from the database constraints');
-          console.log('PASS both 24-grade ladders use zero-based maximum index 23 across login, command, ministry, provisioning and exams');
+          const login=sources['command login'];
+          if(!login.includes('rankFor(m)===({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[m.service_branch]'))throw new Error('Automatic Comando Generale eligibility must use the correct maximum rank for all six institutions');
+          console.log('PASS six rank ladders, 66 units, 24 qualification paths and consistent zero-based maximum-rank access');
           NODE
       - name: Validate hardened patrol and brevetto safeguards
         run: |
@@ -389,4 +412,129 @@ jobs:
           if(create.includes('@login.simulatore.invalid'))throw new Error('Legacy internal account alias must not use simulation terminology');
           if(!create.includes('@account.databaseforzeordine.invalid'))throw new Error('Neutral internal account alias missing');
           console.log('PASS: professional interface language, explicit non-official status and clearly qualified didactic data');
+          NODE
+
+      - name: Validate mission answer bounds and explanations
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const validation=fs.readFileSync('supabase/functions/game-engine/mission-validation.ts','utf8');
+          const tests=fs.readFileSync('supabase/functions/game-engine/mission-validation.test.ts','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const token of [
+            'missionOptions, missionQuestionIsValid',
+            'Number(a) >= missionOptions(mission.questions[index]).length',
+            'const review=mission.questions.map(q=>({prompt:q.prompt,explanation:q.explanation,correct_option:missionOptions(q)[q.correct_index],source_url:q.source_url,source_note:q.source_note}))',
+            'mission_title:mission.title,review'
+          ]) if(!game.includes(token)) throw new Error('Mission server validation/review missing: '+token);
+          for(const token of [
+            'return Array.isArray(question?.options) ? [...question.options] : []',
+            'options.length === 4',
+            'new Set(options.map((option) => option.trim().toLocaleLowerCase("it"))).size === 4',
+            'source.protocol === "https:"',
+            'sourceNote.length >= 20'
+          ]) if(!validation.includes(token)) throw new Error('Mission question integrity guard missing: '+token);
+          for(const token of ['does not invent a fourth option','rejects duplicated options','rejects invalid answer indexes','rejects missing, non-HTTPS']) if(!tests.includes(token)) throw new Error('Mission validation regression test missing: '+token);
+          if(game.includes('MISSION_FOURTH_DISTRACTOR')||validation.includes('options.push(')) throw new Error('Mission questions must never receive a fabricated fourth option');
+          const board=html.slice(html.indexOf('async function loadMissionBoard'),html.indexOf('async function refreshPatrolStatus'));
+          for(const token of ['Missione superata · ','Risposta corretta: ','button.textContent="Missione completata"','questions.forEach(q=>q.querySelectorAll("input").forEach(input=>input.disabled=true))']) {
+            if(!board.includes(token)) throw new Error('Mission result feedback missing: '+token);
+          }
+          if(board.includes('await loadMissionBoard();')) throw new Error('Mission success must not erase the explanation panel immediately');
+          console.log('PASS mission option bounds, server-side grading, explanations on success and persistent feedback');
+          NODE
+      - name: Validate quiz category parity across all six institutions
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const vm=require('vm');
+          const context={window:{}};
+          vm.runInNewContext(fs.readFileSync('corps-config.js','utf8'),context);
+          const config=context.window.CORPS_CONFIG;
+          const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const match=engine.match(/const CATEGORY_BY_BRANCH:Record<string,string\[]>=(\{[\s\S]*?\});/);
+          if(!match)throw new Error('Quiz engine category map missing');
+          const literal=match[1].replace(/ as Record<string,string\[]>/g,'');
+          const categories=Function('"use strict"; return ('+literal+');')();
+          for(const [branch,item] of Object.entries(config)){
+            const expected=[...item.categories].sort();
+            const actual=[...(categories[branch]||[])].sort();
+            if(expected.length!==4||actual.length!==4||expected.some((value,index)=>value!==actual[index])){
+              throw new Error(branch+' quiz categories do not match the four categories displayed by the site');
+            }
+          }
+          console.log('PASS: all six quiz engines expose exactly the four categories configured in the website');
+          NODE
+      - name: Validate promotion exam answer explanations
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const migration=fs.readFileSync('supabase/migrations/20261127120000_expand_service_rpc_functions.sql','utf8');
+          const engine=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const [name,source,tokens] of [
+            ['SQL exam result',migration,["'review',coalesce(v_review,'[]'::jsonb)","'correct_option',q.options->>q.correct_index","'explanation',coalesce(nullif(trim(q.explanation),''),'Spiegazione non disponibile.')"]],
+            ['exam interface',html,['const review=Array.isArray(data.review)?data.review:[]','Risposta corretta:','Spiegazione:','Correzione commentata']],
+            ['exam backend',engine,['action==="rank_exam_submit"','db.rpc("complete_rank_exam"']]
+          ])for(const token of tokens)if(!source.includes(token))throw new Error(name+' is missing '+token);
+          console.log('PASS promotion exams return and display selected answer, correct answer and explanation');
+          NODE
+      - name: Validate strict quiz-bank integrity gates
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const department=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const token of ['validQuestionRow','rankBandCounts.some(value=>value<4)','(bankRows??[]).length!==100','validBankRows.length!==100','uniquePromptCount!==100','normalizedPrompts']) {
+            if(!department.includes(token)) throw new Error('Department quiz integrity guard missing: '+token);
+          }
+          for(const token of ['pool.length!==100','esattamente 100 domande verificate']) {
+            if(!quiz.includes(token)) throw new Error('General quiz exact-count guard missing: '+token);
+          }
+          for(const token of ['validVehicleQuestionRow','count.prompts.size===100','bankCounts.prompts.size!==100','bankCounts.invalid!==0']) {
+            if(!department.includes(token)) throw new Error('Vehicle quiz integrity guard missing: '+token);
+          }
+          console.log('PASS: general, department and vehicle quizzes fail closed on incomplete or malformed banks');
+          NODE
+      - name: Validate general quiz content quality before serving
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const source=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          for(const token of ['correct_index,explanation','Number.isInteger(q.correct_index)','explanation.length>=20','new Set(options.map','return {data:[],error:null}','difficulty:q.difficulty','genericExplanation','templatePrompt','canonicalPrompt','!seen.has(canonicalPrompt)']) {
+            if(!source.includes(token)) throw new Error('General quiz content validation missing: '+token);
+          }
+          console.log('PASS: general quiz questions are validated and answer keys remain server-side');
+          NODE
+
+      - name: Validate per-question source traceability
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const migration=fs.readFileSync('supabase/migrations/20261127140000_enforce_source_verified_quiz_content.sql','utf8');
+          const quiz=fs.readFileSync('supabase/functions/quiz-engine/index.ts','utf8');
+          const department=fs.readFileSync('supabase/functions/department-engine/index.ts','utf8');
+          const game=fs.readFileSync('supabase/functions/game-engine/index.ts','utf8');
+          const missionValidation=fs.readFileSync('supabase/functions/game-engine/mission-validation.ts','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const token of ['add column if not exists source_url','add column if not exists source_note','quiz_questions_source_pair_check','department_questions_source_pair_check','create or replace function public.complete_quiz_attempt','create or replace function public.complete_rank_exam','create or replace function public.complete_department_quiz',"'review',v_review"]){
+            if(!migration.includes(token))throw new Error('Source-traceability migration missing: '+token);
+          }
+          for(const token of ['function validGeneralQuestion','source_url,source_note','const valid=data.length===100&&data.every((q:any)=>validGeneralQuestion(q,seen))','category==="Tutte le materie"?data:data.filter','questionPool("Tutte le materie",branch)','100 quesiti completi, distinti e corredati da fonti verificabili']){
+            if(!quiz.includes(token))throw new Error('General quiz source gate missing: '+token);
+          }
+          for(const token of ['sourceNote.length>=20','source_url,source_note','questions.every(validQuestionRow)','fonte verificabile.']){
+            if(!department.includes(token))throw new Error('Department quiz source gate missing: '+token);
+          }
+          for(const token of ['questions.every(missionQuestionIsValid)','blocked_reason','available,blocked_reason']){
+            if(!game.includes(token))throw new Error('Mission source gate missing: '+token);
+          }
+          for(const token of ['sourceNote.length >= 20','source.protocol === "https:"','options.length === 4','Number.isInteger(question.correct_index)']){
+            if(!missionValidation.includes(token))throw new Error('Mission validation module is missing: '+token);
+          }
+          for(const token of ['Apri la fonte istituzionale o normativa','Apri la fonte','IN REVISIONE']){
+            if(!html.includes(token))throw new Error('Source link or unavailable-state UI missing: '+token);
+          }
+          console.log('PASS: general, rank, department and mission questions fail closed without an HTTPS source and a specific citation note; successful reviews expose the reference');
           NODE

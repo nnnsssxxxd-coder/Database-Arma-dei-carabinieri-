@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
     const password = String(body.password ?? "");
     const serviceBranch = String(body.service_branch ?? "").trim().toLowerCase();
-    if (!["carabinieri", "finanza"].includes(serviceBranch)) return reply(req, { error: "Seleziona il Corpo di appartenenza." }, 400);
+    if (!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(serviceBranch)) return reply(req, { error: "Seleziona il Corpo di appartenenza." }, 400);
     if (!/^[a-z0-9_-]{3,24}$/.test(username) || password.length < 1 || password.length > 128) {
       return reply(req, { error: "Credenziali non valide." }, 400);
     }

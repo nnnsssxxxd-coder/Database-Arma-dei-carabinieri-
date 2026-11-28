@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'corps-config.js'
       - 'manifest.webmanifest'
       - 'app-icon*.svg'
       - 'app-hero.svg'
@@ -41,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p site
-          cp index.html manifest.webmanifest service-worker.js app-icon.svg app-icon-foreground.svg app-icon-monochrome.svg app-hero.svg site/
+          cp index.html corps-config.js manifest.webmanifest service-worker.js app-icon.svg app-icon-foreground.svg app-icon-monochrome.svg app-hero.svg site/
           test -s site/index.html
           test -s site/manifest.webmanifest
           test -s site/service-worker.js

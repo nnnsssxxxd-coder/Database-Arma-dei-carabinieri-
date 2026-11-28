@@ -5,15 +5,31 @@ function reply(req:Request,data:unknown,status=200){return new Response(JSON.str
 const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,service,{auth:{persistSession:false}});
 const WINDOW_MS=24*60*60*1000, SESSION_MS=45*60*1000;
-async function questionPool(category:string,branch:"carabinieri"|"finanza"){
- let request=db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch);
- if(category!=="Tutte le materie")request=request.eq("category",category);
- return await request.order("sort_order");
+function validGeneralQuestion(q:any,seen:Set<string>){
+ const rawPrompt=String(q.prompt??"").trim(),prompt=rawPrompt.toLocaleLowerCase("it");
+ const canonicalPrompt=prompt.replace(/^seleziona l'alternativa corretta:\s*/i,"").trim();
+ const options=q.options,explanation=String(q.explanation??"").trim().toLocaleLowerCase("it");
+ const source=String(q.source_url??"").trim(),sourceNote=String(q.source_note??"").trim();
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=prompt.startsWith("seleziona l'alternativa corretta:");
+ const distinctOptions=Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4;
+ const valid=canonicalPrompt.length>=12&&!seen.has(canonicalPrompt)&&!genericExplanation&&!templatePrompt&&distinctOptions&&Number.isInteger(q.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&explanation.length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
+ if(canonicalPrompt)seen.add(canonicalPrompt);
+ return valid;
 }
-async function cooldownFor(userId:string,category:string,branch:"carabinieri"|"finanza"){
+async function questionPool(category:string,branch:string){
+ const {data,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty,correct_index,explanation,source_url,source_note").eq("active",true).eq("service_branch",branch).order("sort_order");
+ if(error||!data)return {data:null,error};
+ const seen=new Set<string>();
+ const valid=data.length===100&&data.every((q:any)=>validGeneralQuestion(q,seen));
+ if(!valid)return {data:[],error:null};
+ const selected=category==="Tutte le materie"?data:data.filter((q:any)=>q.category===category);
+ return {data:selected.map((q:any)=>({id:q.id,prompt:q.prompt,options:q.options,category:q.category,difficulty:q.difficulty})),error:null};
+}
+async function cooldownFor(userId:string,category:string,branch:string){
  const {data:pool,error:poolError}=await questionPool(category,branch);
  if(poolError||!pool)return {error:true,available:0,cooldown_until:null};
- if(pool.length<4)return {error:false,available:pool.length,too_few:true,cooldown_until:null};
+ if(pool.length<4||(category==="Tutte le materie"&&pool.length!==100))return {error:false,available:pool.length,too_few:true,required:category==="Tutte le materie"?100:4,cooldown_until:null};
  const since=new Date(Date.now()-WINDOW_MS).toISOString();
  const {data:recent,error}=await db.from("quiz_attempts").select("question_ids,completed_at")
   .eq("user_id",userId).eq("service_branch",branch).not("completed_at","is",null).gte("completed_at",since).order("completed_at",{ascending:true});
@@ -40,18 +56,17 @@ Deno.serve(async(req)=>{
   if(profileError)return reply(req,{error:"Impossibile verificare il profilo."},500);
   if(!profile?.active||profile.deleted)return reply(req,{error:"Account non attivo"},403);
   const requestedBranch=String((await req.clone().json().catch(()=>({}))).service_branch??"");
-  const branch=requestedBranch==="finanza"||requestedBranch==="carabinieri"?requestedBranch:null;
+  const branch=["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(requestedBranch)?requestedBranch:null;
   if(!branch)return reply(req,{error:"Corpo selezionato non valido."},400);
   const {data:membership,error:membershipError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
   if(membershipError)return reply(req,{error:"Impossibile verificare l'abilitazione al Corpo."},500);
   if(!membership)return reply(req,{error:"Non sei abilitato per questo Corpo."},403);
   const body=await req.json();
-  const allowed=branch==="finanza"
-   ? ["Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"]
-   : ["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura"];
+  const CATEGORY_BY_BRANCH:Record<string,string[]>={carabinieri:["Arma e ordinamento","Costituzione e istituzioni","Diritto penale e procedura","Sicurezza e procedure di servizio"],finanza:["Ordinamento e compiti","Diritto tributario","Dogane e monopoli","Polizia economico-finanziaria"],polizia:["Ordinamento e servizi di polizia","Diritto penale e procedura","Sicurezza pubblica","Normativa amministrativa e circolazione"],esercito:["Ordinamento militare","Storia e organizzazione","Addestramento e sicurezza","Logistica e supporto"],marina:["Ordinamento militare navale","Organizzazione della Marina","Sicurezza e navigazione","Diritto marittimo e tutela ambientale"],aeronautica:["Ordinamento militare aeronautico","Organizzazione dell’Aeronautica","Sicurezza aeronautica","Meteorologia e principi del volo"]};
+  const allowed=CATEGORY_BY_BRANCH[branch]??[];
   const category=String(body.category??"Tutte le materie");
   if(category!=="Tutte le materie"&&!allowed.includes(category))return reply(req,{error:"Materia non valida per il Corpo selezionato."},400);
-  const maxRank=branch==="finanza"?23:23;
+  const maxRank=({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[branch]??23;
   if(body.action==="rank_exam_start"){
    const {data:row,error:progressError}=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
    const {data:prof,error:rankError}=await db.from("profile_memberships").select("initial_rank").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
@@ -61,11 +76,11 @@ Deno.serve(async(req)=>{
    const need=Math.round((250+rank*60+rank*rank*4)/10)*10;
    if(rank>=maxRank)return reply(req,{error:"Hai già raggiunto il livello massimo."},409);
    if(exp<need)return reply(req,{error:"Per accedere all'esame servono ancora "+(need-exp)+" EXP.",required:need,exp,rank},403);
-   const bands=branch==="finanza"
-    ? (rank<4?["Ordinamento e compiti"]:rank<15?["Ordinamento e compiti","Diritto tributario"]:allowed)
-    : (rank<5?["Arma e ordinamento"]:rank<14?["Arma e ordinamento","Costituzione e istituzioni"]:allowed);
-   const {data:pool,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").eq("active",true).eq("service_branch",branch).in("category",bands);
-   if(error||!pool||pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},500);
+   const bands=rank<5?allowed.slice(0,1):rank<14?allowed.slice(0,2):allowed;
+   const {data:verifiedBank,error:bankError}=await questionPool("Tutte le materie",branch);
+   if(bankError||!verifiedBank||verifiedBank.length!==100)return reply(req,{error:"La banca generale non contiene 100 quesiti completi, distinti e corredati da fonti verificabili."},409);
+   const pool=verifiedBank.filter((q:any)=>bands.includes(q.category));
+   if(pool.length<5)return reply(req,{error:"Banca dati insufficiente per creare l'esame."},409);
    const shuffled=[...pool];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const selected=shuffled.slice(0,5);
    const {data:attempt,error:insertError}=await db.from("rank_exam_attempts").insert({user_id:user.id,service_branch:branch,from_rank:rank,question_ids:selected.map(q=>q.id)}).select("id,started_at").single();
    if(insertError)return reply(req,{error:"Impossibile avviare l'esame."},500);
@@ -91,9 +106,9 @@ Deno.serve(async(req)=>{
      .eq("user_id",user.id).eq("service_branch",branch).is("completed_at",null).order("started_at",{ascending:false}).limit(1).maybeSingle();
     if(openError)return reply(req,{error:"Impossibile recuperare la sessione quiz."},500);
     if(open){
-    const {data:rows,error}=await db.from("quiz_questions").select("id,prompt,options,category,difficulty").in("id",open.question_ids);
-    if(error||!rows)return reply(req,{error:"Impossibile riprendere il quiz"},500);
-    const byId=new Map(rows.map(q=>[q.id,q]));
+    const {data:verifiedBank,error:bankError}=await questionPool("Tutte le materie",branch);
+    if(bankError||!verifiedBank||verifiedBank.length!==100)return reply(req,{error:"La banca generale non è più completa o verificata; la sessione non può essere ripresa."},409);
+    const byId=new Map(verifiedBank.map((q:any)=>[q.id,q]));
     const questions=open.question_ids.map((id:string)=>byId.get(id)).filter(Boolean);
     if(questions.length!==4)return reply(req,{error:"Sessione quiz non più disponibile"},409);
     if(category!=="Tutte le materie"&&questions.some((q:{category:string})=>q.category!==category))return reply(req,{error:"Hai già un quiz in corso. Completa quello aperto prima di iniziarne un altro."},409);
@@ -101,7 +116,7 @@ Deno.serve(async(req)=>{
    }
    const {data:pool,error:poolError}=await questionPool(category,branch);
    if(poolError||!pool)return reply(req,{error:"Errore nel caricamento delle domande"},500);
-   if(pool.length<4)return reply(req,{error:"Non ci sono abbastanza domande per questa materia"},422);
+   if(pool.length<4||(category==="Tutte le materie"&&pool.length!==100))return reply(req,{error:category==="Tutte le materie"?"La banca generale deve contenere esattamente 100 domande verificate per questo Corpo.":"Non ci sono abbastanza domande per questa materia",required:category==="Tutte le materie"?100:4,available:pool.length},422);
    const status=await cooldownFor(user.id,category,branch);
    if(status.error)return reply(req,{error:"Impossibile verificare il ripristino delle domande"},500);
    if(status.available<4)return reply(req,{error:"Le domande recenti sono in ripristino",cooldown_until:status.cooldown_until,available:status.available});

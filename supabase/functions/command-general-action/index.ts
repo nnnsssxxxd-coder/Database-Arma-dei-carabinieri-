@@ -4,8 +4,8 @@ const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:f
 const origins=new Set(["https://localhost","capacitor://localhost","http://localhost","http://localhost:8100","https://localhost:8100","https://nnnsssxxxd-coder.github.io"]);
 function hs(req:Request){const o=req.headers.get("Origin")??"";return {"Access-Control-Allow-Origin":origins.has(o)?o:"null","Vary":"Origin","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function out(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:hs(req)});}
-const validBranch=(b:string)=>b==="carabinieri"||b==="finanza";
-const maxRank=(b:string)=>b==="carabinieri"?23:23;
+const validBranch=(b:string)=>["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(b);
+const maxRank=(b:string)=>({carabinieri:23,finanza:23,polizia:23,esercito:25,marina:27,aeronautica:25} as Record<string,number>)[b]??23;
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:hs(req)});
  if(req.method!=="POST")return out(req,{error:"Metodo non consentito"},405);
@@ -18,7 +18,7 @@ Deno.serve(async(req:Request)=>{
    if(re)throw re;
    const {data:progressRows,error:ge}=await db.from("progress").select("service_branch,payload").eq("user_id",user.id);if(ge)throw ge;
    const rankFor=(m:{initial_rank:number;service_branch:string})=>Math.max(Number(m.initial_rank)||0,Number((progressRows??[]).find(r=>r.service_branch===m.service_branch)?.payload?.rank)||0);
-   const stillEligible=(currentRanks??[]).some(m=>(m.service_branch==="carabinieri"||m.service_branch==="finanza")&&rankFor(m)===23);
+   const stillEligible=(currentRanks??[]).some(m=>rankFor(m)===maxRank(m.service_branch));
    if(!stillEligible){
     const {error:off}=await db.from("command_general_admins").update({active:false}).eq("user_id",user.id);if(off)throw off;
     const {error:log}=await db.from("command_general_audit").insert({actor_id:user.id,actor_username:actor.username,event:"automatic_command_access_revoked",target_user_id:user.id,details:{reason:"highest_rank_no_longer_active"}});if(log)throw log;
@@ -58,7 +58,7 @@ Deno.serve(async(req:Request)=>{
    try{
     const {data:profile,error:pr}=await db.from("profiles").select("id,username").eq("id",uid).maybeSingle();if(pr)throw pr;if(!profile)throw new Error("Il trigger Auth non ha creato il profilo: account annullato.");
     const {data:serial,error:se}=await db.from("matricole").insert({user_id:uid}).select("id").single();if(se||!serial)throw se??new Error("Matricola non assegnata.");
-    const matricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
+    const matricola=(({carabinieri:"CC-",finanza:"GF-",polizia:"PS-",esercito:"EI-",marina:"MM-",aeronautica:"AM-"} as Record<string,string>)[branch])+String(serial.id).padStart(7,"0");
     const {data:updated,error:ue}=await db.from("profiles").update({display_name:display,service_branch:branch,initial_rank:rank,matricola}).eq("id",uid).select("id").maybeSingle();if(ue)throw ue;if(!updated)throw new Error("Profilo non aggiornato: account annullato.");
     const {error:me}=await db.from("profile_memberships").insert({user_id:uid,service_branch:branch,role:"user",initial_rank:rank,matricola,active:true});if(me)throw me;
    const {error:pg}=await db.from("progress").upsert({user_id:uid,service_branch:branch,payload:{rank:rank,exp:0,totalExp:0,streak:0,correct:0,history:[],quizCount:0},updated_at:new Date().toISOString()},{onConflict:"user_id,service_branch"});if(pg)throw pg;
@@ -101,7 +101,7 @@ Deno.serve(async(req:Request)=>{
     else if(enabled){
      const rank=Number.isInteger(Number(b.initial_rank))?Number(b.initial_rank):Number(profile.initial_rank??0);if(rank<0||rank>maxRank(branch))return out(req,{error:"Imposta un grado valido per il Corpo da abilitare."},400);
      const {data:serial,error:se}=await db.from("matricole").select("id").eq("user_id",target).maybeSingle();if(se)throw se;if(!serial)return out(req,{error:"Matricola non disponibile: impossibile abilitare il secondo Corpo in sicurezza."},409);
-     const matricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
+     const matricola=(({carabinieri:"CC-",finanza:"GF-",polizia:"PS-",esercito:"EI-",marina:"MM-",aeronautica:"AM-"} as Record<string,string>)[branch])+String(serial.id).padStart(7,"0");
      const {error}=await db.from("profile_memberships").insert({user_id:target,service_branch:branch,role:"user",initial_rank:rank,matricola,active:true});if(error)throw error;
     }
     await audit(enabled?"body_access_enabled":"body_access_disabled",target,{username:profile.username,service_branch:branch});return out(req,{ok:true});
@@ -110,7 +110,7 @@ Deno.serve(async(req:Request)=>{
     const from=String(b.from_branch??""),rank=Number(b.initial_rank);if(!validBranch(from)||from===branch||!Number.isInteger(rank)||rank<0||rank>maxRank(branch))return out(req,{error:"Dati trasferimento non validi."},400);
     const {data:old,error:oe}=await db.from("profile_memberships").select("matricola,role,active,initial_rank").eq("user_id",target).eq("service_branch",from).maybeSingle();if(oe)throw oe;if(!old)return out(req,{error:"Appartenenza di origine non trovata."},409);
     const {data:serial,error:se}=await db.from("matricole").select("id").eq("user_id",target).maybeSingle();if(se)throw se;if(!serial)return out(req,{error:"Matricola non disponibile per il trasferimento."},409);
-    const targetMatricola=(branch==="finanza"?"GF-":"CC-")+String(serial.id).padStart(7,"0");
+    const targetMatricola=(({carabinieri:"CC-",finanza:"GF-",polizia:"PS-",esercito:"EI-",marina:"MM-",aeronautica:"AM-"} as Record<string,string>)[branch])+String(serial.id).padStart(7,"0");
     const {data:existing,error:xe}=await db.from("profile_memberships").select("user_id,matricola,role,active,initial_rank").eq("user_id",target).eq("service_branch",branch).maybeSingle();if(xe)throw xe;
     let inserted=false;
     if(existing){const {error}=await db.from("profile_memberships").update({active:true,initial_rank:rank,updated_at:new Date().toISOString()}).eq("user_id",target).eq("service_branch",branch);if(error)throw error;}

@@ -24,11 +24,31 @@ const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(url, service, { auth: { persistSession: false } });
 const SESSION_MS = 45 * 60 * 1000;
+function validVehicleQuestionRow(q:any){
+ const options=q?.options,prompt=String(q?.prompt??"").trim(),normalizedPrompt=prompt.toLocaleLowerCase("it"),source=String(q?.source_url??"").trim(),note=String(q?.source_note??"").trim(),explanation=String(q?.explanation??"").trim().toLocaleLowerCase("it");
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=normalizedPrompt.startsWith("seleziona l'alternativa corretta:");
+ return prompt.length>=12&&!templatePrompt&&!genericExplanation&&/^https:\/\/[^\s]+$/i.test(source)&&note.length>=20&&explanation.length>=20&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(q?.correct_index)&&q.correct_index>=0&&q.correct_index<=3&&["physics","technical","regulations"].includes(q?.category);
+}
+function validQuestionRow(q:any){
+ const options=q?.options,prompt=String(q?.prompt??"").trim(),normalizedPrompt=prompt.toLocaleLowerCase("it"),source=String(q?.source_url??"").trim(),sourceNote=String(q?.source_note??"").trim(),explanation=String(q?.explanation??"").trim().toLocaleLowerCase("it");
+ const genericExplanation=explanation.includes("la risposta è coerente con la normativa e con le informazioni istituzionali di riferimento");
+ const templatePrompt=normalizedPrompt.startsWith("seleziona l'alternativa corretta:");
+ return typeof q?.prompt==="string"&&prompt.length>=12&&!templatePrompt&&!genericExplanation&&Array.isArray(options)&&options.length===4&&options.every((value:any)=>typeof value==="string"&&value.trim().length>0)&&new Set(options.map((value:string)=>value.trim().toLocaleLowerCase("it"))).size===4&&Number.isInteger(Number(q.correct_index))&&Number(q.correct_index)>=0&&Number(q.correct_index)<=3&&explanation.length>=20&&/^https:\/\/[^\s]+$/i.test(source)&&sourceNote.length>=20;
+}
 const DEPT_RANKS_BY_BRANCH = {
   carabinieri: ["Addetto di reparto", "Addetto esperto", "Coordinatore di squadra", "Vice responsabile di squadra", "Responsabile di squadra", "Referente di compagnia", "Vice responsabile di reparto", "Responsabile di reparto"],
-  finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"]
+  finanza: ["Addetto specialista", "Addetto qualificato", "Coordinatore pattuglia", "Vice referente di nucleo", "Referente di nucleo", "Referente ufficiale", "Vice responsabile di reparto", "Responsabile di reparto"],
+  polizia: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di servizio", "Vice responsabile", "Responsabile di squadra", "Referente di ufficio", "Vice responsabile di reparto", "Responsabile di reparto"],
+  esercito: ["Operatore di unità", "Operatore qualificato", "Capo squadra", "Vice comandante di plotone", "Comandante di plotone", "Referente di compagnia", "Vice comandante di reparto", "Comandante di reparto"],
+  marina: ["Operatore di bordo", "Operatore qualificato", "Capo componente", "Vice responsabile di servizio", "Responsabile di servizio", "Referente di unità", "Vice comandante di reparto", "Comandante di reparto"],
+  aeronautica: ["Operatore di reparto", "Operatore qualificato", "Coordinatore di team", "Vice responsabile di sezione", "Responsabile di sezione", "Referente di gruppo", "Vice comandante di reparto", "Comandante di reparto"]
 };
 const departmentRanks = (branch: string) => DEPT_RANKS_BY_BRANCH[branch as keyof typeof DEPT_RANKS_BY_BRANCH] ?? DEPT_RANKS_BY_BRANCH.carabinieri;
+const DEPARTMENT_UNLOCK_GRADE:Record<string,string>={carabinieri:"Vicebrigadiere",finanza:"Vice Brigadiere",polizia:"Vice Sovrintendente",esercito:"Sergente",marina:"Sergente",aeronautica:"Sergente"};
+const DEPARTMENT_UNLOCK_RANK:Record<string,number>={carabinieri:5,finanza:5,polizia:6,esercito:7,marina:8,aeronautica:7};
+const VEHICLE_UNLOCK_RANK:Record<string,number>={carabinieri:2,finanza:2,polizia:3,esercito:2,marina:2,aeronautica:2};
+const VEHICLE_UNLOCK_GRADE:Record<string,string>={carabinieri:"Appuntato",finanza:"Appuntato",polizia:"Assistente",esercito:"Graduato",marina:"Comune di Prima Classe",aeronautica:"Primo Aviere"};
 async function getUser(req: Request) {
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: { user } } = await caller.auth.getUser();
@@ -54,7 +74,7 @@ Deno.serve(async (req: Request) => {
     if (!user) return reply(req,{ error: "Sessione non valida" }, 401);
     const body = await req.json();
     const branch=String(body.service_branch??"");
-    if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
+    if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(branch))return reply(req,{error:"Corpo selezionato non valido."},400);
     const { data: profile, error: profileError } = await db.from("profiles").select("active,deleted").eq("id", user.id).maybeSingle();
     if (profileError) return reply(req,{error:"Impossibile verificare il profilo."},500);
     if (!profile?.active || profile.deleted) return reply(req,{ error: "Account non attivo" }, 403);
@@ -67,7 +87,7 @@ Deno.serve(async (req: Request) => {
        const rankRow=await db.from("progress").select("payload").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
        if(rankRow.error)return reply(req,{error:"Impossibile verificare il grado personale."},500);
        const baseRank=Math.max(Number(membershipAccess.initial_rank)||0,Number(rankRow.data?.payload?.rank)||0);
-       const minimumRank=2;
+       const minimumRank=VEHICLE_UNLOCK_RANK[branch]??2;
        const locked=baseRank<minimumRank;
        if(action==="vehicle_brevetto_status"){
          const [{data:catalog,error:catalogError},{data:chosen,error:chosenError}]=await Promise.all([
@@ -75,6 +95,12 @@ Deno.serve(async (req: Request) => {
            db.from("department_vehicle_brevetti").select("vehicle_id,vehicle_name,vehicle_type,selected_at").eq("user_id",user.id).eq("service_branch",branch).maybeSingle()
          ]);
          if(catalogError||chosenError)return reply(req,{error:"Impossibile caricare catalogo o scelta brevetto."},500);
+         const vehicleIds=(catalog??[]).map((item:any)=>item.id);
+         const {data:bankRows,error:bankStatusError}=vehicleIds.length?await db.from("vehicle_brevetto_question_bank").select("vehicle_id,category,prompt,options,correct_index,explanation,source_url,source_note").in("vehicle_id",vehicleIds).eq("active",true):{data:[],error:null};
+         if(bankStatusError)return reply(req,{error:"Impossibile verificare la completezza dei quiz veicolo."},500);
+         const bankCounts=new Map<string,{total:number;physics:number;technical:number;regulations:number;invalid:number;prompts:Set<string>}>();
+         for(const row of bankRows??[]){const count=bankCounts.get(row.vehicle_id)??{total:0,physics:0,technical:0,regulations:0,invalid:0,prompts:new Set<string>()};count.total++;if(row.category==="physics")count.physics++;if(row.category==="technical")count.technical++;if(row.category==="regulations")count.regulations++;const prompt=String(row.prompt??"").trim().toLocaleLowerCase("it");if(!validVehicleQuestionRow(row)||count.prompts.has(prompt))count.invalid++;count.prompts.add(prompt);bankCounts.set(row.vehicle_id,count);}
+         const catalogWithReadiness=(catalog??[]).map((item:any)=>{const count=bankCounts.get(item.id)??{total:0,physics:0,technical:0,regulations:0,invalid:0,prompts:new Set<string>()};return {...item,bank_total:count.total,bank_ready:count.total===100&&count.physics===30&&count.technical===40&&count.regulations===30&&count.invalid===0&&count.prompts.size===100};});
          const {data:cycle,error:cycleError}=await db.from("vehicle_brevetto_cycles").select("completed_attempts,cooldown_until,cycle_number").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(cycleError)return reply(req,{error:"Impossibile caricare il ciclo del brevetto."},500);
          const storedCooldown=cycle?.cooldown_until??null;
@@ -84,14 +110,18 @@ Deno.serve(async (req: Request) => {
          const completed=cooldownExpired?0:Number(cycle?.completed_attempts??0);
          const cooldownUntil=cooldownExpired?null:storedCooldown;
          const cycleNumber=Number(cycle?.cycle_number??1)+(cooldownExpired?1:0);
-         return reply(req,{catalog:catalog??[],brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
+         return reply(req,{catalog:catalogWithReadiness,brevetto:chosen??null,cooldown_until:cooldownUntil,attempts_completed:completed,attempts_remaining:Math.max(0,6-completed),cycle_number:cycleNumber,locked,required_rank:minimumRank});
        }
-       if(locked)return reply(req,{error:"Il brevetto veicolo speciale si sblocca dal grado di Appuntato.",locked:true,required_rank:minimumRank},403);
+       if(locked)return reply(req,{error:"Il percorso tecnico del mezzo si sblocca dal grado/qualifica di "+(VEHICLE_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore.",locked:true,required_rank:minimumRank},403);
        if(action==="vehicle_brevetto_choose"){
          const vehicleId=String(body.vehicle_id??"");
          const {data:vehicle,error:vehicleError}=await db.from("vehicle_brevetto_catalog").select("id,display_name,vehicle_domain").eq("id",vehicleId).eq("service_branch",branch).eq("active",true).maybeSingle();
          if(vehicleError)return reply(req,{error:"Impossibile verificare il veicolo."},500);
-         if(!vehicle)return reply(req,{error:"Veicolo non presente nel catalogo ufficiale del Corpo."},400);
+         if(!vehicle)return reply(req,{error:"Veicolo non presente nel catalogo del Corpo."},400);
+         const {data:vehicleBank,error:vehicleBankError}=await db.from("vehicle_brevetto_question_bank").select("category,prompt,options,correct_index,explanation,source_url,source_note").eq("vehicle_id",vehicleId).eq("active",true);
+         if(vehicleBankError)return reply(req,{error:"Impossibile verificare la banca del veicolo."},500);
+         const bankCounts=(vehicleBank??[]).reduce((count:any,row:any)=>{count.total++;if(row.category==="physics")count.physics++;if(row.category==="technical")count.technical++;if(row.category==="regulations")count.regulations++;const prompt=String(row.prompt??"").trim().toLocaleLowerCase("it");if(!validVehicleQuestionRow(row)||count.prompts.has(prompt))count.invalid++;count.prompts.add(prompt);return count;},{total:0,physics:0,technical:0,regulations:0,invalid:0,prompts:new Set<string>()});
+         if(bankCounts.total!==100||bankCounts.physics!==30||bankCounts.technical!==40||bankCounts.regulations!==30||bankCounts.invalid!==0||bankCounts.prompts.size!==100)return reply(req,{error:"Il quiz di questo mezzo è in preparazione: servono 100 quesiti distinti, spiegati e corredati da fonti (30 fisica, 40 tecnica, 30 normativa)."},409);
          const {data:existing,error:existingError}=await db.from("department_vehicle_brevetti").select("vehicle_id").eq("user_id",user.id).eq("service_branch",branch).maybeSingle();
          if(existingError)return reply(req,{error:"Impossibile verificare la scelta già registrata."},500);
          if(existing)return reply(req,{error:"Hai già scelto il brevetto: la scelta è unica e non modificabile."},409);
@@ -194,8 +224,8 @@ Deno.serve(async (req: Request) => {
       const rankRow = await db.from("progress").select("payload").eq("user_id", user.id).eq("service_branch",branch).maybeSingle();
       if (rankRow.error) return reply(req,{ error: "Impossibile verificare il grado personale" }, 500);
       const personalRank = Math.max(Number(membershipAccess.initial_rank) || 0, Number(rankRow.data?.payload?.rank) || 0);
-      const minimumRank = branch === "finanza" ? 5 : 5;
-      if (personalRank < minimumRank) return reply(req,{ error: branch === "finanza" ? "La Carriera Reparto si sblocca dal grado di Vice Brigadiere." : "La Carriera Reparto si sblocca dal grado di Vicebrigadiere." }, 403);
+      const minimumRank = DEPARTMENT_UNLOCK_RANK[branch]??5;
+      if (personalRank < minimumRank) return reply(req,{ error: "La Carriera Reparto si sblocca dal grado/qualifica di "+(DEPARTMENT_UNLOCK_GRADE[branch]??"requisito previsto")+" o superiore." }, 403);
       const departmentId = String(body.department_id ?? "");
       const { data: department, error: departmentError } = await db.from("department_catalog").select("id").eq("id", departmentId).eq("service_branch",branch).eq("active", true).maybeSingle();
       if (departmentError) return reply(req,{error:"Impossibile verificare il reparto."},500);
@@ -352,16 +382,22 @@ Deno.serve(async (req: Request) => {
       const { data: open, error: openError } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id", user.id).eq("department_id", membership.department_id).eq("service_branch",branch).is("completed_at", null).order("started_at", { ascending: false }).limit(1).maybeSingle();
       if (openError) return reply(req,{ error: "Impossibile verificare la sessione reparto" }, 500);
       if (open && new Date(open.started_at).getTime() >= Date.now() - SESSION_MS) {
-        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id", open.question_ids).eq("service_branch",branch);
+        const { data: rows, error } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").in("id", open.question_ids).eq("service_branch",branch);
         if (error || !rows) return reply(req,{ error: "Impossibile riprendere il quiz reparto" }, 500);
         const byId = new Map(rows.map(q => [q.id, q]));
         const questions = open.question_ids.map((id: string) => byId.get(id)).filter(Boolean);
-        if (questions.length !== 4) return reply(req,{ error: "Sessione reparto non più disponibile" }, 409);
+        if (questions.length !== 4 || !questions.every(validQuestionRow)) return reply(req,{ error: "Sessione reparto non più disponibile: una o più domande non hanno una fonte verificabile." }, 409);
         return reply(req,{ attempt_id: open.id, questions, answers: open.answers ?? [], expires_at: new Date(new Date(open.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
       }
       if (open) await db.from("department_quiz_attempts").update({ completed_at: new Date().toISOString() }).eq("id", open.id).eq("service_branch",branch).is("completed_at", null);
       const band = membership.rank < 2 ? 0 : membership.rank < 5 ? 1 : 2;
-      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
+      const { data: bankRows, error: bankCountError } = await db.from("department_questions").select("id,prompt,options,correct_index,explanation,rank_band,source_url,source_note").eq("department_id", membership.department_id).eq("service_branch",branch).eq("active",true);
+      const validBankRows=(bankRows??[]).filter(validQuestionRow);
+      const normalizedPrompts=validBankRows.map((q:any)=>String(q.prompt??"").trim().replace(/\\s+/g," ").toLocaleLowerCase("it"));
+      const uniquePromptCount=new Set(normalizedPrompts).size;
+      const rankBandCounts=[0,1,2].map(value=>validBankRows.filter((q:any)=>Number(q.rank_band)===value).length);
+      if (bankCountError || (bankRows??[]).length!==100 || validBankRows.length!==100 || uniquePromptCount!==100 || rankBandCounts.some(value=>value<4)) return reply(req,{ error: "Banca reparto non completa o non verificata: servono 100 quesiti distinti, validi, spiegati e distribuiti su tutti i livelli." }, 409);
+      const { data: pool, error: poolError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").eq("department_id", membership.department_id).eq("service_branch",branch).eq("rank_band", band).eq("active", true);
       if (poolError || !pool || pool.length < 4) return reply(req,{ error: "Banca domande insufficiente per questo livello. Contatta l'amministratore." }, 500);
       // Evita di riproporre allo stesso utente le domande completate nelle ultime 24 ore.
       const rotationWindow = 24 * 60 * 60 * 1000;
@@ -394,11 +430,11 @@ Deno.serve(async (req: Request) => {
         if (insertError.code === "23505") {
           const { data: concurrent } = await db.from("department_quiz_attempts").select("id,question_ids,answers,started_at").eq("user_id",user.id).eq("department_id",membership.department_id).eq("service_branch",branch).is("completed_at",null).maybeSingle();
           if (concurrent) {
-            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band").in("id",concurrent.question_ids).eq("service_branch",branch);
+            const { data: concurrentRows, error: concurrentError } = await db.from("department_questions").select("id,prompt,options,explanation,rank_band,source_url,source_note").in("id",concurrent.question_ids).eq("service_branch",branch);
             if (!concurrentError && concurrentRows) {
               const concurrentById = new Map(concurrentRows.map(q => [q.id,q]));
               const concurrentQuestions = concurrent.question_ids.map((id: string) => concurrentById.get(id)).filter(Boolean);
-              if (concurrentQuestions.length === 4) return reply(req,{ attempt_id: concurrent.id, questions: concurrentQuestions, answers: concurrent.answers ?? [], expires_at: new Date(new Date(concurrent.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
+              if (concurrentQuestions.length === 4 && concurrentQuestions.every(validQuestionRow)) return reply(req,{ attempt_id: concurrent.id, questions: concurrentQuestions, answers: concurrent.answers ?? [], expires_at: new Date(new Date(concurrent.started_at).getTime() + SESSION_MS).toISOString(), resumed: true, membership });
             }
           }
         }

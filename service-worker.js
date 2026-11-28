@@ -1,5 +1,5 @@
-const CACHE_NAME = "database-forze-ordine-v15";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-hero.svg", "./supabase.js"];
+const CACHE_NAME = "database-forze-ordine-v16";
+const APP_SHELL = ["./", "./manifest.webmanifest", "./app-icon.svg", "./app-hero.svg", "./corps-config.js", "./supabase.js"];
 
 self.addEventListener("install", event => {
   event.waitUntil(

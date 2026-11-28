@@ -37,7 +37,7 @@ Deno.serve(async(req)=>{
   if(adminError)return reply(req,{error:"Impossibile verificare il profilo amministrativo."},500);
   if(!admin?.active||admin.deleted)return reply(req,{error:"Permesso negato"},403);
   const body=await req.json(),userId=String(body.user_id??""),action=String(body.action??""),branch=String(body.service_branch??"");
-  if(!["carabinieri","finanza"].includes(branch))return reply(req,{error:"Corpo non valido"},400);
+  if(!["carabinieri","finanza","polizia","esercito","marina","aeronautica"].includes(branch))return reply(req,{error:"Corpo non valido"},400);
   const {data:adminMembership,error:adminMembershipError}=await db.from("profile_memberships").select("role").eq("user_id",user.id).eq("service_branch",branch).eq("active",true).maybeSingle();
   if(adminMembershipError)return reply(req,{error:"Impossibile verificare i permessi per questo Corpo."},500);
   if(!adminMembership||!["admin","istruttore"].includes(adminMembership.role))return reply(req,{error:"Non puoi gestire account di questo Corpo."},403);
