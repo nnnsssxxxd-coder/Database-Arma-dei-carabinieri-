@@ -3,7 +3,7 @@
 **Audit:** 28 novembre 2026  
 **Ramo:** `feat/expansione-sei-corpi`  
 **PR:** [#4 — Espansione sito a sei ambienti istituzionali](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/pull/4)  
-**Ultimo commit applicativo verificato:** `55c8fa2e8c67e329f4ba30df0a97c5b9dae3850a`
+**Ultimo commit applicativo verificato:** `72e1a5459ece867fbe21fd41d2ddc4faf1ee51cb`
 
 ## Stato della pubblicazione
 
@@ -21,11 +21,11 @@ La PR è ancora **DRAFT**, non è stata unita e la versione a sei ambienti non �
 
 Sul commit `55c8fa2e8c67e329f4ba30df0a97c5b9dae3850a`:
 
-- [App quality gate — SUCCESS, run 560](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46127663219).
+- [App quality gate — SUCCESS, run 564](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128163631).
   - Type-check di tutte le Edge Functions: SUCCESS.
   - Test Deno della validazione missioni: SUCCESS.
   - Tutti i controlli statici e di regressione, compresa la tracciabilità delle fonti: SUCCESS.
-- [Validate six-corps website — SUCCESS, run 167](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46127663270).
+- [Validate six-corps website — SUCCESS, run 172](https://github.com/nnnsssxxxd-coder/Database-Arma-dei-carabinieri-/actions/runs/46128163638).
 
 Il precedente run 559 aveva segnalato un'asserzione del workflow che cercava la validazione nel vecchio file dopo l'estrazione del modulo. Il controllo è stato aggiornato e il run 560 è passato integralmente.
 
@@ -38,7 +38,7 @@ Questi workflow sono controlli statici e unitari; **non** equivalgono a test end
 - **Quiz generali:** 100 domande attive per Carabinieri e 100 per Guardia di Finanza. La banca Carabinieri presenta 30 prompt-template e 60 spiegazioni generiche: non è pubblicabile. La banca Finanza è strutturalmente valida, ma manca ancora la tracciabilità puntuale delle fonti.
 - **Quiz di reparto:** 4 banche Carabinieri e 11 Finanza, tutte da 100 domande e strutturalmente valide (opzioni/indici/spiegazioni e prompt distinti). Le colonne `source_url` e `source_note` non esistono ancora in produzione per queste tabelle: saranno aggiunte dalla migrazione del ramo e dovranno poi essere valorizzate.
 - **Quiz veicolo:** 4 percorsi Carabinieri e 4 Finanza, ciascuno con 100 domande e rapporto 30 fisica / 40 tecnica / 30 normativa. Ogni banca ha 17–18 URL distinti; il numero di URL non dimostra che ogni riferimento sostenga la domanda specifica. La revisione qualitativa di ogni quesito e fonte resta obbligatoria.
-- L'audit delle note ha individuato 8 quesiti di fisica Carabinieri con note troppo brevi ("Legge d’inerzia" / "Forza centripeta"). La migrazione di ramo `20261127150000_refine_carabinieri_vehicle_physics_sources.sql` le sostituisce con riferimenti NASA Glenn e University of Central Florida; entrambi i contenuti sono stati verificati. Restano da verificare le altre associazioni domanda-fonte: alcune URL sono riutilizzate su molti quesiti (ad esempio Normattiva e IMO), quindi il solo conteggio delle URL non prova la pertinenza puntuale.
+- L'audit ha individuato 32 quesiti di fisica Carabinieri che usavano 5 URL Physics Classroom; 8 avevano anche note troppo brevi. La migrazione `20261127150000_refine_carabinieri_vehicle_physics_sources.sql` sostituisce tutte le 32 associazioni con riferimenti NASA Glenn e University of Central Florida/OpenStax (§6.2 accelerazione centripeta, §7.2 energia cinetica, §8.1 quantità di moto, §5.1 piano inclinato), con guardia sui conteggi attesi (4 inerzia, 12 curva, 8 energia, 4 quantità di moto, 4 piano inclinato). Le pagine NASA e UCF sono state verificate. Restano da verificare le altre associazioni domanda-fonte: alcune URL sono riutilizzate su molti quesiti (ad esempio Normattiva e IMO), quindi il solo conteggio delle URL non prova la pertinenza puntuale.
 - **Catalogo reparti in produzione:** 4 Carabinieri e 11 Finanza.
 - **Catalogo veicoli in produzione:** 4 Carabinieri e 4 Finanza.
 - Le migrazioni del ramo preparano i cataloghi degli altri quattro Corpi e completano a 11 i reparti Carabinieri; non sono ancora applicate.
